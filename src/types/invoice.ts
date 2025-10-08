@@ -4,11 +4,12 @@ export interface InvoiceInfo {
   collectionStatus: string;
   customerAddress: string;
   customerName: string;
+  customerPhone: string;
   invoiceNumber: string;
   printStatus: string;
   totalAmount: string;
   issueDate: string;
-  collectionDate: string;
+  collectionDate: string | null;
   assignedTo: {
     email: string;
     fullName: string;
