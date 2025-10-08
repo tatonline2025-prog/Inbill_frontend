@@ -8,8 +8,8 @@ import { AuthProvider } from "@/context/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Next.js App with TypeScript",
-  description: "Giao diện web cơ bản",
+  title: "In bill hoá đơn TAT",
+  description: "Hệ thống in bill",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
