@@ -24,7 +24,7 @@ export default function LoginPage() {
     try {
       const res = await login(userName, password);
 
-      console.log(res);
+      console.log(res.data.user.role);
 
       // **LƯU TOKEN VÀO LOCAL STORAGE (hoặc Cookie)**
       localStorage.setItem("token", res.data.token);
@@ -34,8 +34,12 @@ export default function LoginPage() {
 
       // Chuyển hướng sau 1.5 giây (ví dụ về trang tài khoản)
       setTimeout(() => {
-        window.location.href = "/users";
-      }, 1000);
+        if (res.data.user.role === "admin") {
+          window.location.href = "/admin_invoice";
+        } else {
+          window.location.href = "/user_invoice";
+        }
+      }, 500);
     } catch (err) {
       const errorMessage = "Lỗi kết nối server.";
       console.log(err);
