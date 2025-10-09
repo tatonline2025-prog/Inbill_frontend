@@ -319,6 +319,7 @@ export default function InvoicesPage() {
                 <thead>
                   <tr style={{ backgroundColor: "#f9fafb" }}>
                     {[
+                      "STT",
                       "Số Hóa Đơn",
                       "Tên Khách Hàng",
                       "SĐT",
@@ -347,8 +348,13 @@ export default function InvoicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentInvoices.map((invoice) => (
+                  {currentInvoices.map((invoice, index) => (
                     <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
+                      <td
+                        style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem", textAlign: "center" }}
+                      >
+                        {index + 1 + (currentPage - 1) * invoicesPerPage}
+                      </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.invoiceNumber}
                       </td>
