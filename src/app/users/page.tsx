@@ -54,7 +54,7 @@ export default function UsersPage() {
         setMessage({ type: "success", text: `Đã tải file cho user ${userId} thành công.` });
       } catch (error) {
         console.error(error);
-        setMessage({ type: "error", text: "Có lỗi khi tải file." });
+        setMessage({ type: "error", text: getErrorMessage(error) });
       } finally {
         setIsLoading(false);
       }
@@ -131,4 +131,26 @@ export default function UsersPage() {
       </div>
     </AdminRoute>
   );
+}
+
+interface AxiosLikeError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+export function getErrorMessage(error: unknown): string {
+  // Nếu là object kiểu Axios
+
+  const err = error as AxiosLikeError;
+
+  // ưu tiên message từ response.data.message
+  if (err.response?.data?.message) {
+    return err.response.data.message;
+  } else {
+    return "Lỗi không xác định";
+  }
 }

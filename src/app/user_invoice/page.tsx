@@ -329,7 +329,7 @@ export default function InvoicesPage() {
                     "SĐT",
                     "Địa Chỉ",
                     "Kỳ Thanh Toán",
-                    "Tổng tiền",
+                    "Tổng Tiền",
                     "Nhân viên phụ trách",
                     "Đã in bill",
                     "Đã thu",
