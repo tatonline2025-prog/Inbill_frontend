@@ -164,7 +164,7 @@ export default function InvoicesPage() {
             gap: 2,
           }}
         >
-          <div className="flex gap-2">
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
             {/* Nút Xuất Excel */}
             <Button
               variant="contained"
@@ -172,7 +172,12 @@ export default function InvoicesPage() {
               startIcon={<DownloadIcon />}
               onClick={handleExport}
               disabled={invoices.length === 0}
-              sx={{ borderRadius: 2, textTransform: "none" }}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontSize: { xs: "0.7rem", sm: "0.875rem" }, // responsive font
+                minWidth: { xs: "120px", sm: "160px" }, // co gọn trên mobile
+              }}
             >
               Xuất ra Excel toàn bộ
             </Button>
@@ -183,7 +188,10 @@ export default function InvoicesPage() {
               size="small"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              sx={{ minWidth: 180 }}
+              sx={{
+                minWidth: { xs: 120, sm: 180 },
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+              }}
               InputLabelProps={{
                 shrink: true,
               }}
@@ -197,18 +205,24 @@ export default function InvoicesPage() {
               sx={{
                 borderRadius: 2,
                 textTransform: "none",
-                backgroundColor: "#16a34a", // xanh lá
-                "&:hover": {
-                  backgroundColor: "#15803d", // xanh lá đậm khi hover
-                },
+                backgroundColor: "#16a34a",
+                "&:hover": { backgroundColor: "#15803d" },
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                minWidth: { xs: "120px", sm: "160px" },
               }}
             >
               Xuất ra Excel đã thu
             </Button>
-          </div>
+          </Box>
 
           {/* Chọn số lượng hiển thị */}
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 100, sm: 120 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
             <InputLabel id="invoices-per-page-label">Hiển thị</InputLabel>
             <Select
               labelId="invoices-per-page-label"
@@ -238,7 +252,13 @@ export default function InvoicesPage() {
             mb: 2,
           }}
         >
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 140, sm: 160 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
             <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
             <Select
               labelId="filter-print-label"
@@ -255,7 +275,13 @@ export default function InvoicesPage() {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 140, sm: 160 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
             <InputLabel id="filter-collection-label">Trạng thái thu tiền</InputLabel>
             <Select
               labelId="filter-collection-label"
@@ -280,12 +306,14 @@ export default function InvoicesPage() {
           <Typography>Không có hóa đơn nào được tìm thấy.</Typography>
         ) : (
           <>
-            <Paper sx={{ overflow: "hidden" }}>
+            {/* Thêm scroll ngang */}
+            <Box sx={{ overflowX: "auto" }}>
               <table
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",
-                  fontSize: "14px",
+                  minWidth: 900,
+                  fontSize: "0.875rem", // default ~14px
                 }}
               >
                 <thead>
@@ -307,9 +335,10 @@ export default function InvoicesPage() {
                         key={col}
                         style={{
                           border: "1px solid #e0e0e0",
-                          padding: "10px",
+                          padding: "8px 6px",
                           textAlign: "left",
                           backgroundColor: "#f5f5f5",
+                          fontSize: "0.75rem", // header nhỏ hơn dòng dữ liệu
                         }}
                       >
                         {col}
@@ -319,56 +348,55 @@ export default function InvoicesPage() {
                 </thead>
                 <tbody>
                   {currentInvoices.map((invoice) => (
-                    <tr key={invoice._id}>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.invoiceNumber}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.customerName}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.customerPhone}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.customerAddress}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.billing_period}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.totalAmount}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{invoice.assignedTo.fullName}</td>
-
-                      {/* Toggle in bill */}
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
+                    <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.invoiceNumber}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerName}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerPhone}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerAddress}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.billing_period}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.totalAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.assignedTo.fullName}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
                         <Switch
                           checked={invoice.printStatus === "printed"}
                           onChange={() => handleToggle(invoice._id, "printStatus")}
                           color="primary"
+                          sx={{ transform: "scale(0.8)" }} // thu nhỏ switch
                         />
                       </td>
-
-                      {/* Toggle thu tiền */}
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
+                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
                         <Switch
                           checked={invoice.collectionStatus === "collected"}
                           onChange={() => handleToggle(invoice._id, "collectionStatus")}
                           color="success"
+                          sx={{ transform: "scale(0.8)" }}
                         />
                       </td>
-
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                        {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : ""}
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : "---"}
                       </td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                        {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : ""}
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </Paper>
+            </Box>
 
             {/* --- Phân trang --- */}
             <Box
@@ -380,9 +408,9 @@ export default function InvoicesPage() {
               }}
             >
               <Pagination
-                count={totalPages} // tổng số trang
-                page={currentPage} // trang hiện tại
-                onChange={(event, value) => handlePageChange(value)} // gọi hàm đổi trang
+                count={totalPages}
+                page={currentPage}
+                onChange={(event, value) => handlePageChange(value)}
                 color="primary"
                 shape="rounded"
                 showFirstButton
