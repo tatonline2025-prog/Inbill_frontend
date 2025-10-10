@@ -4,6 +4,7 @@ import AdminRoute from "@/components/AdminRoute";
 import { excelUp } from "@/services/excel.api";
 import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
+import Image from "next/image";
 import { ChangeEvent, useEffect, useState } from "react";
 
 export default function UsersPage() {
@@ -65,6 +66,20 @@ export default function UsersPage() {
     <AdminRoute fallback={<p>Redirecting...</p>}>
       <div className="p-4">
         <h1 className="text-3xl font-bold mb-6 text-orange-600">Danh Sách Tài Khoản Người Dùng</h1>
+
+        <div className="p-3 mb-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-300 rounded-md">
+          ⚠️ Lưu ý: Chỉ upload file Excel (.xlsx hoặc .xls) đúng định dạng. Mỗi lần chỉ tải lên cho một người dùng. Mỗi
+          file Excel phải có các header như hình dưới đây để cho hệ thống có thể đọc được, thứ tự các cột thì tuỳ ý.
+        </div>
+
+        <div className="relative w-full h-[150px] mx-auto mb-6">
+          <Image
+            src="/images/example_excel.png"
+            alt="Hướng dẫn upload file Excel"
+            fill
+            className="object-contain rounded-lg shadow"
+          />
+        </div>
 
         {message && (
           <div
