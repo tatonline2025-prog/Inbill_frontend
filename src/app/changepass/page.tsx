@@ -63,13 +63,13 @@ export default function ChangePassPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
-              Nhập mật khẩi mới
+              Nhập mật khẩu mới
             </label>
             <input
               type="text"
               id="userName"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Nhập mật khẩi mới"
+              placeholder="Nhập mật khẩu mới"
               required
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
