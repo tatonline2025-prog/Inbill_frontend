@@ -1,10 +1,8 @@
-// frontend/src/app/register/page.tsx
 "use client";
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { register } from "@/services/auth.api";
-import Header from "@/components/Header";
 
 export default function RegisterPage() {
   const [lastName, setLastName] = useState("");
@@ -12,6 +10,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [province, setProvince] = useState(""); // ✅ thêm state mới
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -24,18 +23,16 @@ export default function RegisterPage() {
     const fullName = `${lastName} ${firstName}`.trim();
 
     try {
-      const res = await register(name, email, password, fullName);
-
-      // console.log(res);
+      const res = await register(name, email, password, fullName, province); // ✅ gửi thêm province
 
       setMessage({ type: "success", text: "Đăng ký thành công! Đang chuyển hướng..." });
 
-      // Chuyển hướng sau 2 giây
       setTimeout(() => {
         router.push("/");
       }, 2000);
     } catch (err) {
       console.log(err);
+      setMessage({ type: "error", text: "Đăng ký thất bại. Vui lòng thử lại!" });
     } finally {
       setIsLoading(false);
     }
@@ -47,6 +44,44 @@ export default function RegisterPage() {
       ? "bg-green-100 border-green-400 text-green-700"
       : "bg-red-100 border-red-400 text-red-700";
   };
+
+  // ✅ Danh sách tỉnh/thành cơ bản
+  const provinces = [
+    "TP Hà Nội",
+    "TP Huế",
+    "Quảng Ninh",
+    "Cao Bằng",
+    "Lạng Sơn",
+    "Lai Châu",
+    "Điện Biên",
+    "Sơn La",
+    "Thanh Hóa",
+    "Nghệ An",
+    "Hà Tĩnh",
+    "Tuyên Quang",
+    "Lào Cai",
+    "Thái Nguyên",
+    "Phú Thọ",
+    "Bắc Ninh",
+    "Hưng Yên",
+    "TP Hải Phòng",
+    "Ninh Bình",
+    "Quảng Trị",
+    "TP Đà Nẵng",
+    "Quảng Ngãi",
+    "Gia Lai",
+    "Khánh Hòa",
+    "Lâm Đồng",
+    "Đắk Lắk",
+    "TP Hồ Chí Minh",
+    "Đồng Nai",
+    "Tây Ninh",
+    "TP Cần Thơ",
+    "Vĩnh Long",
+    "Đồng Tháp",
+    "Cà Mau",
+    "An Giang",
+  ];
 
   return (
     <div className="min-h-screen flex items-start justify-center pt-10">
@@ -86,6 +121,7 @@ export default function RegisterPage() {
               />
             </div>
           </div>
+
           <div className="mb-4">
             <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
               Tên đăng nhập
@@ -100,6 +136,7 @@ export default function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
             />
           </div>
+
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
               Email
@@ -114,6 +151,28 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
+
+          {/* ✅ Thêm trường Tỉnh/Thành */}
+          <div className="mb-4">
+            <label htmlFor="province" className="block text-gray-700 text-sm font-bold mb-2">
+              Tỉnh / Thành phố
+            </label>
+            <select
+              id="province"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+            >
+              <option value="">-- Chọn tỉnh / thành phố --</option>
+              {provinces.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="mb-6">
             <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
               Mật khẩu
@@ -128,6 +187,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+
           <button
             type="submit"
             disabled={isLoading}

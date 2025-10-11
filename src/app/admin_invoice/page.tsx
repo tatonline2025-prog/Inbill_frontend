@@ -32,6 +32,8 @@ export default function InvoicesPage() {
   const [filterCollection, setFilterCollection] = useState("all");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
 
+  const [totalAmount, setTotalAmount] = useState(0);
+
   // --- Gọi API khi component mount ---
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -43,7 +45,7 @@ export default function InvoicesPage() {
         const data = res.data; // nếu backend trả trực tiếp mảng
         // const data = res.data.result; // nếu backend trả { result: [...] }
 
-        console.log(data);
+        // console.log(data);
 
         setInvoices(data);
       } catch (err) {
@@ -91,7 +93,12 @@ export default function InvoicesPage() {
     const matchAssignedUser =
       filterAssignedUser === "all" ? true : inv.assignedTo && inv.assignedTo._id === filterAssignedUser;
 
-    return matchPrint && matchCollection && matchAssignedUser;
+    const matchDate =
+      selectedDate === "" || filterCollection !== "collected"
+        ? true
+        : inv.collectionDate && new Date(inv.collectionDate).toISOString().slice(0, 10) === selectedDate;
+
+    return matchPrint && matchCollection && matchAssignedUser && matchDate;
   });
 
   // --- Tính toán dữ liệu trang hiện tại ---
@@ -101,6 +108,16 @@ export default function InvoicesPage() {
 
   // --- Tổng số trang sau khi lọc ---
   const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
+
+  // Tính toán tổng số tiền theo bộ lọc
+  useEffect(() => {
+    const total = filteredInvoices.reduce((sum, inv) => {
+      const amount = parseFloat(inv.totalAmount.toString().replace(/[^\d.-]/g, ""));
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
+
+    setTotalAmount(total);
+  }, [filteredInvoices]);
 
   // Lọc tên của người phụ trách
   const uniqueAssignedUsers = Array.from(
@@ -338,7 +355,50 @@ export default function InvoicesPage() {
           </FormControl>
         </Box>
 
-        <p>Đang có tổng {filteredInvoices.length} hoá đơn</p>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-around",
+            alignItems: "center",
+            textAlign: "center",
+            backgroundColor: "#f9fafb",
+            borderRadius: 2,
+            p: 2,
+            mb: 3,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+            gap: 2,
+          }}
+        >
+          {filterAssignedUser === "all" && (
+            <Box sx={{ minWidth: 200 }}>
+              <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+                Tổng số nhân viên
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: "#2563eb" }}>
+                {uniqueAssignedUsers.length}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ minWidth: 200 }}>
+            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+              Số mã khách hàng đang phụ trách
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
+              {filteredInvoices.length}
+            </Typography>
+          </Box>
+
+          <Box sx={{ minWidth: 200 }}>
+            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+              Tổng giá trị hoá đơn
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
+              {totalAmount.toLocaleString("vi-VN")} đ
+            </Typography>
+          </Box>
+        </Box>
 
         {/* --- Bảng dữ liệu --- */}
         {invoices.length === 0 ? (
@@ -359,7 +419,7 @@ export default function InvoicesPage() {
                   <tr style={{ backgroundColor: "#f9fafb" }}>
                     {[
                       "STT",
-                      "Số Hóa Đơn",
+                      "Mã Khách Hàng",
                       "Tên Khách Hàng",
                       "SĐT",
                       "Địa Chỉ",

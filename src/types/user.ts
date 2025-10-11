@@ -4,6 +4,7 @@ export interface IUser {
   username: string;
   fullName: string;
   email: string;
+  province: string;
   role: "admin" | "user";
   createdAt: string; // Hoặc Date nếu bạn parse nó
   updatedAt: string; // Hoặc Date

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { fetchInvoiceByUser, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
-import { useAuth } from "@/context/AuthContext";
 
 import {
   Box,
@@ -19,6 +18,9 @@ import {
   Typography,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import { excelUp } from "@/services/excel.api";
+import { getErrorMessage } from "../users/page";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -32,7 +34,12 @@ export default function InvoicesPage() {
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
 
-  const { isAuthenticated } = useAuth();
+  const [totalAmount, setTotalAmount] = useState(0);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+
+  const { isAuthenticated, user } = useAuth();
 
   // --- Gọi API khi component mount ---
   useEffect(() => {
@@ -92,7 +99,11 @@ export default function InvoicesPage() {
         ? inv.collectionStatus === "collected"
         : inv.collectionStatus !== "collected";
 
-    return matchPrint && matchCollection;
+    const matchDate =
+      selectedDate === "" || filterCollection !== "collected"
+        ? true
+        : inv.collectionDate && new Date(inv.collectionDate).toISOString().slice(0, 10) === selectedDate;
+    return matchPrint && matchCollection && matchDate;
   });
 
   // --- Tính toán dữ liệu trang hiện tại ---
@@ -102,6 +113,16 @@ export default function InvoicesPage() {
 
   // --- Tổng số trang sau khi lọc ---
   const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
+
+  // Tính toán tổng số tiền theo bộ lọc
+  useEffect(() => {
+    const total = filteredInvoices.reduce((sum, inv) => {
+      const amount = parseFloat(inv.totalAmount.toString().replace(/[^\d.-]/g, ""));
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
+
+    setTotalAmount(total);
+  }, [filteredInvoices]);
 
   // --- Hàm đổi trang ---
   const handlePageChange = (page: number) => {
@@ -144,6 +165,43 @@ export default function InvoicesPage() {
       );
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      const validTypes = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+      ];
+
+      if (!validTypes.includes(selectedFile.type)) {
+        setMessage({ type: "error", text: "Vui lòng chọn file Excel (.xlsx hoặc .xls)." });
+        return;
+      }
+
+      setIsLoading(true);
+      setMessage({ type: "info", text: `Đang tải file lên cho user: ${userId}...` });
+
+      const formData = new FormData();
+      formData.append("excelFile", selectedFile);
+      formData.append("userId", userId); // ✅ gửi kèm id user
+
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Bạn chưa đăng nhập!");
+
+        const response = await excelUp(formData, token);
+        console.log("Upload thành công:", response.data);
+
+        setMessage({ type: "success", text: `Đã tải file cho user ${userId} thành công.` });
+      } catch (error) {
+        console.error(error);
+        setMessage({ type: "error", text: getErrorMessage(error) });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -218,6 +276,15 @@ export default function InvoicesPage() {
           >
             Xuất ra Excel đã thu
           </Button>
+
+          <input
+            type="file"
+            id={`fileUpload-${user?._id || "me"}`}
+            accept=".xlsx, .xls"
+            disabled={isLoading}
+            onChange={(e) => handleFileChange(e, user?._id || "")}
+            className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+          />
         </Box>
 
         {/* Chọn số lượng hiển thị */}
@@ -304,7 +371,39 @@ export default function InvoicesPage() {
         </FormControl>
       </Box>
 
-      <p>Đang có tổng {filteredInvoices.length} hoá đơn</p>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-around",
+          alignItems: "center",
+          textAlign: "center",
+          backgroundColor: "#f9fafb",
+          borderRadius: 2,
+          p: 2,
+          mb: 3,
+          boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ minWidth: 200 }}>
+          <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+            Số mã khách hàng đang phụ trách
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
+            {filteredInvoices.length}
+          </Typography>
+        </Box>
+
+        <Box sx={{ minWidth: 200 }}>
+          <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+            Tổng giá trị hoá đơn
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
+            {totalAmount.toLocaleString("vi-VN")} đ
+          </Typography>
+        </Box>
+      </Box>
 
       {/* --- Bảng dữ liệu --- */}
       {invoices.length === 0 ? (
@@ -324,7 +423,7 @@ export default function InvoicesPage() {
               <thead>
                 <tr style={{ backgroundColor: "#f9fafb" }}>
                   {[
-                    "Số Hóa Đơn",
+                    "Mã Khách Hàng",
                     "Tên Khách Hàng",
                     "SĐT",
                     "Địa Chỉ",

@@ -53,6 +53,14 @@ export default function Header() {
             </Link>
           )}
 
+          <Link
+            href="/changepass"
+            className="block py-2 px-3 rounded hover:bg-blue-700"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Đổi mật khẩu tài khoản
+          </Link>
+
           <button
             onClick={logout}
             className="w-full text-left bg-red-500 py-2 px-3 rounded hover:bg-red-600 md:w-auto md:text-center"

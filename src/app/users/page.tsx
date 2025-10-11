@@ -2,7 +2,9 @@
 
 import AdminRoute from "@/components/AdminRoute";
 import { excelUp } from "@/services/excel.api";
+import { fetchallInvoice } from "@/services/invoice.api";
 import { fetchallUser } from "@/services/user.api";
+import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
 import { ChangeEvent, useEffect, useState } from "react";
@@ -11,6 +13,7 @@ export default function UsersPage() {
   const [userData, setUserData] = useState<IUser[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "error" | "success"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +25,21 @@ export default function UsersPage() {
       }
     };
 
+    const fetchInvoices = async () => {
+      try {
+        const res = await fetchallInvoice();
+        const data = res.data; // nếu backend trả trực tiếp mảng
+        // const data = res.data.result; // nếu backend trả { result: [...] }
+
+        // console.log(data);
+
+        setInvoices(data);
+      } catch (err) {
+        console.error("Lỗi khi tải hóa đơn:", err);
+      }
+    };
+
+    fetchInvoices();
     fetchData();
   }, []);
 
@@ -61,6 +79,9 @@ export default function UsersPage() {
       }
     }
   };
+
+  const totalAdmins = userData.filter((u) => u.role === "admin").length;
+  const totalUsers = userData.filter((u) => u.role === "user").length;
 
   return (
     <AdminRoute fallback={<p>Redirecting...</p>}>
@@ -103,6 +124,9 @@ export default function UsersPage() {
             {/* --- DANH SÁCH ADMIN --- */}
             <div>
               <h2 className="text-lg font-semibold text-blue-600 mb-3">Tài khoản Quản trị (Admin)</h2>
+              <div className="flex-1 min-w-[250px] bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-700 font-semibold shadow-sm">
+                Tổng số tài khoản Quản trị (Admin): <span className="text-blue-900">{totalAdmins}</span>
+              </div>
               <div className="overflow-x-auto border border-blue-200 rounded-lg">
                 <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
                   <thead>
@@ -144,6 +168,9 @@ export default function UsersPage() {
             {/* --- DANH SÁCH USER --- */}
             <div>
               <h2 className="text-lg font-semibold text-green-600 mb-3">Tài khoản Người dùng (User)</h2>
+              <div className="flex-1 min-w-[250px] bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold shadow-sm">
+                Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalUsers}</span>
+              </div>
               <div className="overflow-x-auto border border-green-200 rounded-lg">
                 <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
                   <thead>
@@ -158,7 +185,13 @@ export default function UsersPage() {
                         Email
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tỉnh
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Ngày tạo
+                      </th>
+                      <th className="px-6 py-3  text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
+                        Số hoá đơn phụ trách
                       </th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                         Upload Excel
@@ -168,28 +201,38 @@ export default function UsersPage() {
                   <tbody className="divide-y divide-gray-200">
                     {userData
                       .filter((user) => user.role === "user")
-                      .map((user) => (
-                        <tr key={user._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {user._id.substring(user._id.length - 4)}...
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <input
-                              type="file"
-                              id={`fileUpload-${user._id}`}
-                              accept=".xlsx, .xls"
-                              disabled={isLoading}
-                              onChange={(e) => handleFileChange(e, user._id)}
-                              className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      .map((user) => {
+                        const invoiceCount = invoices.filter(
+                          (inv) => inv.assignedTo && inv.assignedTo._id === user._id
+                        ).length;
+
+                        return (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                              {user._id.substring(user._id.length - 4)}...
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
+                              {invoiceCount}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <input
+                                type="file"
+                                id={`fileUpload-${user._id}`}
+                                accept=".xlsx, .xls"
+                                disabled={isLoading}
+                                onChange={(e) => handleFileChange(e, user._id)}
+                                className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

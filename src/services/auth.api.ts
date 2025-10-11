@@ -9,7 +9,13 @@ export const login = async (userName: string, password: string) => {
   return res;
 };
 
-export const register = async (userName: string, email: string, password: string, fullName: string) => {
+export const register = async (
+  userName: string,
+  email: string,
+  password: string,
+  fullName: string,
+  province: string
+) => {
   const token = localStorage.getItem("token");
 
   const res = await axios.post(
@@ -19,6 +25,23 @@ export const register = async (userName: string, email: string, password: string
       email,
       password,
       fullName,
+      province,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, // Token của admin
+      },
+    }
+  );
+  return res;
+};
+
+export const changepass = async (newpass: string, token: string) => {
+  const res = await axios.post<IUserResponse>(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/changepass`,
+    {
+      newpass,
+      token,
     },
     {
       headers: {
