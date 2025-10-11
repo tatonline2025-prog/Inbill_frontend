@@ -99,48 +99,101 @@ export default function UsersPage() {
         {userData.length === 0 ? (
           <div className="text-gray-500 p-4 border rounded-lg bg-gray-50">Chưa có tài khoản nào được đăng ký.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
-              <thead>
-                <tr className="bg-gray-100 border-b">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tên
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ngày tạo
-                  </th>
-                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
-                    Upload Excel
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {userData.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {user._id.substring(user._id.length - 4)}...
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(user.createdAt).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-center">
-                      <input
-                        type="file"
-                        id={`fileUpload-${user._id}`}
-                        accept=".xlsx, .xls"
-                        disabled={isLoading}
-                        onChange={(e) => handleFileChange(e, user._id)}
-                        className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-10">
+            {/* --- DANH SÁCH ADMIN --- */}
+            <div>
+              <h2 className="text-lg font-semibold text-blue-600 mb-3">Tài khoản Quản trị (Admin)</h2>
+              <div className="overflow-x-auto border border-blue-200 rounded-lg">
+                <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tên
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày tạo
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {userData
+                      .filter((user) => user.role === "admin")
+                      .map((user) => (
+                        <tr key={user._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {user._id.substring(user._id.length - 4)}...
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* --- DANH SÁCH USER --- */}
+            <div>
+              <h2 className="text-lg font-semibold text-green-600 mb-3">Tài khoản Người dùng (User)</h2>
+              <div className="overflow-x-auto border border-green-200 rounded-lg">
+                <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tên
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày tạo
+                      </th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
+                        Upload Excel
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {userData
+                      .filter((user) => user.role === "user")
+                      .map((user) => (
+                        <tr key={user._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {user._id.substring(user._id.length - 4)}...
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <input
+                              type="file"
+                              id={`fileUpload-${user._id}`}
+                              accept=".xlsx, .xls"
+                              disabled={isLoading}
+                              onChange={(e) => handleFileChange(e, user._id)}
+                              className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
       </div>

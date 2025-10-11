@@ -14,7 +14,7 @@ export default function HomePage() {
           Nơi bạn có thể quản lý người dùng và nhập dữ liệu Excel một cách dễ dàng.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Quản lý Tài khoản */}
           <Link
             href="/users"
@@ -22,15 +22,6 @@ export default function HomePage() {
           >
             <h2 className="text-2xl font-semibold text-blue-600 mb-2">Quản lý Tài khoản</h2>
             <p className="text-gray-600">Xem, chỉnh sửa, và quản lý danh sách tất cả người dùng.</p>
-          </Link>
-
-          {/* Card 2: Tải File Excel */}
-          <Link
-            href="/upload"
-            className="block p-6 border-2 border-red-400 rounded-lg shadow-md hover:shadow-xl transition-transform transform hover:-translate-y-1 duration-300 bg-red-50"
-          >
-            <h2 className="text-2xl font-semibold text-red-600 mb-2">Tải File Excel</h2>
-            <p className="text-gray-600">Nhập dữ liệu mới vào hệ thống thông qua file Excel.</p>
           </Link>
 
           {/* Card 3: Đăng ký/Đăng nhập */}

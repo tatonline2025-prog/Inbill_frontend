@@ -30,6 +30,7 @@ export default function InvoicesPage() {
 
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
+  const [filterAssignedUser, setFilterAssignedUser] = useState("all");
 
   // --- Gọi API khi component mount ---
   useEffect(() => {
@@ -87,7 +88,10 @@ export default function InvoicesPage() {
         ? inv.collectionStatus === "collected"
         : inv.collectionStatus !== "collected";
 
-    return matchPrint && matchCollection;
+    const matchAssignedUser =
+      filterAssignedUser === "all" ? true : inv.assignedTo && inv.assignedTo._id === filterAssignedUser;
+
+    return matchPrint && matchCollection && matchAssignedUser;
   });
 
   // --- Tính toán dữ liệu trang hiện tại ---
@@ -97,6 +101,15 @@ export default function InvoicesPage() {
 
   // --- Tổng số trang sau khi lọc ---
   const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
+
+  // Lọc tên của người phụ trách
+  const uniqueAssignedUsers = Array.from(
+    new Map(
+      invoices
+        .filter((inv) => inv.assignedTo) // loại bỏ hóa đơn chưa có người phụ trách
+        .map((inv) => [inv.assignedTo._id, inv.assignedTo])
+    ).values()
+  );
 
   // --- Hàm đổi trang ---
   const handlePageChange = (page: number) => {
@@ -295,6 +308,32 @@ export default function InvoicesPage() {
               <MenuItem value="all">Tất cả</MenuItem>
               <MenuItem value="collected">Đã thu</MenuItem>
               <MenuItem value="notCollected">Chưa thu</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 140, sm: 160 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
+            <InputLabel id="assigned-user-label">Người phụ trách</InputLabel>
+            <Select
+              labelId="assigned-user-label"
+              value={filterAssignedUser}
+              label="Người phụ trách"
+              onChange={(e) => {
+                setFilterAssignedUser(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              {uniqueAssignedUsers.map((user) => (
+                <MenuItem key={user._id} value={user._id}>
+                  {user.fullName || user.email}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
