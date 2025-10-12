@@ -102,7 +102,7 @@ export default function InvoicesPage() {
     const matchDate =
       selectedDate === "" || filterCollection !== "collected"
         ? true
-        : inv.collectionDate && new Date(inv.collectionDate).toISOString().slice(0, 10) === selectedDate;
+        : inv.collectionDate && new Date(inv.collectionDate).toLocaleDateString("en-CA") === selectedDate;
     return matchPrint && matchCollection && matchDate;
   });
 
