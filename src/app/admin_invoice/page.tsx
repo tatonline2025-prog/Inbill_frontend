@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react"; // --- SỬA ĐỔI ---
 import { fetchallInvoice, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import AdminRoute from "@/components/AdminRoute";
@@ -18,6 +18,8 @@ import {
   Typography,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"; // --- THÊM MỚI ---
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"; // --- THÊM MỚI ---
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -34,19 +36,23 @@ export default function InvoicesPage() {
 
   const [totalAmount, setTotalAmount] = useState(0);
 
+  // --- THÊM MỚI: State để quản lý việc sắp xếp ---
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof InvoiceInfo | null;
+    direction: "ascending" | "descending" | null;
+  }>({
+    key: null,
+    direction: null,
+  });
+
   // --- Gọi API khi component mount ---
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
         setLoading(true);
         setError(null);
-
         const res = await fetchallInvoice();
-        const data = res.data; // nếu backend trả trực tiếp mảng
-        // const data = res.data.result; // nếu backend trả { result: [...] }
-
-        // console.log(data);
-
+        const data = res.data;
         setInvoices(data);
       } catch (err) {
         console.error("Lỗi khi tải hóa đơn:", err);
@@ -69,8 +75,6 @@ export default function InvoicesPage() {
       alert("Vui lòng chọn ngày trước khi xuất!");
       return;
     }
-
-    // Gửi ngày dưới dạng query param
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelPrinted?date=${selectedDate}`;
   };
 
@@ -101,33 +105,80 @@ export default function InvoicesPage() {
     return matchPrint && matchCollection && matchAssignedUser && matchDate;
   });
 
+  // --- THÊM MỚI: Logic sắp xếp dữ liệu ---
+  // Sử dụng useMemo để chỉ sắp xếp lại khi dữ liệu hoặc cấu hình sort thay đổi
+  const sortedInvoices = useMemo(() => {
+    const sortableInvoices = [...filteredInvoices]; // Tạo bản sao để không thay đổi mảng gốc
+
+    if (sortConfig.key !== null && sortConfig.direction !== null) {
+      sortableInvoices.sort((a, b) => {
+        const aValue = a[sortConfig.key!];
+        const bValue = b[sortConfig.key!];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        let comparison = 0;
+        // Xử lý riêng cho cột tổng tiền vì nó là string có định dạng
+        if (sortConfig.key === "totalAmount") {
+          const numA = parseFloat(String(aValue).replace(/[^\d.-]/g, ""));
+          const numB = parseFloat(String(bValue).replace(/[^\d.-]/g, ""));
+          comparison = numA > numB ? 1 : -1;
+        } else {
+          // Xử lý cho các cột khác (string, number, date...)
+          if (aValue > bValue) {
+            comparison = 1;
+          } else if (aValue < bValue) {
+            comparison = -1;
+          }
+        }
+
+        return sortConfig.direction === "ascending" ? comparison : -comparison;
+      });
+    }
+
+    return sortableInvoices;
+  }, [filteredInvoices, sortConfig]);
+
+  // --- THÊM MỚI: Hàm xử lý khi click vào header cột ---
+  const handleSort = (key: keyof InvoiceInfo) => {
+    let direction: "ascending" | "descending" | null = "descending"; // Mặc định lần đầu là cao -> thấp
+
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "descending") {
+        direction = "ascending"; // Chuyển sang thấp -> cao
+      } else if (sortConfig.direction === "ascending") {
+        direction = null; // Trở về bình thường
+      }
+    }
+
+    setSortConfig({ key: direction === null ? null : key, direction });
+    setCurrentPage(1); // Quay về trang 1 khi sắp xếp
+  };
+
   // --- Tính toán dữ liệu trang hiện tại ---
+  // --- SỬA ĐỔI: Sử dụng mảng đã được sắp xếp `sortedInvoices` ---
   const indexOfLastInvoice = currentPage * invoicesPerPage;
   const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
-  const currentInvoices = filteredInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
+  const currentInvoices = sortedInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
 
   // --- Tổng số trang sau khi lọc ---
-  const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
+  // --- SỬA ĐỔI: Dùng sortedInvoices (hoặc filteredInvoices cũng được vì length như nhau) ---
+  const totalPages = Math.ceil(sortedInvoices.length / invoicesPerPage);
 
   // Tính toán tổng số tiền theo bộ lọc
   useEffect(() => {
     const total = filteredInvoices.reduce((sum, inv) => {
-      // SỬA Ở ĐÂY: Thêm `?.` và `?? 0`
       const amountValue = inv?.totalAmount ?? 0;
       const amount = parseFloat(amountValue.toString().replace(/[^\d.-]/g, ""));
       return sum + (isNaN(amount) ? 0 : amount);
     }, 0);
-
     setTotalAmount(total);
   }, [filteredInvoices]);
 
   // Lọc tên của người phụ trách
   const uniqueAssignedUsers = Array.from(
-    new Map(
-      invoices
-        .filter((inv) => inv.assignedTo) // loại bỏ hóa đơn chưa có người phụ trách
-        .map((inv) => [inv.assignedTo._id, inv.assignedTo])
-    ).values()
+    new Map(invoices.filter((inv) => inv.assignedTo).map((inv) => [inv.assignedTo._id, inv.assignedTo])).values()
   );
 
   // --- Hàm đổi trang ---
@@ -139,12 +190,7 @@ export default function InvoicesPage() {
 
   const handleToggle = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
     try {
-      // Gọi API cập nhật trạng thái
       const res = await handleToggle_API(invoiceId, field);
-
-      // if (!res.ok) throw new Error("Cập nhật thất bại");
-
-      // Nếu bạn đang lưu danh sách invoice trong state, cập nhật lại UI:
       setInvoices((prev) =>
         prev.map((inv) =>
           inv._id === invoiceId
@@ -158,13 +204,12 @@ export default function InvoicesPage() {
                     : inv.collectionStatus === "collected"
                     ? "not_collected"
                     : "collected",
-                // Nếu là cập nhật trạng thái thu tiền thì xử lý thêm collectionDate
                 collectionDate:
                   field === "collectionStatus"
                     ? inv.collectionStatus === "collected"
-                      ? null // nếu vừa chuyển sang "chưa thu" thì xóa ngày
-                      : new Date().toISOString() // nếu vừa chuyển sang "đã thu" thì cập nhật ngày hiện tại
-                    : inv.collectionDate, // còn nếu không phải field này thì giữ nguyên
+                      ? null
+                      : new Date().toISOString()
+                    : inv.collectionDate,
               }
             : inv
         )
@@ -174,9 +219,36 @@ export default function InvoicesPage() {
     }
   };
 
-  // --- Trạng thái hiển thị ---
   if (loading) return <p style={{ padding: "2rem" }}>Đang tải dữ liệu hóa đơn...</p>;
   if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
+
+  // --- THÊM MỚI: Hàm render icon sắp xếp ---
+  const getSortIcon = (key: keyof InvoiceInfo) => {
+    if (sortConfig.key !== key || sortConfig.direction === null) {
+      return null;
+    }
+    return sortConfig.direction === "ascending" ? (
+      <ArrowUpwardIcon sx={{ fontSize: "1rem", ml: 0.5 }} />
+    ) : (
+      <ArrowDownwardIcon sx={{ fontSize: "1rem", ml: 0.5 }} />
+    );
+  };
+
+  // --- SỬA ĐỔI: Đổi cấu trúc tiêu đề bảng để dễ dàng thêm onClick ---
+  const tableHeaders: { key: keyof InvoiceInfo | null; label: string; sortable: boolean }[] = [
+    { key: null, label: "STT", sortable: false },
+    { key: "invoiceNumber", label: "Mã Khách Hàng", sortable: true },
+    { key: "customerName", label: "Tên Khách Hàng", sortable: true },
+    { key: "customerPhone", label: "SĐT", sortable: true },
+    { key: "customerAddress", label: "Địa Chỉ", sortable: true },
+    { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
+    { key: "totalAmount", label: "Tổng Tiền", sortable: true },
+    { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
+    { key: null, label: "Đã in bill", sortable: false },
+    { key: null, label: "Đã thu", sortable: false },
+    { key: "collectionDate", label: "Ngày thu", sortable: true },
+    { key: "issueDate", label: "Ngày giao", sortable: true },
+  ];
 
   return (
     <AdminRoute fallback={<p>Redirecting...</p>}>
@@ -197,7 +269,6 @@ export default function InvoicesPage() {
           }}
         >
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-            {/* Nút Xuất Excel */}
             <Button
               variant="contained"
               color="primary"
@@ -207,13 +278,12 @@ export default function InvoicesPage() {
               sx={{
                 borderRadius: 2,
                 textTransform: "none",
-                fontSize: { xs: "0.7rem", sm: "0.875rem" }, // responsive font
-                minWidth: { xs: "120px", sm: "160px" }, // co gọn trên mobile
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                minWidth: { xs: "120px", sm: "160px" },
               }}
             >
               Xuất ra Excel toàn bộ
             </Button>
-
             <TextField
               label="Chọn ngày thu"
               type="date"
@@ -228,7 +298,6 @@ export default function InvoicesPage() {
                 shrink: true,
               }}
             />
-
             <Button
               variant="contained"
               startIcon={<DownloadIcon />}
@@ -246,8 +315,6 @@ export default function InvoicesPage() {
               Xuất ra Excel đã thu
             </Button>
           </Box>
-
-          {/* Chọn số lượng hiển thị */}
           <FormControl
             size="small"
             sx={{
@@ -306,7 +373,6 @@ export default function InvoicesPage() {
               <MenuItem value="notPrinted">Chưa in</MenuItem>
             </Select>
           </FormControl>
-
           <FormControl
             size="small"
             sx={{
@@ -329,7 +395,6 @@ export default function InvoicesPage() {
               <MenuItem value="notCollected">Chưa thu</MenuItem>
             </Select>
           </FormControl>
-
           <FormControl
             size="small"
             sx={{
@@ -407,43 +472,36 @@ export default function InvoicesPage() {
           <Typography>Không có hóa đơn nào được tìm thấy.</Typography>
         ) : (
           <>
-            {/* Thêm scroll ngang */}
             <Box sx={{ overflowX: "auto" }}>
               <table
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",
                   minWidth: 900,
-                  fontSize: "0.875rem", // default ~14px
+                  fontSize: "0.875rem",
                 }}
               >
                 <thead>
                   <tr style={{ backgroundColor: "#f9fafb" }}>
-                    {[
-                      "STT",
-                      "Mã Khách Hàng",
-                      "Tên Khách Hàng",
-                      "SĐT",
-                      "Địa Chỉ",
-                      "Kỳ Thanh Toán",
-                      "Tổng Tiền",
-                      "Nhân viên phụ trách",
-                      "Đã in bill",
-                      "Đã thu",
-                      "Ngày thu",
-                      "Ngày giao",
-                    ].map((col) => (
+                    {/* --- SỬA ĐỔI: Dùng map từ mảng tableHeaders --- */}
+                    {tableHeaders.map((header) => (
                       <th
-                        key={col}
+                        key={header.label}
                         style={{
                           border: "1px solid #e0e0e0",
                           padding: "8px 6px",
                           textAlign: "left",
                           backgroundColor: "#f5f5f5",
-                          fontSize: "0.75rem", // header nhỏ hơn dòng dữ liệu
+                          fontSize: "0.75rem",
+                          cursor: header.sortable ? "pointer" : "default",
+                          userSelect: "none", // Tránh bôi đen text khi click
                         }}
+                        onClick={header.sortable ? () => handleSort(header.key!) : undefined}
                       >
-                        {col}
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          {header.label}
+                          {header.sortable && getSortIcon(header.key!)}
+                        </Box>
                       </th>
                     ))}
                   </tr>
@@ -482,7 +540,7 @@ export default function InvoicesPage() {
                           checked={invoice.printStatus === "printed"}
                           onChange={() => handleToggle(invoice._id, "printStatus")}
                           color="primary"
-                          sx={{ transform: "scale(0.8)" }} // thu nhỏ switch
+                          sx={{ transform: "scale(0.8)" }}
                         />
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>

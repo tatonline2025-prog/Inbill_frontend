@@ -1,8 +1,10 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { fetchInvoiceByUser, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"; // --- THÊM MỚI ---
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"; // --- THÊM MỚI ---
 
 import {
   Box,
@@ -38,6 +40,15 @@ export default function InvoicesPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+
+  // --- THÊM MỚI: State để quản lý việc sắp xếp ---
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof InvoiceInfo | null;
+    direction: "ascending" | "descending" | null;
+  }>({
+    key: null,
+    direction: null,
+  });
 
   const { isAuthenticated, user } = useAuth();
 
@@ -106,13 +117,66 @@ export default function InvoicesPage() {
     return matchPrint && matchCollection && matchDate;
   });
 
+  // --- THÊM MỚI: Logic sắp xếp dữ liệu ---
+  // Sử dụng useMemo để chỉ sắp xếp lại khi dữ liệu hoặc cấu hình sort thay đổi
+  const sortedInvoices = useMemo(() => {
+    const sortableInvoices = [...filteredInvoices]; // Tạo bản sao để không thay đổi mảng gốc
+
+    if (sortConfig.key !== null && sortConfig.direction !== null) {
+      sortableInvoices.sort((a, b) => {
+        const aValue = a[sortConfig.key!];
+        const bValue = b[sortConfig.key!];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        let comparison = 0;
+        // Xử lý riêng cho cột tổng tiền vì nó là string có định dạng
+        if (sortConfig.key === "totalAmount") {
+          const numA = parseFloat(String(aValue).replace(/[^\d.-]/g, ""));
+          const numB = parseFloat(String(bValue).replace(/[^\d.-]/g, ""));
+          comparison = numA > numB ? 1 : -1;
+        } else {
+          // Xử lý cho các cột khác (string, number, date...)
+          if (aValue > bValue) {
+            comparison = 1;
+          } else if (aValue < bValue) {
+            comparison = -1;
+          }
+        }
+
+        return sortConfig.direction === "ascending" ? comparison : -comparison;
+      });
+    }
+
+    return sortableInvoices;
+  }, [filteredInvoices, sortConfig]);
+
+  // --- THÊM MỚI: Hàm xử lý khi click vào header cột ---
+  const handleSort = (key: keyof InvoiceInfo) => {
+    let direction: "ascending" | "descending" | null = "descending"; // Mặc định lần đầu là cao -> thấp
+
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "descending") {
+        direction = "ascending"; // Chuyển sang thấp -> cao
+      } else if (sortConfig.direction === "ascending") {
+        direction = null; // Trở về bình thường
+      }
+    }
+
+    setSortConfig({ key: direction === null ? null : key, direction });
+    setCurrentPage(1); // Quay về trang 1 khi sắp xếp
+  };
+
   // --- Tính toán dữ liệu trang hiện tại ---
+  // --- SỬA ĐỔI: Sử dụng mảng đã được sắp xếp `sortedInvoices` ---
   const indexOfLastInvoice = currentPage * invoicesPerPage;
   const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
-  const currentInvoices = filteredInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
+  const currentInvoices = sortedInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
 
   // --- Tổng số trang sau khi lọc ---
-  const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
+  // --- SỬA ĐỔI: Dùng sortedInvoices (hoặc filteredInvoices cũng được vì length như nhau) ---
+  const totalPages = Math.ceil(sortedInvoices.length / invoicesPerPage);
 
   // Tính toán tổng số tiền theo bộ lọc
   useEffect(() => {
@@ -211,6 +275,34 @@ export default function InvoicesPage() {
   if (!isAuthenticated) <p style={{ padding: "2rem" }}>Vui lòng đăng nhập...</p>;
   if (loading) return <p style={{ padding: "2rem" }}>Đang tải dữ liệu hóa đơn...</p>;
   if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
+
+  // --- THÊM MỚI: Hàm render icon sắp xếp ---
+  const getSortIcon = (key: keyof InvoiceInfo) => {
+    if (sortConfig.key !== key || sortConfig.direction === null) {
+      return null;
+    }
+    return sortConfig.direction === "ascending" ? (
+      <ArrowUpwardIcon sx={{ fontSize: "1rem", ml: 0.5 }} />
+    ) : (
+      <ArrowDownwardIcon sx={{ fontSize: "1rem", ml: 0.5 }} />
+    );
+  };
+
+  // --- SỬA ĐỔI: Đổi cấu trúc tiêu đề bảng để dễ dàng thêm onClick ---
+  const tableHeaders: { key: keyof InvoiceInfo | null; label: string; sortable: boolean }[] = [
+    { key: null, label: "STT", sortable: false },
+    { key: "invoiceNumber", label: "Mã Khách Hàng", sortable: true },
+    { key: "customerName", label: "Tên Khách Hàng", sortable: true },
+    { key: "customerPhone", label: "SĐT", sortable: true },
+    { key: "customerAddress", label: "Địa Chỉ", sortable: true },
+    { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
+    { key: "totalAmount", label: "Tổng Tiền", sortable: true },
+    { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
+    { key: null, label: "Đã in bill", sortable: false },
+    { key: null, label: "Đã thu", sortable: false },
+    { key: "collectionDate", label: "Ngày thu", sortable: true },
+    { key: "issueDate", label: "Ngày giao", sortable: true },
+  ];
 
   return (
     <Box sx={{ p: 4 }}>
@@ -424,30 +516,24 @@ export default function InvoicesPage() {
             >
               <thead>
                 <tr style={{ backgroundColor: "#f9fafb" }}>
-                  {[
-                    "Mã Khách Hàng",
-                    "Tên Khách Hàng",
-                    "SĐT",
-                    "Địa Chỉ",
-                    "Kỳ Thanh Toán",
-                    "Tổng Tiền",
-                    "Nhân viên phụ trách",
-                    "Đã in bill",
-                    "Đã thu",
-                    "Ngày thu",
-                    "Ngày giao",
-                  ].map((col) => (
+                  {tableHeaders.map((header) => (
                     <th
-                      key={col}
+                      key={header.label}
                       style={{
                         border: "1px solid #e0e0e0",
                         padding: "8px 6px",
                         textAlign: "left",
                         backgroundColor: "#f5f5f5",
-                        fontSize: "0.75rem", // header nhỏ hơn dòng dữ liệu
+                        fontSize: "0.75rem",
+                        cursor: header.sortable ? "pointer" : "default",
+                        userSelect: "none", // Tránh bôi đen text khi click
                       }}
+                      onClick={header.sortable ? () => handleSort(header.key!) : undefined}
                     >
-                      {col}
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        {header.label}
+                        {header.sortable && getSortIcon(header.key!)}
+                      </Box>
                     </th>
                   ))}
                 </tr>
