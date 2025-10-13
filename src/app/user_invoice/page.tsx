@@ -117,7 +117,9 @@ export default function InvoicesPage() {
   // Tính toán tổng số tiền theo bộ lọc
   useEffect(() => {
     const total = filteredInvoices.reduce((sum, inv) => {
-      const amount = parseFloat(inv.totalAmount.toString().replace(/[^\d.-]/g, ""));
+      // SỬA Ở ĐÂY: Thêm `?.` và `?? 0`
+      const amountValue = inv?.totalAmount ?? 0;
+      const amount = parseFloat(amountValue.toString().replace(/[^\d.-]/g, ""));
       return sum + (isNaN(amount) ? 0 : amount);
     }, 0);
 
