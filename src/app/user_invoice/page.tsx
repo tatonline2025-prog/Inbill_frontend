@@ -539,8 +539,11 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {currentInvoices.map((invoice) => (
+                {currentInvoices.map((invoice, index) => (
                   <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
+                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem", textAlign: "center" }}>
+                      {index + 1 + (currentPage - 1) * invoicesPerPage}
+                    </td>
                     <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                       {invoice.invoiceNumber}
                     </td>
@@ -567,7 +570,7 @@ export default function InvoicesPage() {
                         checked={invoice.printStatus === "printed"}
                         onChange={() => handleToggle(invoice._id, "printStatus")}
                         color="primary"
-                        sx={{ transform: "scale(0.8)" }} // thu nhỏ switch
+                        sx={{ transform: "scale(0.8)" }}
                       />
                     </td>
                     <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
