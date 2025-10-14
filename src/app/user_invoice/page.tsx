@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { fetchInvoiceByUser, handleToggle_API } from "@/services/invoice.api";
+import { fetchInvoiceByUserMonth, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"; // --- THÊM MỚI ---
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"; // --- THÊM MỚI ---
@@ -62,7 +62,7 @@ export default function InvoicesPage() {
         const token = localStorage.getItem("token");
         if (!token) setError("Chưa đăng nhập");
 
-        const res = await fetchInvoiceByUser(token as string);
+        const res = await fetchInvoiceByUserMonth(token as string);
 
         const data = res.data; // nếu backend trả trực tiếp mảng
         // const data = res.data.result; // nếu backend trả { result: [...] }
@@ -295,6 +295,7 @@ export default function InvoicesPage() {
     { key: "customerName", label: "Tên Khách Hàng", sortable: true },
     { key: "customerPhone", label: "SĐT", sortable: true },
     { key: "customerAddress", label: "Địa Chỉ", sortable: true },
+    { key: "previousAmount", label: "Kỳ trước", sortable: true },
     { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
     { key: "totalAmount", label: "Tổng Tiền", sortable: true },
     { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
@@ -555,6 +556,9 @@ export default function InvoicesPage() {
                     </td>
                     <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                       {invoice.customerAddress}
+                    </td>
+                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                      {invoice.previousAmount}
                     </td>
                     <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                       {invoice.billing_period}

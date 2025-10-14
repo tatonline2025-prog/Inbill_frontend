@@ -241,8 +241,9 @@ export default function InvoicesPage() {
     { key: "customerName", label: "Tên Khách Hàng", sortable: true },
     { key: "customerPhone", label: "SĐT", sortable: true },
     { key: "customerAddress", label: "Địa Chỉ", sortable: true },
+    { key: "previousAmount", label: "Kỳ trước", sortable: true },
     { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
-    { key: "totalAmount", label: "Tổng Tiền", sortable: true },
+    { key: "totalAmount", label: "Kỳ này", sortable: true },
     { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
     { key: null, label: "Đã in bill", sortable: false },
     { key: null, label: "Đã thu", sortable: false },
@@ -525,6 +526,9 @@ export default function InvoicesPage() {
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.customerAddress}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.previousAmount}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.billing_period}

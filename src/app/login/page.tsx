@@ -35,9 +35,9 @@ export default function LoginPage() {
       // Chuyển hướng sau 1.5 giây (ví dụ về trang tài khoản)
       setTimeout(() => {
         if (res.data.user.role === "admin") {
-          window.location.href = "/admin_invoice";
+          window.location.href = "/dashboard";
         } else {
-          window.location.href = "/user_invoice";
+          window.location.href = "/userdashboard";
         }
       }, 500);
     } catch (err) {

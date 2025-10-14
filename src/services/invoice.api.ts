@@ -18,6 +18,20 @@ export const fetchInvoiceByUser = async (token: string) => {
   return res;
 };
 
+export const fetchInvoiceByUserMonth = async (token: string) => {
+  const res = await axios.get<InvoiceInfo[]>(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchallbyusermonth`,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res;
+};
+
 export const handleToggle_API = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
   try {
     const token = localStorage.getItem("token");

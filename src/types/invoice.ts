@@ -8,6 +8,7 @@ export interface InvoiceInfo {
   invoiceNumber: string;
   printStatus: string;
   totalAmount: string;
+  previousAmount: string;
   issueDate: string;
   collectionDate: string | null;
   assignedTo: {

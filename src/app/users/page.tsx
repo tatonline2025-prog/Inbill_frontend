@@ -3,7 +3,7 @@
 import AdminRoute from "@/components/AdminRoute";
 import { excelUp } from "@/services/excel.api";
 import { fetchallInvoice } from "@/services/invoice.api";
-import { fetchallUser } from "@/services/user.api";
+import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
@@ -14,6 +14,9 @@ export default function UsersPage() {
   const [message, setMessage] = useState<{ type: "info" | "error" | "success"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+
+  const [editingUser, setEditingUser] = useState<IUser | null>(null);
+  const [formData, setFormData] = useState<Partial<IUser>>();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,6 +86,53 @@ export default function UsersPage() {
   const totalAdmins = userData.filter((u) => u.role === "admin").length;
   const totalUsers = userData.filter((u) => u.role === "user").length;
 
+  const handleEditClick = (user: IUser) => {
+    setEditingUser(user);
+    setFormData({
+      fullName: user.fullName,
+      email: user.email,
+      province: user.province || "",
+      username: user.username || "",
+      pass: user.pass || "",
+    });
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Bạn có chắc muốn xoá tài khoản này không?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await deleteUserByAdmin(userId, token!);
+
+      setUserData((prev) => prev.filter((u) => u._id !== userId));
+      setMessage({ type: "success", text: "Đã xoá tài khoản thành công!" });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: "error", text: getErrorMessage(err) });
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    try {
+      const token = localStorage.getItem("token");
+      await updateUserByAdmin(editingUser._id, formData!, token!);
+      setUserData((prev) => prev.map((u) => (u._id === editingUser._id ? { ...u, ...formData } : u)));
+      setMessage({ type: "success", text: "Cập nhật tài khoản thành công!" });
+      setEditingUser(null);
+      setFormData({
+        fullName: "",
+        email: "",
+        province: "",
+        username: "",
+        pass: "",
+      });
+    } catch (err) {
+      console.error(err);
+      setEditingUser(null);
+      setMessage({ type: "error", text: getErrorMessage(err) });
+    }
+  };
+
   return (
     <AdminRoute fallback={<p>Redirecting...</p>}>
       <div className="p-4">
@@ -132,9 +182,6 @@ export default function UsersPage() {
                   <thead>
                     <tr className="bg-gray-100 border-b">
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -150,9 +197,6 @@ export default function UsersPage() {
                       .filter((user) => user.role === "admin")
                       .map((user) => (
                         <tr key={user._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {user._id.substring(user._id.length - 4)}...
-                          </td>
                           <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
                           <td className="px-6 py-4 text-sm text-gray-500">
@@ -176,9 +220,6 @@ export default function UsersPage() {
                   <thead>
                     <tr className="bg-gray-100 border-b">
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -192,6 +233,9 @@ export default function UsersPage() {
                       </th>
                       <th className="px-6 py-3  text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                         Số hoá đơn phụ trách
+                      </th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
+                        Hành động
                       </th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                         Upload Excel
@@ -208,9 +252,6 @@ export default function UsersPage() {
 
                         return (
                           <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                              {user._id.substring(user._id.length - 4)}...
-                            </td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
@@ -220,6 +261,21 @@ export default function UsersPage() {
                             <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
                               {invoiceCount}
                             </td>
+                            <td className="px-6 py-4 text-center space-x-2">
+                              <button
+                                onClick={() => handleEditClick(user)}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user._id)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Xoá
+                              </button>
+                            </td>
+
                             <td className="px-6 py-4 text-center">
                               <input
                                 type="file"
@@ -235,6 +291,80 @@ export default function UsersPage() {
                       })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editingUser && (
+          <div className="fixed inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] z-50">
+            <div className="bg-white rounded-lg shadow-lg w-[400px] p-6">
+              <h2 className="text-lg font-semibold mb-4 text-gray-800">Chỉnh sửa tài khoản</h2>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Họ tên</label>
+                  <input
+                    type="text"
+                    value={formData?.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    value={formData?.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tỉnh</label>
+                  <input
+                    type="text"
+                    value={formData?.province}
+                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
+                  <input
+                    type="text"
+                    value={formData?.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                  <input
+                    type="text"
+                    value={formData?.pass}
+                    onChange={(e) => setFormData({ ...formData, pass: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                  />
+                  <span className="text-red-500 text-sm">
+                    Lưu ý: Thay đổi mật khẩu không qua xác minh. Hãy cân nhắc.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Lưu thay đổi
+                </button>
               </div>
             </div>
           </div>
