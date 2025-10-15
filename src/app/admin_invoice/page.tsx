@@ -28,6 +28,8 @@ import { IUser } from "@/types/user";
 
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
+import toast from "react-hot-toast";
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [userData, setUserData] = useState<IUser[]>([]);
@@ -663,11 +665,11 @@ export default function InvoicesPage() {
                     const res = await deleteInvoice_API(selectedInvoice._id);
 
                     if (res!.status === 200 || res!.status === 204) {
-                      alert("Xoá hoá đơn thành công!");
+                      toast.success("Xoá hoá đơn thành công!");
                       const result = await fetchallInvoice(); // 🔁 Load lại danh sách
                       setInvoices(result.data);
                     } else {
-                      alert("Không thể xoá hoá đơn, vui lòng thử lại.");
+                      toast.error("Không thể xoá hoá đơn, vui lòng thử lại.");
                     }
                   } catch (error) {
                     console.error("Lỗi khi xoá hoá đơn:", error);
@@ -713,6 +715,7 @@ export default function InvoicesPage() {
           (async () => {
             const res = await fetchallInvoice();
             setInvoices(res.data);
+            toast.success("Thêm hoá đơn thành công!");
           })();
         }}
         assignedUsers={userData}

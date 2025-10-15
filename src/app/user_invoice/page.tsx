@@ -29,6 +29,7 @@ import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import AddIcon from "@mui/icons-material/Add";
 
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import toast from "react-hot-toast";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -683,10 +684,10 @@ export default function InvoicesPage() {
                     const res = await deleteInvoice_API(selectedInvoice._id);
 
                     if (res!.status === 200 || res!.status === 204) {
-                      alert("Xoá hoá đơn thành công!");
+                      toast.success("Xoá hoá đơn thành công!");
                       fetchInvoices(); // 🔁 Load lại danh sách
                     } else {
-                      alert("Không thể xoá hoá đơn, vui lòng thử lại.");
+                      toast.error("Không thể xoá hoá đơn, vui lòng thử lại.");
                     }
                   } catch (error) {
                     console.error("Lỗi khi xoá hoá đơn:", error);
@@ -731,6 +732,7 @@ export default function InvoicesPage() {
           // Gọi lại API load danh sách sau khi thêm mới thành công
           (() => {
             fetchInvoices();
+            toast.success("Thêm hoá đơn thành công!");
           })();
         }}
         // assignedUsers={userData}
