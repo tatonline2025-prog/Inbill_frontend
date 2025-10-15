@@ -13,7 +13,6 @@ import {
   InputLabel,
   MenuItem,
   Pagination,
-  Paper,
   Select,
   Switch,
   TextField,
@@ -23,6 +22,9 @@ import DownloadIcon from "@mui/icons-material/Download";
 import { excelUp } from "@/services/excel.api";
 import { getErrorMessage } from "../users/page";
 import { useAuth } from "@/hooks/useAuth";
+
+import AddInvoiceDialog from "@/components/AddInvoiceDialog";
+import AddIcon from "@mui/icons-material/Add";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -37,6 +39,8 @@ export default function InvoicesPage() {
   const [filterCollection, setFilterCollection] = useState("all");
 
   const [totalAmount, setTotalAmount] = useState(0);
+
+  const [openAddDialog, setOpenAddDialog] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
@@ -53,31 +57,43 @@ export default function InvoicesPage() {
   const { isAuthenticated, user } = useAuth();
 
   // --- Gọi API khi component mount ---
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem("token");
+      if (!token) setError("Chưa đăng nhập");
+
+      const res = await fetchInvoiceByUserMonth(token as string);
+
+      const data = res.data; // nếu backend trả trực tiếp mảng
+      // const data = res.data.result; // nếu backend trả { result: [...] }
+
+      setInvoices(data);
+    } catch (err) {
+      console.error("Lỗi khi tải hóa đơn:", err);
+      setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const token = localStorage.getItem("token");
-        if (!token) setError("Chưa đăng nhập");
-
-        const res = await fetchInvoiceByUserMonth(token as string);
-
-        const data = res.data; // nếu backend trả trực tiếp mảng
-        // const data = res.data.result; // nếu backend trả { result: [...] }
-
-        setInvoices(data);
-      } catch (err) {
-        console.error("Lỗi khi tải hóa đơn:", err);
-        setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchInvoices();
   }, []);
+
+  // Lấy kỳ hiện tại
+  const now = new Date();
+  let month = now.getMonth();
+  let year = now.getFullYear();
+
+  if (month === 0) {
+    month = 12;
+    year -= 1;
+  }
+
+  const billing_period = `${month.toString().padStart(2, "0")}/${year}`;
 
   // --- Hàm xuất Excel ---
   const handleExport = () => {
@@ -306,318 +322,351 @@ export default function InvoicesPage() {
   ];
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-        Danh Sách Hóa Đơn
-      </Typography>
+    <>
+      <Box sx={{ p: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+          Danh Sách Hóa Đơn
+        </Typography>
 
-      {/* --- Thanh điều khiển trên cùng --- */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {/* Nút Xuất Excel */}
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<DownloadIcon />}
-            onClick={handleExport}
-            disabled={invoices.length === 0}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: { xs: "0.7rem", sm: "0.875rem" }, // responsive font
-              minWidth: { xs: "120px", sm: "160px" }, // co gọn trên mobile
-            }}
-          >
-            Xuất ra Excel toàn bộ
-          </Button>
-
-          <TextField
-            label="Chọn ngày thu"
-            type="date"
-            size="small"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            sx={{
-              minWidth: { xs: 120, sm: 180 },
-              fontSize: { xs: "0.7rem", sm: "0.875rem" },
-            }}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={handleExportPrinted}
-            disabled={invoices.length === 0}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              backgroundColor: "#16a34a",
-              "&:hover": { backgroundColor: "#15803d" },
-              fontSize: { xs: "0.7rem", sm: "0.875rem" },
-              minWidth: { xs: "120px", sm: "160px" },
-            }}
-          >
-            Xuất ra Excel đã thu
-          </Button>
-
-          <input
-            type="file"
-            id={`fileUpload-${user?._id || "me"}`}
-            accept=".xlsx, .xls"
-            disabled={isLoading}
-            onChange={(e) => handleFileChange(e, user?._id || "")}
-            className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
-          />
-        </Box>
-
-        {/* Chọn số lượng hiển thị */}
-        <FormControl
-          size="small"
+        {/* --- Thanh điều khiển trên cùng --- */}
+        <Box
           sx={{
-            minWidth: { xs: 100, sm: 120 },
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+            flexWrap: "wrap",
+            gap: 2,
           }}
         >
-          <InputLabel id="invoices-per-page-label">Hiển thị</InputLabel>
-          <Select
-            labelId="invoices-per-page-label"
-            value={invoicesPerPage}
-            label="Hiển thị"
-            onChange={(e) => {
-              setInvoicesPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-          >
-            <MenuItem value={15}>15</MenuItem>
-            <MenuItem value={20}>20</MenuItem>
-            <MenuItem value={50}>50</MenuItem>
-            <MenuItem value={100}>100</MenuItem>
-            <MenuItem value={200}>200</MenuItem>
-            <MenuItem value={300}>300</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-
-      {/* --- Bộ lọc trạng thái --- */}
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          mb: 2,
-        }}
-      >
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 140, sm: 160 },
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
-          <Select
-            labelId="filter-print-label"
-            value={filterPrint}
-            label="Trạng thái in bill"
-            onChange={(e) => {
-              setFilterPrint(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value="printed">Đã in</MenuItem>
-            <MenuItem value="notPrinted">Chưa in</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 140, sm: 160 },
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          <InputLabel id="filter-collection-label">Trạng thái thu tiền</InputLabel>
-          <Select
-            labelId="filter-collection-label"
-            value={filterCollection}
-            label="Trạng thái thu tiền"
-            onChange={(e) => {
-              setFilterCollection(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value="collected">Đã thu</MenuItem>
-            <MenuItem value="notCollected">Chưa thu</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "space-around",
-          alignItems: "center",
-          textAlign: "center",
-          backgroundColor: "#f9fafb",
-          borderRadius: 2,
-          p: 2,
-          mb: 3,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ minWidth: 200 }}>
-          <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
-            Số mã khách hàng đang phụ trách
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
-            {filteredInvoices.length}
-          </Typography>
-        </Box>
-
-        <Box sx={{ minWidth: 200 }}>
-          <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
-            Tổng giá trị hoá đơn
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
-            {totalAmount.toLocaleString("vi-VN")} đ
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* --- Bảng dữ liệu --- */}
-      {invoices.length === 0 ? (
-        <Typography>Không có hóa đơn nào được tìm thấy.</Typography>
-      ) : (
-        <>
-          {/* Thêm scroll ngang */}
-          <Box sx={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                minWidth: 900,
-                fontSize: "0.875rem", // default ~14px
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            {/* Nút Xuất Excel */}
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<DownloadIcon />}
+              onClick={handleExport}
+              disabled={invoices.length === 0}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontSize: { xs: "0.7rem", sm: "0.875rem" }, // responsive font
+                minWidth: { xs: "120px", sm: "160px" }, // co gọn trên mobile
               }}
             >
-              <thead>
-                <tr style={{ backgroundColor: "#f9fafb" }}>
-                  {tableHeaders.map((header) => (
-                    <th
-                      key={header.label}
-                      style={{
-                        border: "1px solid #e0e0e0",
-                        padding: "8px 6px",
-                        textAlign: "left",
-                        backgroundColor: "#f5f5f5",
-                        fontSize: "0.75rem",
-                        cursor: header.sortable ? "pointer" : "default",
-                        userSelect: "none", // Tránh bôi đen text khi click
-                      }}
-                      onClick={header.sortable ? () => handleSort(header.key!) : undefined}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        {header.label}
-                        {header.sortable && getSortIcon(header.key!)}
-                      </Box>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {currentInvoices.map((invoice, index) => (
-                  <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem", textAlign: "center" }}>
-                      {index + 1 + (currentPage - 1) * invoicesPerPage}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.invoiceNumber}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.customerName}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.customerPhone}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.customerAddress}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.previousAmount}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.billing_period}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.totalAmount}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.assignedTo.fullName}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
-                      <Switch
-                        checked={invoice.printStatus === "printed"}
-                        onChange={() => handleToggle(invoice._id, "printStatus")}
-                        color="primary"
-                        sx={{ transform: "scale(0.8)" }}
-                      />
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
-                      <Switch
-                        checked={invoice.collectionStatus === "collected"}
-                        onChange={() => handleToggle(invoice._id, "collectionStatus")}
-                        color="success"
-                        sx={{ transform: "scale(0.8)" }}
-                      />
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : "---"}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                      {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Box>
+              Xuất ra Excel toàn bộ
+            </Button>
 
-          {/* --- Phân trang --- */}
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Pagination
-              count={totalPages}
-              page={currentPage}
-              onChange={(event, value) => handlePageChange(value)}
-              color="primary"
-              shape="rounded"
-              showFirstButton
-              showLastButton
+            <TextField
+              label="Chọn ngày thu"
+              type="date"
+              size="small"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              sx={{
+                minWidth: { xs: 120, sm: 180 },
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+              }}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportPrinted}
+              disabled={invoices.length === 0}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                backgroundColor: "#16a34a",
+                "&:hover": { backgroundColor: "#15803d" },
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                minWidth: { xs: "120px", sm: "160px" },
+              }}
+            >
+              Xuất ra Excel đã thu
+            </Button>
+
+            <input
+              type="file"
+              id={`fileUpload-${user?._id || "me"}`}
+              accept=".xlsx, .xls"
+              disabled={isLoading}
+              onChange={(e) => handleFileChange(e, user?._id || "")}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
             />
           </Box>
-        </>
-      )}
-    </Box>
+
+          {/* Chọn số lượng hiển thị */}
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 100, sm: 120 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
+            <InputLabel id="invoices-per-page-label">Hiển thị</InputLabel>
+            <Select
+              labelId="invoices-per-page-label"
+              value={invoicesPerPage}
+              label="Hiển thị"
+              onChange={(e) => {
+                setInvoicesPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+              <MenuItem value={200}>200</MenuItem>
+              <MenuItem value={300}>300</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenAddDialog(true)}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            minWidth: { xs: "120px", sm: "160px" },
+            marginBottom: 2,
+          }}
+        >
+          Thêm mới hoá đơn
+        </Button>
+
+        {/* --- Bộ lọc trạng thái --- */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 140, sm: 160 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
+            <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
+            <Select
+              labelId="filter-print-label"
+              value={filterPrint}
+              label="Trạng thái in bill"
+              onChange={(e) => {
+                setFilterPrint(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="printed">Đã in</MenuItem>
+              <MenuItem value="notPrinted">Chưa in</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 140, sm: 160 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
+            <InputLabel id="filter-collection-label">Trạng thái thu tiền</InputLabel>
+            <Select
+              labelId="filter-collection-label"
+              value={filterCollection}
+              label="Trạng thái thu tiền"
+              onChange={(e) => {
+                setFilterCollection(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="collected">Đã thu</MenuItem>
+              <MenuItem value="notCollected">Chưa thu</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-around",
+            alignItems: "center",
+            textAlign: "center",
+            backgroundColor: "#f9fafb",
+            borderRadius: 2,
+            p: 2,
+            mb: 3,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ minWidth: 200 }}>
+            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+              Số mã khách hàng đang phụ trách
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
+              {filteredInvoices.length}
+            </Typography>
+          </Box>
+
+          <Box sx={{ minWidth: 200 }}>
+            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+              Tổng giá trị hoá đơn
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
+              {totalAmount.toLocaleString("vi-VN")} đ
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* --- Bảng dữ liệu --- */}
+        {invoices.length === 0 ? (
+          <Typography>Không có hóa đơn nào được tìm thấy.</Typography>
+        ) : (
+          <>
+            {/* Thêm scroll ngang */}
+            <Box sx={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: 900,
+                  fontSize: "0.875rem", // default ~14px
+                }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: "#f9fafb" }}>
+                    {tableHeaders.map((header) => (
+                      <th
+                        key={header.label}
+                        style={{
+                          border: "1px solid #e0e0e0",
+                          padding: "8px 6px",
+                          textAlign: "left",
+                          backgroundColor: "#f5f5f5",
+                          fontSize: "0.75rem",
+                          cursor: header.sortable ? "pointer" : "default",
+                          userSelect: "none", // Tránh bôi đen text khi click
+                        }}
+                        onClick={header.sortable ? () => handleSort(header.key!) : undefined}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          {header.label}
+                          {header.sortable && getSortIcon(header.key!)}
+                        </Box>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentInvoices.map((invoice, index) => (
+                    <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
+                      <td
+                        style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem", textAlign: "center" }}
+                      >
+                        {index + 1 + (currentPage - 1) * invoicesPerPage}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.invoiceNumber}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerName}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerPhone}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerAddress}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.previousAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.billing_period}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.totalAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.assignedTo.fullName}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                        <Switch
+                          checked={invoice.printStatus === "printed"}
+                          onChange={() => handleToggle(invoice._id, "printStatus")}
+                          color="primary"
+                          sx={{ transform: "scale(0.8)" }}
+                        />
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                        <Switch
+                          checked={invoice.collectionStatus === "collected"}
+                          onChange={() => handleToggle(invoice._id, "collectionStatus")}
+                          color="success"
+                          sx={{ transform: "scale(0.8)" }}
+                        />
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : "---"}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Box>
+
+            {/* --- Phân trang --- */}
+            <Box
+              sx={{
+                mt: 2,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Pagination
+                count={totalPages}
+                page={currentPage}
+                onChange={(event, value) => handlePageChange(value)}
+                color="primary"
+                shape="rounded"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          </>
+        )}
+      </Box>
+
+      <AddInvoiceDialog
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        onSuccess={() => {
+          // Gọi lại API load danh sách sau khi thêm mới thành công
+          (() => {
+            fetchInvoices();
+          })();
+        }}
+        // assignedUsers={userData}
+        billing_period={billing_period}
+      />
+    </>
   );
 }

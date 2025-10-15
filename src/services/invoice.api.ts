@@ -48,3 +48,27 @@ export const handleToggle_API = async (invoiceId: string, field: "printStatus" |
     console.error("Cập nhật trạng thái thất bại:", err);
   }
 };
+
+export const createInvoice_API = async (newInvoice: {
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  billing_period: string;
+  totalAmount: string;
+  assignedTo: string;
+}) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Chưa đăng nhập");
+
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/creatnew`,
+      { newInvoice },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res;
+  } catch (err) {
+    console.error("Cập nhật trạng thái thất bại:", err);
+  }
+};

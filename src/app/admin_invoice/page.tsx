@@ -11,7 +11,6 @@ import {
   InputLabel,
   MenuItem,
   Pagination,
-  Paper,
   Select,
   Switch,
   TextField,
@@ -20,9 +19,15 @@ import {
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"; // --- THÊM MỚI ---
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"; // --- THÊM MỚI ---
+import AddIcon from "@mui/icons-material/Add";
+import AddInvoiceDialog from "@/components/AddInvoiceDialog";
+import { fetchallUser } from "@/services/user.api";
+import { IUser } from "@/types/user";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+  const [userData, setUserData] = useState<IUser[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
@@ -35,6 +40,8 @@ export default function InvoicesPage() {
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
 
   const [totalAmount, setTotalAmount] = useState(0);
+
+  const [openAddDialog, setOpenAddDialog] = useState(false);
 
   // --- THÊM MỚI: State để quản lý việc sắp xếp ---
   const [sortConfig, setSortConfig] = useState<{
@@ -62,8 +69,35 @@ export default function InvoicesPage() {
       }
     };
 
+    const fetchData = async () => {
+      try {
+        const res = await fetchallUser();
+
+        const filterUser = res.data.user.filter((user) => {
+          return user.role === "user";
+        });
+
+        setUserData(filterUser);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchData();
     fetchInvoices();
   }, []);
+
+  // Lấy kỳ hiện tại
+  const now = new Date();
+  let month = now.getMonth();
+  let year = now.getFullYear();
+
+  if (month === 0) {
+    month = 12;
+    year -= 1;
+  }
+
+  const billing_period = `${month.toString().padStart(2, "0")}/${year}`;
 
   // --- Hàm xuất Excel ---
   const handleExport = () => {
@@ -175,11 +209,6 @@ export default function InvoicesPage() {
     }, 0);
     setTotalAmount(total);
   }, [filteredInvoices]);
-
-  // Lọc tên của người phụ trách
-  const uniqueAssignedUsers = Array.from(
-    new Map(invoices.filter((inv) => inv.assignedTo).map((inv) => [inv.assignedTo._id, inv.assignedTo])).values()
-  );
 
   // --- Hàm đổi trang ---
   const handlePageChange = (page: number) => {
@@ -343,6 +372,22 @@ export default function InvoicesPage() {
           </FormControl>
         </Box>
 
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenAddDialog(true)}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            minWidth: { xs: "120px", sm: "160px" },
+            marginBottom: 2,
+          }}
+        >
+          Thêm mới hoá đơn
+        </Button>
+
         {/* --- Bộ lọc trạng thái --- */}
         <Box
           sx={{
@@ -414,7 +459,7 @@ export default function InvoicesPage() {
               }}
             >
               <MenuItem value="all">Tất cả</MenuItem>
-              {uniqueAssignedUsers.map((user) => (
+              {userData.map((user) => (
                 <MenuItem key={user._id} value={user._id}>
                   {user.fullName || user.email}
                 </MenuItem>
@@ -444,7 +489,7 @@ export default function InvoicesPage() {
                 Tổng số nhân viên
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 600, color: "#2563eb" }}>
-                {uniqueAssignedUsers.length}
+                {userData.length}
               </Typography>
             </Box>
           )}
@@ -589,6 +634,20 @@ export default function InvoicesPage() {
           </>
         )}
       </Box>
+
+      <AddInvoiceDialog
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        onSuccess={() => {
+          // Gọi lại API load danh sách sau khi thêm mới thành công
+          (async () => {
+            const res = await fetchallInvoice();
+            setInvoices(res.data);
+          })();
+        }}
+        assignedUsers={userData}
+        billing_period={billing_period}
+      />
     </AdminRoute>
   );
 }
