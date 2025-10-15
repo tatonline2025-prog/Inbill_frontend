@@ -72,3 +72,20 @@ export const createInvoice_API = async (newInvoice: {
     console.error("Cập nhật trạng thái thất bại:", err);
   }
 };
+
+export const deleteInvoice_API = async (invoiceNumber: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Chưa đăng nhập");
+
+    const res = await axios.delete(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/delete/${invoiceNumber}`,
+
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res;
+  } catch (err) {
+    console.error("Xoá hoá đơn thất bại thất bại:", err);
+  }
+};

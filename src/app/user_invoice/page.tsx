@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { fetchInvoiceByUserMonth, handleToggle_API } from "@/services/invoice.api";
+import { deleteInvoice_API, fetchInvoiceByUserMonth, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"; // --- THÊM MỚI ---
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"; // --- THÊM MỚI ---
@@ -10,7 +10,9 @@ import {
   Box,
   Button,
   FormControl,
+  IconButton,
   InputLabel,
+  Menu,
   MenuItem,
   Pagination,
   Select,
@@ -25,6 +27,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import AddIcon from "@mui/icons-material/Add";
+
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -53,6 +57,20 @@ export default function InvoicesPage() {
     key: null,
     direction: null,
   });
+
+  // --- State quản lý menu hành động ---
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceInfo | null>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, invoice: InvoiceInfo) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedInvoice(invoice);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedInvoice(null);
+  };
 
   const { isAuthenticated, user } = useAuth();
 
@@ -319,6 +337,7 @@ export default function InvoicesPage() {
     { key: null, label: "Đã thu", sortable: false },
     { key: "collectionDate", label: "Ngày thu", sortable: true },
     { key: "issueDate", label: "Ngày giao", sortable: true },
+    { key: null, label: "Hành động", sortable: false },
   ];
 
   return (
@@ -626,11 +645,61 @@ export default function InvoicesPage() {
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
                       </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, invoice)}>
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </Box>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+            >
+              <MenuItem
+                onClick={async () => {
+                  if (!selectedInvoice) return;
+
+                  // ✅ Hỏi xác nhận trước khi xoá
+                  const confirmDelete = window.confirm(
+                    `Bạn có chắc muốn xoá hoá đơn ${selectedInvoice.invoiceNumber}?`
+                  );
+                  if (!confirmDelete) return;
+
+                  try {
+                    const res = await deleteInvoice_API(selectedInvoice._id);
+
+                    if (res!.status === 200 || res!.status === 204) {
+                      alert("Xoá hoá đơn thành công!");
+                      fetchInvoices(); // 🔁 Load lại danh sách
+                    } else {
+                      alert("Không thể xoá hoá đơn, vui lòng thử lại.");
+                    }
+                  } catch (error) {
+                    console.error("Lỗi khi xoá hoá đơn:", error);
+                    alert("Đã xảy ra lỗi khi xoá hoá đơn.");
+                  } finally {
+                    handleMenuClose();
+                  }
+                }}
+                sx={{ color: "red", fontSize: 13 }}
+              >
+                Xoá hoá đơn
+              </MenuItem>
+            </Menu>
 
             {/* --- Phân trang --- */}
             <Box
