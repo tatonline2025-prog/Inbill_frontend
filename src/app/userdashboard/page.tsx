@@ -131,7 +131,7 @@ export default function Dashboard() {
       <div className="flex flex-wrap justify-center gap-4 mb-8">
         {/* Kỳ thanh toán */}
         <div>
-          <label className="block text-sm font-semibold mb-1">Kỳ thanh toán:</label>
+          <label className="block text-sm font-semibold mb-1">Tháng nợ:</label>
           <select
             value={filterPeriod}
             onChange={(e) => setFilterPeriod(e.target.value)}

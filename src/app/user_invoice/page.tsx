@@ -216,12 +216,10 @@ export default function InvoicesPage() {
   // Tính toán tổng số tiền theo bộ lọc
   useEffect(() => {
     const total = filteredInvoices.reduce((sum, inv) => {
-      // SỬA Ở ĐÂY: Thêm `?.` và `?? 0`
-      const amountValue = inv?.totalAmount ?? 0;
-      const amount = parseFloat(amountValue.toString().replace(/[^\d.-]/g, ""));
-      return sum + (isNaN(amount) ? 0 : amount);
+      const prev = parseFloat(inv?.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+      const curr = parseFloat(inv?.totalAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+      return sum + prev + curr;
     }, 0);
-
     setTotalAmount(total);
   }, [filteredInvoices]);
 
@@ -330,9 +328,10 @@ export default function InvoicesPage() {
     { key: "customerName", label: "Tên Khách Hàng", sortable: true },
     { key: "customerPhone", label: "SĐT", sortable: true },
     { key: "customerAddress", label: "Địa Chỉ", sortable: true },
+    { key: "billing_period", label: "Tháng nợ", sortable: true },
+    { key: "totalAmount", label: "Kỳ này", sortable: true },
     { key: "previousAmount", label: "Kỳ trước", sortable: true },
-    { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
-    { key: "totalAmount", label: "Tổng Tiền", sortable: true },
+    { key: null, label: "Tổng tiền nợ", sortable: false },
     { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
     { key: null, label: "Đã in bill", sortable: false },
     { key: null, label: "Đã thu", sortable: false },
@@ -613,13 +612,20 @@ export default function InvoicesPage() {
                         {invoice.customerAddress}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.previousAmount}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.billing_period}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.totalAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.previousAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {(() => {
+                          const prev = parseFloat(invoice.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+                          const curr = parseFloat(invoice.totalAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+                          return (prev + curr).toLocaleString("vi-VN") + " đ";
+                        })()}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.assignedTo.fullName}
