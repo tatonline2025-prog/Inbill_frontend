@@ -44,6 +44,7 @@ export default function InvoicesPage() {
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
+  const [searchInvoiceNumber, setSearchInvoiceNumber] = useState("");
 
   const [totalAmount, setTotalAmount] = useState(0);
 
@@ -156,7 +157,12 @@ export default function InvoicesPage() {
         ? true
         : inv.collectionDate && new Date(inv.collectionDate).toLocaleDateString("en-CA") === selectedDate;
 
-    return matchPrint && matchCollection && matchAssignedUser && matchDate;
+    const matchSearch =
+      searchInvoiceNumber.trim() === ""
+        ? true
+        : inv.invoiceNumber.toLowerCase().includes(searchInvoiceNumber.trim().toLowerCase());
+
+    return matchPrint && matchCollection && matchAssignedUser && matchDate && matchSearch;
   });
 
   // --- THÊM MỚI: Logic sắp xếp dữ liệu ---
@@ -405,10 +411,25 @@ export default function InvoicesPage() {
             fontSize: { xs: "0.7rem", sm: "0.875rem" },
             minWidth: { xs: "120px", sm: "160px" },
             marginBottom: 2,
+            marginRight: 2,
           }}
         >
           Thêm mới hoá đơn
         </Button>
+
+        <TextField
+          label="Tìm theo Mã khách hàng"
+          size="small"
+          value={searchInvoiceNumber}
+          onChange={(e) => {
+            setSearchInvoiceNumber(e.target.value);
+            setCurrentPage(1); // Reset về trang 1 khi search
+          }}
+          sx={{
+            minWidth: { xs: 150, sm: 200 },
+            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+          }}
+        />
 
         {/* --- Bộ lọc trạng thái --- */}
         <Box
