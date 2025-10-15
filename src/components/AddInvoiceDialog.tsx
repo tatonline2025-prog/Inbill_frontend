@@ -120,14 +120,14 @@ export default function AddInvoiceDialog({
             fullWidth
           />
           <TextField
-            label="Kỳ thanh toán (VD: 10/2025)"
+            label="Tháng nợ (VD: 10/2025)"
             value={newInvoice.billing_period}
             onChange={(e) => handleChange("billing_period", e.target.value)}
             fullWidth
             required
           />
           <TextField
-            label="Tổng tiền (VNĐ)"
+            label="Tiền nợ kỳ này (VNĐ)"
             type="number"
             value={newInvoice.totalAmount}
             onChange={(e) => handleChange("totalAmount", e.target.value)}
