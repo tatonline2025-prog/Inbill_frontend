@@ -1,6 +1,5 @@
 // src/app/page.tsx
 
-import AdminRoute from "@/components/AdminRoute";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -44,6 +43,14 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      <p className="mt-10 text-sm text-gray-500">
+        Bằng việc sử dụng hệ thống này, bạn đồng ý với{" "}
+        <Link href="/privacy_policy" className="text-blue-600 hover:underline">
+          Chính sách bảo mật
+        </Link>
+        .
+      </p>
     </div>
   );
 }
