@@ -291,8 +291,9 @@ export default function InvoicesPage() {
     { key: "customerPhone", label: "SĐT", sortable: true },
     { key: "customerAddress", label: "Địa Chỉ", sortable: true },
     { key: "previousAmount", label: "Kỳ trước", sortable: true },
-    { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
+    // { key: "billing_period", label: "Kỳ Thanh Toán", sortable: true },
     { key: "totalAmount", label: "Kỳ này", sortable: true },
+    { key: null, label: "Tổng tiền nợ", sortable: false },
     { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
     { key: null, label: "Đã in bill", sortable: false },
     { key: null, label: "Đã thu", sortable: false },
@@ -596,11 +597,18 @@ export default function InvoicesPage() {
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.previousAmount}
                       </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                      {/* <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.billing_period}
-                      </td>
+                      </td> */}
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.totalAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {(() => {
+                          const prev = parseFloat(invoice.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+                          const curr = parseFloat(invoice.totalAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+                          return (prev + curr).toLocaleString("vi-VN") + " đ";
+                        })()}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.assignedTo.fullName}
