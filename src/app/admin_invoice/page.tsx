@@ -428,6 +428,7 @@ export default function InvoicesPage() {
           sx={{
             minWidth: { xs: 150, sm: 200 },
             fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            marginBottom: 2,
           }}
         />
 
