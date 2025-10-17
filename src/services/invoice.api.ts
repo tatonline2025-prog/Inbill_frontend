@@ -54,7 +54,7 @@ export const createInvoice_API = async (newInvoice: {
   customerPhone: string;
   customerAddress: string;
   billing_period: string;
-  totalAmount: string;
+  currentAmount: string;
   assignedTo: string;
 }) => {
   try {

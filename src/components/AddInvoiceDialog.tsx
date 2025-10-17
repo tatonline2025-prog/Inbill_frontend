@@ -36,7 +36,8 @@ export default function AddInvoiceDialog({
     customerPhone: "",
     customerAddress: "",
     billing_period: "",
-    totalAmount: "",
+    currentAmount: "",
+    previousAmount: "",
     assignedTo: "",
   });
 
@@ -60,7 +61,8 @@ export default function AddInvoiceDialog({
       !newInvoice.invoiceNumber ||
       !newInvoice.customerName ||
       !newInvoice.billing_period ||
-      !newInvoice.totalAmount
+      !newInvoice.previousAmount ||
+      !newInvoice.currentAmount
     ) {
       alert("Vui lòng nhập đầy đủ thông tin bắt buộc!");
       return;
@@ -126,11 +128,21 @@ export default function AddInvoiceDialog({
             fullWidth
             required
           />
+
           <TextField
             label="Tiền nợ kỳ này (VNĐ)"
             type="number"
-            value={newInvoice.totalAmount}
-            onChange={(e) => handleChange("totalAmount", e.target.value)}
+            value={newInvoice.currentAmount}
+            onChange={(e) => handleChange("currentAmount", e.target.value)}
+            fullWidth
+            required
+          />
+
+          <TextField
+            label="Tiền nợ kỳ trước (VNĐ)"
+            type="number"
+            value={newInvoice.previousAmount}
+            onChange={(e) => handleChange("previousAmount", e.target.value)}
             fullWidth
             required
           />

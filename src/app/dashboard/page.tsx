@@ -140,8 +140,8 @@ export default function Dashboard() {
           >
             <option value="all">Tất cả</option>
             {uniqueAssignedUsers.map((user) => (
-              <option key={user._id} value={user._id}>
-                {user.fullName || user.email}
+              <option key={user?._id} value={user?._id}>
+                {user?.fullName || user?.email}
               </option>
             ))}
           </select>
