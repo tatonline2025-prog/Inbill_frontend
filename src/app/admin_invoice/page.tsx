@@ -174,10 +174,11 @@ export default function InvoicesPage() {
     sortableInvoices.sort((a, b) => {
       const totalA =
         (parseFloat(a.currentAmount?.toString().replace(/[^\d.-]/g, "")) || 0) +
-        (parseFloat(a.previousAmount!.toString().replace(/[^\d.-]/g, "")) || 0);
+        (parseFloat(a.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0);
+
       const totalB =
         (parseFloat(b.currentAmount?.toString().replace(/[^\d.-]/g, "")) || 0) +
-        (parseFloat(b.previousAmount!.toString().replace(/[^\d.-]/g, "")) || 0);
+        (parseFloat(b.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0);
 
       // Nếu A có nợ mà B không có nợ → A lên trước
       if (totalA > 0 && totalB <= 0) return -1;
@@ -248,13 +249,15 @@ export default function InvoicesPage() {
   const totalPages = Math.ceil(sortedInvoices.length / invoicesPerPage);
 
   // --- Tính toán tổng giá trị hoá đơn (bao gồm cả kỳ trước + kỳ này) ---
+  // Trong useEffect tính tổng
   useEffect(() => {
     const total = filteredInvoices.reduce((sum, inv) => {
-      const prev = parseFloat(inv?.previousAmount!.toString().replace(/[^\d.-]/g, "")) || 0;
-      const curr = parseFloat(inv?.currentAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
+      const prev = parseFloat(inv.previousAmount?.toString().replace(/[^\d.-]/g, "") ?? "0");
+      const curr = parseFloat(inv.currentAmount?.toString().replace(/[^\d.-]/g, "") ?? "0");
 
       return sum + prev + curr;
     }, 0);
+
     setTotalAmountInfo(total);
   }, [filteredInvoices]);
 

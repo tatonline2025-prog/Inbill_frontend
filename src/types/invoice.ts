@@ -9,7 +9,7 @@ export interface InvoiceInfo {
 
   // 💰 Các trường tiền tệ
   currentAmount: string; // Tiền kỳ này
-  previousAmount?: string | null; // Tiền kỳ trước
+  previousAmount: string; // Tiền kỳ trước
   totalAmount: string; // Tổng tiền (đã có trong Excel)
 
   // 📅 Trạng thái và ngày tháng
