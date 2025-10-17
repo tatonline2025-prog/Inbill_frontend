@@ -46,7 +46,7 @@ export default function InvoicesPage() {
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [searchInvoiceNumber, setSearchInvoiceNumber] = useState("");
 
-  const [totalAmount, setTotalAmount] = useState(0);
+  const [totalAmountInfo, setTotalAmountInfo] = useState(0);
 
   const [openAddDialog, setOpenAddDialog] = useState(false);
 
@@ -168,29 +168,45 @@ export default function InvoicesPage() {
   // --- THÊM MỚI: Logic sắp xếp dữ liệu ---
   // Sử dụng useMemo để chỉ sắp xếp lại khi dữ liệu hoặc cấu hình sort thay đổi
   const sortedInvoices = useMemo(() => {
-    const sortableInvoices = [...filteredInvoices]; // Tạo bản sao để không thay đổi mảng gốc
+    const sortableInvoices = [...filteredInvoices];
 
+    // 🔹 Bước 1: Ưu tiên hiển thị các hóa đơn có tổng tiền > 0 lên trên
+    sortableInvoices.sort((a, b) => {
+      const totalA =
+        (parseFloat(a.totalAmount?.toString().replace(/[^\d.-]/g, "")) || 0) +
+        (parseFloat(a.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0);
+      const totalB =
+        (parseFloat(b.totalAmount?.toString().replace(/[^\d.-]/g, "")) || 0) +
+        (parseFloat(b.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0);
+
+      // Nếu A có nợ mà B không có nợ → A lên trước
+      if (totalA > 0 && totalB <= 0) return -1;
+      if (totalA <= 0 && totalB > 0) return 1;
+      return 0; // Giữ nguyên thứ tự cho các nhóm tương tự
+    });
+
+    // 🔹 Bước 2: Áp dụng sắp xếp theo cột người dùng chọn (nếu có)
     if (sortConfig.key !== null && sortConfig.direction !== null) {
       sortableInvoices.sort((a, b) => {
-        const aValue = a[sortConfig.key!];
-        const bValue = b[sortConfig.key!];
+        const aValue = a[sortConfig.key!] as string | number | null | undefined;
+        const bValue = b[sortConfig.key!] as string | number | null | undefined;
 
-        if (aValue === null || aValue === undefined) return 1;
-        if (bValue === null || bValue === undefined) return -1;
+        const isEmptyA = aValue === null || aValue === undefined || aValue === "" || aValue === "Không nợ cước";
+        const isEmptyB = bValue === null || bValue === undefined || bValue === "" || bValue === "Không nợ cước";
+
+        if (isEmptyA && !isEmptyB) return 1;
+        if (!isEmptyA && isEmptyB) return -1;
 
         let comparison = 0;
-        // Xử lý riêng cho cột tổng tiền vì nó là string có định dạng
         if (sortConfig.key === "totalAmount") {
           const numA = parseFloat(String(aValue).replace(/[^\d.-]/g, ""));
           const numB = parseFloat(String(bValue).replace(/[^\d.-]/g, ""));
-          comparison = numA > numB ? 1 : -1;
+          comparison = numA > numB ? 1 : numA < numB ? -1 : 0;
         } else {
-          // Xử lý cho các cột khác (string, number, date...)
-          if (aValue > bValue) {
-            comparison = 1;
-          } else if (aValue < bValue) {
-            comparison = -1;
-          }
+          const strA = String(aValue ?? "").toLowerCase();
+          const strB = String(bValue ?? "").toLowerCase();
+          if (strA > strB) comparison = 1;
+          else if (strA < strB) comparison = -1;
         }
 
         return sortConfig.direction === "ascending" ? comparison : -comparison;
@@ -202,6 +218,8 @@ export default function InvoicesPage() {
 
   // --- THÊM MỚI: Hàm xử lý khi click vào header cột ---
   const handleSort = (key: keyof InvoiceInfo) => {
+    console.log(key);
+
     let direction: "ascending" | "descending" | null = "descending"; // Mặc định lần đầu là cao -> thấp
 
     if (sortConfig.key === key) {
@@ -218,9 +236,12 @@ export default function InvoicesPage() {
 
   // --- Tính toán dữ liệu trang hiện tại ---
   // --- SỬA ĐỔI: Sử dụng mảng đã được sắp xếp `sortedInvoices` ---
-  const indexOfLastInvoice = currentPage * invoicesPerPage;
-  const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
-  const currentInvoices = sortedInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
+  // --- Phân trang sau khi đã sắp xếp toàn bộ ---
+  const currentInvoices = useMemo(() => {
+    const indexOfLastInvoice = currentPage * invoicesPerPage;
+    const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
+    return sortedInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
+  }, [sortedInvoices, currentPage, invoicesPerPage]);
 
   // --- Tổng số trang sau khi lọc ---
   // --- SỬA ĐỔI: Dùng sortedInvoices (hoặc filteredInvoices cũng được vì length như nhau) ---
@@ -233,7 +254,7 @@ export default function InvoicesPage() {
       const curr = parseFloat(inv?.totalAmount?.toString().replace(/[^\d.-]/g, "")) || 0;
       return sum + prev + curr;
     }, 0);
-    setTotalAmount(total);
+    setTotalAmountInfo(total);
   }, [filteredInvoices]);
 
   // --- Hàm đổi trang ---
@@ -428,7 +449,7 @@ export default function InvoicesPage() {
           sx={{
             minWidth: { xs: 150, sm: 200 },
             fontSize: { xs: "0.7rem", sm: "0.875rem" },
-            marginBottom: 2,
+            marginBottom: 3,
           }}
         />
 
@@ -552,7 +573,7 @@ export default function InvoicesPage() {
               Tổng giá trị hoá đơn
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
-              {totalAmount.toLocaleString("vi-VN")} đ
+              {totalAmountInfo.toLocaleString("vi-VN")} đ
             </Typography>
           </Box>
         </Box>
