@@ -319,17 +319,17 @@ export default function InvoicesPage() {
     { key: null, label: "STT", sortable: false },
     { key: "invoiceNumber", label: "Mã Khách Hàng", sortable: true },
     { key: "customerName", label: "Tên Khách Hàng", sortable: true },
-    { key: "customerPhone", label: "SĐT", sortable: true },
     { key: "customerAddress", label: "Địa Chỉ", sortable: true },
-    { key: "billing_period", label: "Tháng nợ", sortable: true },
     { key: "currentAmount", label: "Kỳ này", sortable: true },
     { key: "previousAmount", label: "Kỳ trước", sortable: true },
     { key: "totalAmount", label: "Tổng tiền nợ", sortable: false },
+    { key: "customerPhone", label: "SĐT", sortable: true },
     { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
     { key: null, label: "Đã in bill", sortable: false },
     { key: null, label: "Đã thu", sortable: false },
     { key: "collectionDate", label: "Ngày thu", sortable: true },
     { key: "issueDate", label: "Ngày giao", sortable: true },
+    { key: "billing_period", label: "Tháng nợ", sortable: true },
     { key: null, label: "Hành động", sortable: false },
   ];
 
@@ -635,15 +635,11 @@ export default function InvoicesPage() {
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.customerName}
                       </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.customerPhone}
-                      </td>
+
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.customerAddress}
                       </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.billing_period}
-                      </td>
+
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.currentAmount}
                       </td>
@@ -653,6 +649,9 @@ export default function InvoicesPage() {
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.totalAmount}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.customerPhone}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.assignedTo?.fullName}
@@ -678,6 +677,9 @@ export default function InvoicesPage() {
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                        {invoice.billing_period}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
                         <IconButton size="small" onClick={(e) => handleMenuOpen(e, invoice)}>
