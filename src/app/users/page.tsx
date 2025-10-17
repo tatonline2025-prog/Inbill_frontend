@@ -145,7 +145,7 @@ export default function UsersPage() {
 
         <div className="relative w-full h-[150px] mx-auto mb-6">
           <Image
-            src="/images/example_excel.png"
+            src="/images/example_excel.jpg"
             alt="Hướng dẫn upload file Excel"
             fill
             className="object-contain rounded-lg shadow"
