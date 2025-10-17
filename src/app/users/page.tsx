@@ -143,7 +143,7 @@ export default function UsersPage() {
           file Excel phải có các header như hình dưới đây để cho hệ thống có thể đọc được, thứ tự các cột thì tuỳ ý.
         </div>
 
-        <div className="relative w-full h-[150px] mx-auto mb-6">
+        <div className="relative w-full h-[350px] mx-auto mb-6">
           <Image
             src="/images/example_excel.jpg"
             alt="Hướng dẫn upload file Excel"
