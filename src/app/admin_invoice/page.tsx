@@ -29,10 +29,14 @@ import { IUser } from "@/types/user";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import toast from "react-hot-toast";
+import EditInvoiceDialog from "@/components/EditInvoiceDialog";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [userData, setUserData] = useState<IUser[]>([]);
+
+  const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo>();
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -324,6 +328,7 @@ export default function InvoicesPage() {
     { key: "previousAmount", label: "Kỳ trước", sortable: true },
     { key: "totalAmount", label: "Tổng tiền nợ", sortable: false },
     { key: "customerPhone", label: "SĐT", sortable: true },
+    { key: "note", label: "Ghi chú", sortable: false },
     { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false }, // Giả sử không sort theo object
     { key: null, label: "Đã in bill", sortable: false },
     { key: null, label: "Đã thu", sortable: false },
@@ -653,6 +658,7 @@ export default function InvoicesPage() {
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.customerPhone}
                       </td>
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>{invoice.note}</td>
                       <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                         {invoice.assignedTo?.fullName}
                       </td>
@@ -705,6 +711,21 @@ export default function InvoicesPage() {
                 horizontal: "right",
               }}
             >
+              <MenuItem
+                onClick={() => {
+                  if (!selectedInvoice) return;
+
+                  // Mở form chỉnh sửa hoá đơn
+                  // Giả sử bạn có state để show modal hoặc navigate tới trang chỉnh sửa
+                  setEditingInvoice(selectedInvoice); // ví dụ: state để mở modal
+                  setEditModalOpen(true); // mở modal chỉnh sửa
+                  handleMenuClose();
+                }}
+                sx={{ color: "blue", fontSize: 13 }}
+              >
+                Chỉnh sửa hoá đơn
+              </MenuItem>
+
               <MenuItem
                 onClick={async () => {
                   if (!selectedInvoice) return;
@@ -774,6 +795,17 @@ export default function InvoicesPage() {
         }}
         assignedUsers={userData}
         billing_period={billing_period}
+      />
+
+      <EditInvoiceDialog
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        invoice={editingInvoice}
+        onSuccess={async () => {
+          const res = await fetchallInvoice();
+          setInvoices(res.data);
+        }}
+        assignedUsers={userData}
       />
     </AdminRoute>
   );

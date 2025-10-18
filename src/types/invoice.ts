@@ -34,6 +34,8 @@ export interface InvoiceInfo {
   // 🧾 Thông tin file upload (nếu có)
   uploadFileId?: string | null;
 
+  note?: string | null;
+
   // ⏱ Timestamps
   createdAt?: string;
   updatedAt?: string;
