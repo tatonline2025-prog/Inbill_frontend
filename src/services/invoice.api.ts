@@ -1,8 +1,14 @@
-import { InvoiceInfo } from "@/types/invoice";
+import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 import axios from "axios";
 
 export const fetchallInvoice = async () => {
   const res = await axios.get<InvoiceInfo[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`);
+
+  return res;
+};
+
+export const invoiceSummary = async () => {
+  const res = await axios.get<IInvoiceSummaryByUser[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/summary`);
 
   return res;
 };

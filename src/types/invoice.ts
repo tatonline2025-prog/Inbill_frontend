@@ -1,3 +1,5 @@
+import { IUser } from "./user";
+
 export interface InvoiceInfo {
   _id: string;
   invoiceNumber: string;
@@ -39,4 +41,26 @@ export interface InvoiceInfo {
   // ⏱ Timestamps
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface IUserAssigned {
+  _id?: string;
+  fullName?: string | null;
+  email?: string | null;
+  username?: string | null;
+  province?: string | null;
+  role?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  createdBy?: string | null;
+}
+
+export interface IInvoiceSummaryByUser {
+  _id?: string;
+  assignedTo?: IUserAssigned | IUser | null;
+  billing_period: string;
+  collectedCount?: number | null;
+  notCollectedCount?: number | null;
+  collectedTotal?: number | null;
+  notCollectedTotal?: number | null;
 }

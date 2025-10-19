@@ -2,9 +2,9 @@
 
 import AdminRoute from "@/components/AdminRoute";
 import { excelUp } from "@/services/excel.api";
-import { fetchallInvoice } from "@/services/invoice.api";
+import { fetchallInvoice, invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
-import { InvoiceInfo } from "@/types/invoice";
+import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
 import { ChangeEvent, useEffect, useState } from "react";
@@ -13,7 +13,7 @@ export default function UsersPage() {
   const [userData, setUserData] = useState<IUser[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "error" | "success"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+  const [summaryData, setSummaryData] = useState<IInvoiceSummaryByUser[]>([]);
 
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [formData, setFormData] = useState<Partial<IUser>>();
@@ -30,13 +30,10 @@ export default function UsersPage() {
 
     const fetchInvoices = async () => {
       try {
-        const res = await fetchallInvoice();
-        const data = res.data; // nếu backend trả trực tiếp mảng
-        // const data = res.data.result; // nếu backend trả { result: [...] }
+        const res = await invoiceSummary();
+        console.log(res);
 
-        // console.log(data);
-
-        setInvoices(data);
+        setSummaryData(res.data);
       } catch (err) {
         console.error("Lỗi khi tải hóa đơn:", err);
       }
@@ -45,6 +42,19 @@ export default function UsersPage() {
     fetchInvoices();
     fetchData();
   }, []);
+
+  const mergedUsers = userData
+    .filter((u) => u.role === "user")
+    .map((u) => {
+      const summary = summaryData.find((s) => s.assignedTo?._id === u._id);
+      return {
+        ...u,
+        notCollectedCount: summary?.notCollectedCount ?? 0,
+        collectedCount: summary?.collectedCount ?? 0,
+      };
+    });
+
+  console.log(mergedUsers);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string) => {
     if (e.target.files && e.target.files[0]) {
@@ -243,13 +253,9 @@ export default function UsersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {userData
-                      .filter((user) => user.role === "user")
+                    {mergedUsers
+                      // .filter((user) => user.role === "user")
                       .map((user) => {
-                        const invoiceCount = invoices.filter(
-                          (inv) => inv.assignedTo && inv.assignedTo._id === user._id
-                        ).length;
-
                         return (
                           <tr key={user._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
@@ -259,7 +265,7 @@ export default function UsersPage() {
                               {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                             </td>
                             <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
-                              {invoiceCount}
+                              {(user.collectedCount ?? 0) + (user.notCollectedCount ?? 0)}
                             </td>
                             <td className="px-6 py-4 text-center space-x-2">
                               <button

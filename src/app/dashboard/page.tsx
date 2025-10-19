@@ -14,12 +14,12 @@ import {
   YAxis,
   Bar,
 } from "recharts";
-import { fetchallInvoice } from "@/services/invoice.api";
-import { InvoiceInfo } from "@/types/invoice";
+import { fetchallInvoice, invoiceSummary } from "@/services/invoice.api";
+import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 
 export default function Dashboard() {
   // ===================== STATE =====================
-  const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+  const [summaryData, setSummaryData] = useState<IInvoiceSummaryByUser[]>([]);
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [isMobile, setIsMobile] = useState(false);
@@ -37,8 +37,10 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const res = await fetchallInvoice();
-        setInvoices(res.data);
+        const res = await invoiceSummary();
+
+        console.log(res.data);
+        setSummaryData(res.data);
       } catch (err) {
         console.error("Lỗi khi tải hóa đơn:", err);
       }
@@ -48,78 +50,54 @@ export default function Dashboard() {
 
   // ===================== FILTER =====================
   const filteredInvoices = useMemo(() => {
-    return invoices.filter((inv) => {
+    return summaryData.filter((inv) => {
       const matchUser = filterAssignedUser === "all" ? true : inv.assignedTo?._id === filterAssignedUser;
       const matchPeriod = filterPeriod === "all" ? true : inv.billing_period === filterPeriod;
       return matchUser && matchPeriod;
     });
-  }, [invoices, filterAssignedUser, filterPeriod]);
+  }, [summaryData, filterAssignedUser, filterPeriod]);
 
   // ===================== TÍNH TOÁN SỐ LIỆU =====================
-  const parseAmount = (amount: string | number | null | undefined): number => {
-    if (!amount) return 0;
-    if (typeof amount === "number") return amount;
-    return Number(amount.replace(/\./g, "").replace(/,/g, ""));
-  };
+  const { totalCollected, totalNotCollected, collected, notCollected } = useMemo(() => {
+    const totalCollected = filteredInvoices.reduce((sum, inv) => sum + (inv.collectedTotal || 0), 0);
+    const totalNotCollected = filteredInvoices.reduce((sum, inv) => sum + (inv.notCollectedTotal || 0), 0);
+    const collected = filteredInvoices.reduce((sum, inv) => sum + (inv.collectedCount || 0), 0);
+    const notCollected = filteredInvoices.reduce((sum, inv) => sum + (inv.notCollectedCount || 0), 0);
 
-  const { collected, notCollected, totalCollected, totalNotCollected } = useMemo(() => {
-    const collected = filteredInvoices.filter((inv) => inv.collectionStatus === "collected");
-    const notCollected = filteredInvoices.filter((inv) => inv.collectionStatus === "not_collected");
-
-    const sum = (arr: InvoiceInfo[]) =>
-      arr
-        .map((inv) => parseAmount(inv.totalAmount))
-        .filter((v) => !isNaN(v))
-        .reduce((a, b) => a + b, 0);
-
-    return {
-      collected,
-      notCollected,
-      totalCollected: sum(collected),
-      totalNotCollected: sum(notCollected),
-    };
+    return { totalCollected, totalNotCollected, collected, notCollected };
   }, [filteredInvoices]);
 
   // ===================== DỮ LIỆU BIỂU ĐỒ =====================
   const chartData = [
-    { name: "Đã thu", value: collected.length },
-    { name: "Chưa thu", value: notCollected.length },
+    { name: "Đã thu", value: collected },
+    { name: "Chưa thu", value: notCollected },
   ];
 
   const monthlyData = useMemo(() => {
-    const map = new Map<string, { collected: number; notCollected: number }>();
+    const map = new Map<string, { collectedTotal: number; notCollectedTotal: number }>();
 
-    invoices.forEach((inv) => {
-      if (!inv.billing_period) return;
+    filteredInvoices.forEach((inv) => {
       const key = inv.billing_period;
-      const amount = parseAmount(inv.totalAmount);
-      if (isNaN(amount)) return;
+      if (!key) return;
 
-      if (!map.has(key)) map.set(key, { collected: 0, notCollected: 0 });
+      const collected = inv.collectedTotal || 0;
+      const notCollected = inv.notCollectedTotal || 0;
+
+      if (!map.has(key)) map.set(key, { collectedTotal: 0, notCollectedTotal: 0 });
+
       const item = map.get(key)!;
-      if (inv.collectionStatus === "collected") item.collected += amount;
-      else item.notCollected += amount;
+      item.collectedTotal += collected;
+      item.notCollectedTotal += notCollected;
     });
 
-    const years = Array.from(map.keys()).map((p) => Number(p.split("/")[1]));
-    const targetYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+    // Trả về mảng để dùng hiển thị biểu đồ
+    return Array.from(map.entries()).map(([period, values]) => ({
+      period,
+      ...values,
+    }));
+  }, [filteredInvoices]);
 
-    return Array.from({ length: 12 }, (_, i) => {
-      const month = (i + 1).toString().padStart(2, "0");
-      const key = `${month}/${targetYear}`;
-      const values = map.get(key) || { collected: 0, notCollected: 0 };
-      return { period: key, ...values };
-    });
-  }, [invoices]);
-
-  const billingPeriods = Array.from(new Set(invoices.map((inv) => inv.billing_period).filter(Boolean))).sort();
-
-  const uniqueAssignedUsers = useMemo(() => {
-    const data = filterPeriod === "all" ? invoices : invoices.filter((inv) => inv.billing_period === filterPeriod);
-    return Array.from(
-      new Map(data.filter((inv) => inv.assignedTo).map((inv) => [inv.assignedTo!._id, inv.assignedTo])).values()
-    );
-  }, [invoices, filterPeriod]);
+  const billingPeriods = Array.from(new Set(summaryData.map((inv) => inv.billing_period).filter(Boolean))).sort();
 
   const COLORS = ["#4CAF50", "#F44336"];
 
@@ -139,9 +117,9 @@ export default function Dashboard() {
             className="border px-3 py-2 rounded-md text-sm"
           >
             <option value="all">Tất cả</option>
-            {uniqueAssignedUsers.map((user) => (
-              <option key={user?._id} value={user?._id}>
-                {user?.fullName || user?.email}
+            {summaryData.map((user) => (
+              <option key={user?.assignedTo?._id} value={user?.assignedTo?._id}>
+                {user?.assignedTo?.fullName || user?.assignedTo?.email}
               </option>
             ))}
           </select>
@@ -203,8 +181,8 @@ export default function Dashboard() {
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v: number) => v.toLocaleString("vi-VN")} />
                   <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
-                  <Bar dataKey="collected" fill="#4CAF50" name="Đã thu" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="notCollected" fill="#F44336" name="Chưa thu" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="collectedTotal" fill="#4CAF50" name="Đã thu" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="notCollectedTotal" fill="#F44336" name="Chưa thu" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
