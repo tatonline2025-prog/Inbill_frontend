@@ -20,6 +20,8 @@ export interface InvoiceInfo {
   collectionStatus: "collected" | "not_collected";
   printStatus: "printed" | "not_printed";
 
+  province: string;
+
   // 👥 Người liên quan
   assignedTo: {
     _id: string;

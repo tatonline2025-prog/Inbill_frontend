@@ -30,6 +30,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import toast from "react-hot-toast";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
+import UploadInvoiceWithProvinceDialog from "@/components/UploadInvoiceWithProvinceDialog";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -48,11 +49,52 @@ export default function InvoicesPage() {
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
+  const [selectedProvince, setSelectedProvince] = useState("all");
   const [searchInvoiceNumber, setSearchInvoiceNumber] = useState("");
+
+  const [openUploadWithProvince, setOpenUploadWithProvince] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   const [totalAmountInfo, setTotalAmountInfo] = useState(0);
 
   const [openAddDialog, setOpenAddDialog] = useState(false);
+
+  const provinces = [
+    "TP Hà Nội",
+    "TP Huế",
+    "Quảng Ninh",
+    "Cao Bằng",
+    "Lạng Sơn",
+    "Lai Châu",
+    "Điện Biên",
+    "Sơn La",
+    "Thanh Hóa",
+    "Nghệ An",
+    "Hà Tĩnh",
+    "Tuyên Quang",
+    "Lào Cai",
+    "Thái Nguyên",
+    "Phú Thọ",
+    "Bắc Ninh",
+    "Hưng Yên",
+    "TP Hải Phòng",
+    "Ninh Bình",
+    "Quảng Trị",
+    "TP Đà Nẵng",
+    "Quảng Ngãi",
+    "Gia Lai",
+    "Khánh Hòa",
+    "Lâm Đồng",
+    "Đắk Lắk",
+    "TP Hồ Chí Minh",
+    "Đồng Nai",
+    "Tây Ninh",
+    "TP Cần Thơ",
+    "Vĩnh Long",
+    "Đồng Tháp",
+    "Cà Mau",
+    "An Giang",
+  ];
 
   // --- THÊM MỚI: State để quản lý việc sắp xếp ---
   const [sortConfig, setSortConfig] = useState<{
@@ -166,8 +208,12 @@ export default function InvoicesPage() {
         ? true
         : inv.invoiceNumber.toLowerCase().includes(searchInvoiceNumber.trim().toLowerCase());
 
-    return matchPrint && matchCollection && matchAssignedUser && matchDate && matchSearch;
+    const matchProvince = selectedProvince === "all" ? true : inv.province === selectedProvince;
+
+    return matchPrint && matchCollection && matchAssignedUser && matchDate && matchSearch && matchProvince;
   });
+
+  console.log(filteredInvoices);
 
   // --- THÊM MỚI: Logic sắp xếp dữ liệu ---
   // Sử dụng useMemo để chỉ sắp xếp lại khi dữ liệu hoặc cấu hình sort thay đổi
@@ -256,10 +302,17 @@ export default function InvoicesPage() {
   // Trong useEffect tính tổng
   useEffect(() => {
     const total = filteredInvoices.reduce((sum, inv) => {
-      const prev = parseFloat(inv.previousAmount?.toString().replace(/[^\d.-]/g, "") ?? "0");
-      const curr = parseFloat(inv.currentAmount?.toString().replace(/[^\d.-]/g, "") ?? "0");
+      const toNumber = (val: string | number | null | undefined) => {
+        if (!val) return 0;
+        const num = parseFloat(val.toString().replace(/[^\d.-]/g, ""));
+        return isNaN(num) ? 0 : num;
+      };
 
-      return sum + prev + curr;
+      const prev = toNumber(inv.previousAmount);
+      const curr = toNumber(inv.currentAmount);
+      const totalAmt = toNumber(inv.totalAmount);
+
+      return sum + (prev + curr > 0 ? prev + curr : totalAmt);
     }, 0);
 
     setTotalAmountInfo(total);
@@ -447,6 +500,23 @@ export default function InvoicesPage() {
           Thêm mới hoá đơn
         </Button>
 
+        <Button
+          variant="contained"
+          color="secondary"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenUploadWithProvince(true)}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            minWidth: { xs: "120px", sm: "160px" },
+            marginBottom: 2,
+            marginRight: 2,
+          }}
+        >
+          Upload Excel + Tỉnh
+        </Button>
+
         <TextField
           label="Tìm theo Mã khách hàng"
           size="small"
@@ -515,6 +585,7 @@ export default function InvoicesPage() {
               <MenuItem value="notCollected">Chưa thu</MenuItem>
             </Select>
           </FormControl>
+
           <FormControl
             size="small"
             sx={{
@@ -536,6 +607,32 @@ export default function InvoicesPage() {
               {userData.map((user) => (
                 <MenuItem key={user._id} value={user._id}>
                   {user.fullName || user.email}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 140, sm: 160 },
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            }}
+          >
+            <InputLabel id="province-label">Tỉnh</InputLabel>
+            <Select
+              labelId="province-label"
+              value={selectedProvince}
+              label="Tỉnh"
+              onChange={(e) => {
+                setSelectedProvince(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              {provinces.map((province) => (
+                <MenuItem key={province} value={province}>
+                  {province}
                 </MenuItem>
               ))}
             </Select>
@@ -806,6 +903,12 @@ export default function InvoicesPage() {
           setInvoices(res.data);
         }}
         assignedUsers={userData}
+      />
+
+      <UploadInvoiceWithProvinceDialog
+        open={openUploadWithProvince}
+        onClose={() => setOpenUploadWithProvince(false)}
+        onSuccess={(data) => setInvoices(data)}
       />
     </AdminRoute>
   );

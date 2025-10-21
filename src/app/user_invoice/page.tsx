@@ -246,10 +246,17 @@ export default function InvoicesPage() {
   // Tính toán tổng số tiền theo bộ lọc
   useEffect(() => {
     const total = filteredInvoices.reduce((sum, inv) => {
-      const prev = parseFloat(inv.previousAmount?.toString().replace(/[^\d.-]/g, "") ?? "0");
-      const curr = parseFloat(inv.currentAmount?.toString().replace(/[^\d.-]/g, "") ?? "0");
+      const toNumber = (val: string | number | null | undefined) => {
+        if (!val) return 0;
+        const num = parseFloat(val.toString().replace(/[^\d.-]/g, ""));
+        return isNaN(num) ? 0 : num;
+      };
 
-      return sum + prev + curr;
+      const prev = toNumber(inv.previousAmount);
+      const curr = toNumber(inv.currentAmount);
+      const totalAmt = toNumber(inv.totalAmount);
+
+      return sum + (prev + curr > 0 ? prev + curr : totalAmt);
     }, 0);
 
     setTotalAmountInfo(total);
