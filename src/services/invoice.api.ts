@@ -1,8 +1,30 @@
-import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
+import { FetchInvoiceResponse, IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 import axios from "axios";
 
-export const fetchallInvoice = async () => {
-  const res = await axios.get<InvoiceInfo[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`);
+export const fetchallInvoice = async (
+  currentPage: number,
+  invoicesPerPage: number,
+  printStatus?: "printed" | "not_printed",
+  collectionStatus?: "collected" | "not_collected",
+  assignedUserId?: string, // 👈 Thêm dòng này
+  province?: string,
+  searchInvoiceNumber?: string,
+  userprovince?: string
+) => {
+  // console.log(currentPage, invoicesPerPage, printStatus, collectionStatus, assignedUserId, province, userprovince);
+
+  const res = await axios.get<FetchInvoiceResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`, {
+    params: {
+      currentPage,
+      invoicesPerPage,
+      printStatus,
+      collectionStatus,
+      assignedUserId,
+      province,
+      searchInvoiceNumber,
+      userprovince,
+    },
+  });
 
   return res;
 };

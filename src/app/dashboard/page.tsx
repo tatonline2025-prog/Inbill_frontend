@@ -39,7 +39,7 @@ export default function Dashboard() {
       try {
         const res = await invoiceSummary();
 
-        console.log(res.data);
+        // console.log(res.data);
         setSummaryData(res.data);
       } catch (err) {
         console.error("Lỗi khi tải hóa đơn:", err);

@@ -1,10 +1,8 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { deleteInvoice_API, fetchInvoiceByUserMonth, handleToggle_API } from "@/services/invoice.api";
+import { ChangeEvent, useEffect, useState } from "react";
+import { deleteInvoice_API, fetchallInvoice, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"; // --- THÊM MỚI ---
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"; // --- THÊM MỚI ---
 
 import {
   Box,
@@ -42,11 +40,17 @@ export default function InvoicesPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [invoicesPerPage, setInvoicesPerPage] = useState(15);
+  const [totalPages, setTotalPages] = useState(1);
+  const [assignedCustomerCodes, setAssignedCustomerCodes] = useState(1);
+  const [unassignedCustomerCodes, setUnAssignedCustomerCodes] = useState(1);
   const [selectedDate, setSelectedDate] = useState("");
 
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
+  const [selectedProvince, setSelectedProvince] = useState("all");
   const [searchInvoiceNumber, setSearchInvoiceNumber] = useState("");
+
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
 
   const [totalAmountInfo, setTotalAmountInfo] = useState(0);
 
@@ -54,15 +58,6 @@ export default function InvoicesPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
-
-  // --- THÊM MỚI: State để quản lý việc sắp xếp ---
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof InvoiceInfo | null;
-    direction: "ascending" | "descending" | null;
-  }>({
-    key: null,
-    direction: null,
-  });
 
   // --- State quản lý menu hành động ---
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -80,32 +75,67 @@ export default function InvoicesPage() {
 
   const { isAuthenticated, user } = useAuth();
 
-  // --- Gọi API khi component mount ---
-  const fetchInvoices = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = localStorage.getItem("token");
-      if (!token) setError("Chưa đăng nhập");
-
-      const res = await fetchInvoiceByUserMonth(token as string);
-
-      const data = res.data; // nếu backend trả trực tiếp mảng
-      // const data = res.data.result; // nếu backend trả { result: [...] }
-
-      setInvoices(data);
-    } catch (err) {
-      console.error("Lỗi khi tải hóa đơn:", err);
-      setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // console.log(user);
 
   useEffect(() => {
+    if (!user) return;
+
+    const fetchInvoices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetchallInvoice(
+          currentPage,
+          invoicesPerPage,
+          filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
+          filterCollection !== "all"
+            ? filterCollection === "notCollected"
+              ? "not_collected"
+              : "collected"
+            : undefined,
+          user?._id,
+          selectedProvince !== "all" ? selectedProvince : undefined,
+          searchInvoiceNumber || undefined,
+          user.province
+        );
+
+        console.log(res);
+
+        setTotalPages(res.data.pagination.totalPages);
+        setAssignedCustomerCodes(res.data.summary.totalInvoices);
+        setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
+        setTotalAmountInfo(res.data.summary.totalAmount);
+        const data = res.data.data;
+        setInvoices(data);
+      } catch (err) {
+        console.error("Lỗi khi tải hóa đơn:", err);
+        setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchInvoices();
-  }, []);
+  }, [currentPage, invoicesPerPage, filterPrint, filterCollection, user, selectedProvince, searchInvoiceNumber]);
+
+  const reloadInvoices = async () => {
+    if (!user) return;
+
+    const res = await fetchallInvoice(
+      currentPage,
+      invoicesPerPage,
+      filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
+      filterCollection !== "all" ? (filterCollection === "notCollected" ? "not_collected" : "collected") : undefined,
+      user?._id,
+      selectedProvince !== "all" ? selectedProvince : undefined
+    );
+
+    setInvoices(res.data.data);
+    setAssignedCustomerCodes(res.data.summary.totalInvoices);
+    setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
+    setTotalAmountInfo(res.data.summary.totalAmount);
+    setTotalPages(res.data.pagination.totalPages);
+  };
 
   // Lấy kỳ hiện tại
   const now = new Date();
@@ -133,134 +163,6 @@ export default function InvoicesPage() {
     // Gửi ngày dưới dạng query param
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelPrinted?date=${selectedDate}`;
   };
-
-  // --- Lọc hóa đơn theo trạng thái ---
-  const filteredInvoices = invoices.filter((inv) => {
-    const matchPrint =
-      filterPrint === "all"
-        ? true
-        : filterPrint === "printed"
-        ? inv.printStatus === "printed"
-        : inv.printStatus !== "printed";
-
-    const matchCollection =
-      filterCollection === "all"
-        ? true
-        : filterCollection === "collected"
-        ? inv.collectionStatus === "collected"
-        : inv.collectionStatus !== "collected";
-
-    const matchDate =
-      selectedDate === "" || filterCollection !== "collected"
-        ? true
-        : inv.collectionDate && new Date(inv.collectionDate).toLocaleDateString("en-CA") === selectedDate;
-
-    const matchSearch =
-      searchInvoiceNumber.trim() === ""
-        ? true
-        : inv.invoiceNumber.toLowerCase().includes(searchInvoiceNumber.trim().toLowerCase());
-
-    return matchPrint && matchCollection && matchDate && matchSearch;
-  });
-
-  // --- THÊM MỚI: Logic sắp xếp dữ liệu ---
-  // Sử dụng useMemo để chỉ sắp xếp lại khi dữ liệu hoặc cấu hình sort thay đổi
-  const sortedInvoices = useMemo(() => {
-    const sortableInvoices = [...filteredInvoices];
-
-    // 🔹 Bước 1: Ưu tiên hiển thị các hóa đơn có tổng tiền > 0 lên trên
-    sortableInvoices.sort((a, b) => {
-      const totalA =
-        (parseFloat(a.currentAmount?.toString().replace(/[^\d.-]/g, "")) || 0) +
-        (parseFloat(a.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0);
-
-      const totalB =
-        (parseFloat(b.currentAmount?.toString().replace(/[^\d.-]/g, "")) || 0) +
-        (parseFloat(b.previousAmount?.toString().replace(/[^\d.-]/g, "")) || 0);
-
-      // Nếu A có nợ mà B không có nợ → A lên trước
-      if (totalA > 0 && totalB <= 0) return -1;
-      if (totalA <= 0 && totalB > 0) return 1;
-      return 0; // Giữ nguyên thứ tự cho các nhóm tương tự
-    });
-
-    // 🔹 Bước 2: Áp dụng sắp xếp theo cột người dùng chọn (nếu có)
-    if (sortConfig.key !== null && sortConfig.direction !== null) {
-      sortableInvoices.sort((a, b) => {
-        const aValue = a[sortConfig.key!] as string | number | null | undefined;
-        const bValue = b[sortConfig.key!] as string | number | null | undefined;
-
-        const isEmptyA = aValue === null || aValue === undefined || aValue === "" || aValue === "Không nợ cước";
-        const isEmptyB = bValue === null || bValue === undefined || bValue === "" || bValue === "Không nợ cước";
-
-        if (isEmptyA && !isEmptyB) return 1;
-        if (!isEmptyA && isEmptyB) return -1;
-
-        let comparison = 0;
-        if (sortConfig.key === "currentAmount") {
-          const numA = parseFloat(String(aValue).replace(/[^\d.-]/g, ""));
-          const numB = parseFloat(String(bValue).replace(/[^\d.-]/g, ""));
-          comparison = numA > numB ? 1 : numA < numB ? -1 : 0;
-        } else {
-          const strA = String(aValue ?? "").toLowerCase();
-          const strB = String(bValue ?? "").toLowerCase();
-          if (strA > strB) comparison = 1;
-          else if (strA < strB) comparison = -1;
-        }
-
-        return sortConfig.direction === "ascending" ? comparison : -comparison;
-      });
-    }
-
-    return sortableInvoices;
-  }, [filteredInvoices, sortConfig]);
-
-  // --- THÊM MỚI: Hàm xử lý khi click vào header cột ---
-  const handleSort = (key: keyof InvoiceInfo) => {
-    let direction: "ascending" | "descending" | null = "descending"; // Mặc định lần đầu là cao -> thấp
-
-    if (sortConfig.key === key) {
-      if (sortConfig.direction === "descending") {
-        direction = "ascending"; // Chuyển sang thấp -> cao
-      } else if (sortConfig.direction === "ascending") {
-        direction = null; // Trở về bình thường
-      }
-    }
-
-    setSortConfig({ key: direction === null ? null : key, direction });
-    setCurrentPage(1); // Quay về trang 1 khi sắp xếp
-  };
-
-  // --- Tính toán dữ liệu trang hiện tại ---
-  // --- SỬA ĐỔI: Sử dụng mảng đã được sắp xếp `sortedInvoices` ---
-  const currentInvoices = useMemo(() => {
-    const indexOfLastInvoice = currentPage * invoicesPerPage;
-    const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
-    return sortedInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
-  }, [sortedInvoices, currentPage, invoicesPerPage]);
-
-  // --- Tổng số trang sau khi lọc ---
-  // --- SỬA ĐỔI: Dùng sortedInvoices (hoặc filteredInvoices cũng được vì length như nhau) ---
-  const totalPages = Math.ceil(sortedInvoices.length / invoicesPerPage);
-
-  // Tính toán tổng số tiền theo bộ lọc
-  useEffect(() => {
-    const total = filteredInvoices.reduce((sum, inv) => {
-      const toNumber = (val: string | number | null | undefined) => {
-        if (!val) return 0;
-        const num = parseFloat(val.toString().replace(/[^\d.-]/g, ""));
-        return isNaN(num) ? 0 : num;
-      };
-
-      const prev = toNumber(inv.previousAmount);
-      const curr = toNumber(inv.currentAmount);
-      const totalAmt = toNumber(inv.totalAmount);
-
-      return sum + (prev + curr > 0 ? prev + curr : totalAmt);
-    }, 0);
-
-    setTotalAmountInfo(total);
-  }, [filteredInvoices]);
 
   // --- Hàm đổi trang ---
   const handlePageChange = (page: number) => {
@@ -345,23 +247,11 @@ export default function InvoicesPage() {
 
   // --- Trạng thái hiển thị ---
   if (!isAuthenticated) <p style={{ padding: "2rem" }}>Vui lòng đăng nhập...</p>;
-  if (loading) return <p style={{ padding: "2rem" }}>Đang tải dữ liệu hóa đơn...</p>;
   if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
-
-  // --- THÊM MỚI: Hàm render icon sắp xếp ---
-  const getSortIcon = (key: keyof InvoiceInfo) => {
-    if (sortConfig.key !== key || sortConfig.direction === null) {
-      return null;
-    }
-    return sortConfig.direction === "ascending" ? (
-      <ArrowUpwardIcon sx={{ fontSize: "1rem", ml: 0.5 }} />
-    ) : (
-      <ArrowDownwardIcon sx={{ fontSize: "1rem", ml: 0.5 }} />
-    );
-  };
 
   // --- SỬA ĐỔI: Đổi cấu trúc tiêu đề bảng để dễ dàng thêm onClick ---
   const tableHeaders: { key: keyof InvoiceInfo | null; label: string; sortable: boolean }[] = [
+    { key: null, label: "✓", sortable: false },
     { key: null, label: "STT", sortable: false },
     { key: "invoiceNumber", label: "Mã Khách Hàng", sortable: true },
     { key: "customerName", label: "Tên Khách Hàng", sortable: true },
@@ -503,6 +393,45 @@ export default function InvoicesPage() {
           Thêm mới hoá đơn
         </Button>
 
+        <Button
+          variant="contained"
+          color="error"
+          disabled={selectedInvoices.length === 0}
+          onClick={async () => {
+            if (selectedInvoices.length === 0) {
+              toast.error("Vui lòng chọn ít nhất một hoá đơn để xoá!");
+              return;
+            }
+
+            const confirmDelete = window.confirm(
+              `Bạn có chắc muốn xoá ${selectedInvoices.length} hoá đơn đã chọn không?`
+            );
+            if (!confirmDelete) return;
+
+            try {
+              // Gọi API xoá nhiều
+              await Promise.all(selectedInvoices.map((id) => deleteInvoice_API(id)));
+
+              toast.success("Đã xoá thành công các hoá đơn đã chọn!");
+              setSelectedInvoices([]); // Xóa xong thì bỏ chọn hết
+              await reloadInvoices(); // Cập nhật lại danh sách
+            } catch (error) {
+              console.error(error);
+              toast.error("Lỗi khi xoá hoá đơn!");
+            }
+          }}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+            minWidth: { xs: "120px", sm: "160px" },
+            marginBottom: 2,
+            marginRight: 2,
+          }}
+        >
+          Xoá các hoá đơn đã chọn
+        </Button>
+
         <TextField
           label="Tìm theo Mã khách hàng"
           size="small"
@@ -594,7 +523,16 @@ export default function InvoicesPage() {
               Số mã khách hàng đang phụ trách
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
-              {filteredInvoices.length}
+              {assignedCustomerCodes}
+            </Typography>
+          </Box>
+
+          <Box sx={{ minWidth: 200 }}>
+            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
+              Số mã khách hàng chưa được phụ trách
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
+              {unassignedCustomerCodes}
             </Typography>
           </Box>
 
@@ -609,196 +547,229 @@ export default function InvoicesPage() {
         </Box>
 
         {/* --- Bảng dữ liệu --- */}
-        {invoices.length === 0 ? (
-          <Typography>Không có hóa đơn nào được tìm thấy.</Typography>
-        ) : (
-          <>
-            {/* Thêm scroll ngang */}
-            <Box sx={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  minWidth: 900,
-                  fontSize: "0.875rem", // default ~14px
-                }}
-              >
-                <thead>
-                  <tr style={{ backgroundColor: "#f9fafb" }}>
-                    {tableHeaders.map((header) => (
-                      <th
-                        key={header.label}
-                        style={{
-                          border: "1px solid #e0e0e0",
-                          padding: "8px 6px",
-                          textAlign: "left",
-                          backgroundColor: "#f5f5f5",
-                          fontSize: "0.75rem",
-                          cursor: header.sortable ? "pointer" : "default",
-                          userSelect: "none", // Tránh bôi đen text khi click
-                        }}
-                        onClick={header.sortable ? () => handleSort(header.key!) : undefined}
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          {header.label}
-                          {header.sortable && getSortIcon(header.key!)}
-                        </Box>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentInvoices.map((invoice, index) => (
-                    <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
-                      <td
-                        style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem", textAlign: "center" }}
-                      >
-                        {index + 1 + (currentPage - 1) * invoicesPerPage}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.invoiceNumber}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.customerName}
-                      </td>
-
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.customerAddress}
-                      </td>
-
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.currentAmount}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.previousAmount}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.totalAmount}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.customerPhone}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>{invoice.note}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.assignedTo?.fullName}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
-                        <Switch
-                          checked={invoice.printStatus === "printed"}
-                          onChange={() => handleToggle(invoice._id, "printStatus")}
-                          color="primary"
-                          sx={{ transform: "scale(0.8)" }}
-                        />
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
-                        <Switch
-                          checked={invoice.collectionStatus === "collected"}
-                          onChange={() => handleToggle(invoice._id, "collectionStatus")}
-                          color="success"
-                          sx={{ transform: "scale(0.8)" }}
-                        />
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : "---"}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                        {invoice.billing_period}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
-                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, invoice)}>
-                          <MoreVertIcon fontSize="small" />
-                        </IconButton>
-                      </td>
+        <Box sx={{ overflowX: "auto" }}>
+          {loading ? (
+            <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>
+          ) : invoices.length === 0 ? (
+            <Typography sx={{ p: 4, textAlign: "center" }}>Không có hóa đơn nào được tìm thấy.</Typography>
+          ) : (
+            <>
+              {/* Thêm scroll ngang */}
+              <Box sx={{ overflowX: "auto" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    minWidth: 900,
+                    fontSize: "0.875rem", // default ~14px
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#f9fafb" }}>
+                      {tableHeaders.map((header, index) => (
+                        <th
+                          key={header.label}
+                          style={{
+                            border: "1px solid #e0e0e0",
+                            padding: "8px 6px",
+                            textAlign: "left",
+                            backgroundColor: "#f5f5f5",
+                            fontSize: "0.75rem",
+                            cursor: header.sortable ? "pointer" : "default",
+                            userSelect: "none", // Tránh bôi đen text khi click
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            {index === 0 ? ( // ✅ Nếu là cột đầu tiên thì hiển thị checkbox chọn tất cả
+                              <input
+                                type="checkbox"
+                                checked={selectedInvoices.length === invoices.length && invoices.length > 0}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedInvoices(invoices.map((inv) => inv._id));
+                                  } else {
+                                    setSelectedInvoices([]);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              header.label // Còn lại thì hiển thị tên cột
+                            )}
+                          </Box>
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Box>
+                  </thead>
+                  <tbody>
+                    {invoices.map((invoice, index) => (
+                      <tr key={invoice._id} style={{ backgroundColor: "#fff" }}>
+                        <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedInvoices.includes(invoice._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedInvoices((prev) => [...prev, invoice._id]);
+                              } else {
+                                setSelectedInvoices((prev) => prev.filter((id) => id !== invoice._id));
+                              }
+                            }}
+                          />
+                        </td>
+                        <td
+                          style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem", textAlign: "center" }}
+                        >
+                          {index + 1 + (currentPage - 1) * invoicesPerPage}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.invoiceNumber}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.customerName}
+                        </td>
 
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-            >
-              <MenuItem
-                onClick={() => {
-                  if (!selectedInvoice) return;
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.customerAddress}
+                        </td>
 
-                  // Mở form chỉnh sửa hoá đơn
-                  // Giả sử bạn có state để show modal hoặc navigate tới trang chỉnh sửa
-                  setEditingInvoice(selectedInvoice); // ví dụ: state để mở modal
-                  setEditModalOpen(true); // mở modal chỉnh sửa
-                  handleMenuClose();
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.currentAmount}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.previousAmount}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.totalAmount}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.customerPhone}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.note}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.assignedTo?.fullName}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                          <Switch
+                            checked={invoice.printStatus === "printed"}
+                            onChange={() => handleToggle(invoice._id, "printStatus")}
+                            color="primary"
+                            sx={{ transform: "scale(0.8)" }}
+                          />
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                          <Switch
+                            checked={invoice.collectionStatus === "collected"}
+                            onChange={() => handleToggle(invoice._id, "collectionStatus")}
+                            color="success"
+                            sx={{ transform: "scale(0.8)" }}
+                          />
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.collectionDate
+                            ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN")
+                            : "---"}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                          {invoice.billing_period}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, invoice)}>
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Box>
+
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
                 }}
-                sx={{ color: "blue", fontSize: 13 }}
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
               >
-                Chỉnh sửa hoá đơn
-              </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    if (!selectedInvoice) return;
 
-              <MenuItem
-                onClick={async () => {
-                  if (!selectedInvoice) return;
-
-                  // ✅ Hỏi xác nhận trước khi xoá
-                  const confirmDelete = window.confirm(
-                    `Bạn có chắc muốn xoá hoá đơn ${selectedInvoice.invoiceNumber}?`
-                  );
-                  if (!confirmDelete) return;
-
-                  try {
-                    const res = await deleteInvoice_API(selectedInvoice._id);
-
-                    if (res!.status === 200 || res!.status === 204) {
-                      toast.success("Xoá hoá đơn thành công!");
-                      fetchInvoices(); // 🔁 Load lại danh sách
-                    } else {
-                      toast.error("Không thể xoá hoá đơn, vui lòng thử lại.");
-                    }
-                  } catch (error) {
-                    console.error("Lỗi khi xoá hoá đơn:", error);
-                    alert("Đã xảy ra lỗi khi xoá hoá đơn.");
-                  } finally {
+                    // Mở form chỉnh sửa hoá đơn
+                    // Giả sử bạn có state để show modal hoặc navigate tới trang chỉnh sửa
+                    setEditingInvoice(selectedInvoice); // ví dụ: state để mở modal
+                    setEditModalOpen(true); // mở modal chỉnh sửa
                     handleMenuClose();
-                  }
-                }}
-                sx={{ color: "red", fontSize: 13 }}
-              >
-                Xoá hoá đơn
-              </MenuItem>
-            </Menu>
+                  }}
+                  sx={{ color: "blue", fontSize: 13 }}
+                >
+                  Chỉnh sửa hoá đơn
+                </MenuItem>
 
-            {/* --- Phân trang --- */}
-            <Box
-              sx={{
-                mt: 2,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Pagination
-                count={totalPages}
-                page={currentPage}
-                onChange={(event, value) => handlePageChange(value)}
-                color="primary"
-                shape="rounded"
-                showFirstButton
-                showLastButton
-              />
-            </Box>
-          </>
-        )}
+                <MenuItem
+                  onClick={async () => {
+                    if (!selectedInvoice) return;
+
+                    // ✅ Hỏi xác nhận trước khi xoá
+                    const confirmDelete = window.confirm(
+                      `Bạn có chắc muốn xoá hoá đơn ${selectedInvoice.invoiceNumber}?`
+                    );
+                    if (!confirmDelete) return;
+
+                    try {
+                      const res = await deleteInvoice_API(selectedInvoice._id);
+
+                      if (res!.status === 200 || res!.status === 204) {
+                        toast.success("Xoá hoá đơn thành công!");
+                        reloadInvoices(); // 🔁 Load lại danh sách
+                      } else {
+                        toast.error("Không thể xoá hoá đơn, vui lòng thử lại.");
+                      }
+                    } catch (error) {
+                      console.error("Lỗi khi xoá hoá đơn:", error);
+                      alert("Đã xảy ra lỗi khi xoá hoá đơn.");
+                    } finally {
+                      handleMenuClose();
+                    }
+                  }}
+                  sx={{ color: "red", fontSize: 13 }}
+                >
+                  Xoá hoá đơn
+                </MenuItem>
+              </Menu>
+
+              {/* --- Phân trang --- */}
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Pagination
+                  count={totalPages}
+                  page={currentPage}
+                  onChange={(event, value) => handlePageChange(value)}
+                  color="primary"
+                  shape="rounded"
+                  showFirstButton
+                  showLastButton
+                />
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
 
       <EditInvoiceDialog
@@ -806,7 +777,7 @@ export default function InvoicesPage() {
         onClose={() => setEditModalOpen(false)}
         invoice={editingInvoice}
         onSuccess={async () => {
-          fetchInvoices();
+          reloadInvoices();
         }}
         assignedUsers={
           user
@@ -823,7 +794,7 @@ export default function InvoicesPage() {
         onSuccess={() => {
           // Gọi lại API load danh sách sau khi thêm mới thành công
           (() => {
-            fetchInvoices();
+            reloadInvoices();
             toast.success("Thêm hoá đơn thành công!");
           })();
         }}

@@ -18,6 +18,43 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [formData, setFormData] = useState<Partial<IUser>>();
 
+  const provinces = [
+    "TP Hà Nội",
+    "TP Huế",
+    "Quảng Ninh",
+    "Cao Bằng",
+    "Lạng Sơn",
+    "Lai Châu",
+    "Điện Biên",
+    "Sơn La",
+    "Thanh Hóa",
+    "Nghệ An",
+    "Hà Tĩnh",
+    "Tuyên Quang",
+    "Lào Cai",
+    "Thái Nguyên",
+    "Phú Thọ",
+    "Bắc Ninh",
+    "Hưng Yên",
+    "TP Hải Phòng",
+    "Ninh Bình",
+    "Quảng Trị",
+    "TP Đà Nẵng",
+    "Quảng Ngãi",
+    "Gia Lai",
+    "Khánh Hòa",
+    "Lâm Đồng",
+    "Đắk Lắk",
+    "TP Hồ Chí Minh",
+    "Đồng Nai",
+    "Tây Ninh",
+    "TP Cần Thơ",
+    "Vĩnh Long",
+    "Đồng Tháp",
+    "Cà Mau",
+    "An Giang",
+  ];
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -31,7 +68,7 @@ export default function UsersPage() {
     const fetchInvoices = async () => {
       try {
         const res = await invoiceSummary();
-        console.log(res);
+        // console.log(res);
 
         setSummaryData(res.data);
       } catch (err) {
@@ -54,7 +91,7 @@ export default function UsersPage() {
       };
     });
 
-  console.log(mergedUsers);
+  // console.log(mergedUsers);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string) => {
     if (e.target.files && e.target.files[0]) {
@@ -328,13 +365,20 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Tỉnh</label>
-                  <input
-                    type="text"
-                    value={formData?.province}
+                  <select
+                    value={formData?.province || ""}
                     onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
-                  />
+                  >
+                    <option value="">-- Chọn tỉnh --</option>
+                    {provinces.map((province) => (
+                      <option key={province} value={province}>
+                        {province}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
                   <input

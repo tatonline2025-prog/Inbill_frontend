@@ -66,3 +66,19 @@ export interface IInvoiceSummaryByUser {
   collectedTotal?: number | null;
   notCollectedTotal?: number | null;
 }
+
+export interface FetchInvoiceResponse {
+  success: boolean;
+  data: InvoiceInfo[];
+  summary: {
+    totalInvoices: number;
+    totalAmount: number;
+    unassignedInvoices: number;
+  };
+  pagination: {
+    total: number;
+    currentPage: number;
+    invoicesPerPage: number;
+    totalPages: number;
+  };
+}
