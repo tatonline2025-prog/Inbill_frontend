@@ -1,11 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { Box, Button, Dialog, FormControl, InputLabel, MenuItem, Select, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Typography,
+} from "@mui/material";
 import toast from "react-hot-toast";
 import { fetchallInvoice } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { excelUpProvince } from "@/services/excel.api";
+import Spinner from "./SpinnerLoading";
 
 interface Props {
   open: boolean;
@@ -31,7 +42,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
       console.log(res);
 
       if (res?.status === 200) {
-        toast.success("Upload file tổng thành công! 🎉");
+        toast.success("Upload file tổng thành công!");
         onClose();
       } else {
         toast.error("Upload thất bại!");
@@ -82,43 +93,57 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
   ];
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <Box sx={{ p: 3, minWidth: 300 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Upload Excel với tỉnh
-        </Typography>
+    <>
+      <Dialog open={open} onClose={onClose}>
+        <Box sx={{ p: 3, minWidth: 300 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Upload Excel với tỉnh
+          </Typography>
 
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="province-label">Chọn tỉnh</InputLabel>
-          <Select
-            labelId="province-label"
-            value={selectedProvince}
-            label="Chọn tỉnh"
-            onChange={(e) => setSelectedProvince(e.target.value)}
-          >
-            {provinces.map((prov) => (
-              <MenuItem key={prov} value={prov}>
-                {prov}
-              </MenuItem>
-            ))}
-            {/* Add các tỉnh khác */}
-          </Select>
-        </FormControl>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="province-label">Chọn tỉnh</InputLabel>
+            <Select
+              labelId="province-label"
+              value={selectedProvince}
+              label="Chọn tỉnh"
+              onChange={(e) => setSelectedProvince(e.target.value)}
+            >
+              {provinces.map((prov) => (
+                <MenuItem key={prov} value={prov}>
+                  {prov}
+                </MenuItem>
+              ))}
+              {/* Add các tỉnh khác */}
+            </Select>
+          </FormControl>
 
-        <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
-          Chọn file Excel
-          <input type="file" accept=".xls,.xlsx" hidden onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)} />
-        </Button>
-        {uploadFile && <Typography sx={{ mb: 2 }}>{uploadFile.name}</Typography>}
-
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-          <Button onClick={onClose}>Hủy</Button>
-          <Button variant="contained" disabled={!uploadFile || !selectedProvince || loading} onClick={handleUpload}>
-            {loading ? "Đang upload..." : "Upload"}
+          <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
+            Chọn file Excel
+            <input
+              type="file"
+              accept=".xls,.xlsx"
+              hidden
+              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+            />
           </Button>
+          {uploadFile && <Typography sx={{ mb: 2 }}>{uploadFile.name}</Typography>}
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+            <Button onClick={onClose} disabled={loading}>
+              Hủy
+            </Button>
+            <Button
+              variant="contained"
+              disabled={!uploadFile || !selectedProvince || loading}
+              onClick={handleUpload}
+              startIcon={loading ? <Spinner size={20} /> : null}
+            >
+              {loading ? "Đang upload..." : "Upload"}
+            </Button>
+          </Box>
         </Box>
-      </Box>
-    </Dialog>
+      </Dialog>
+    </>
   );
 };
 
