@@ -14,14 +14,18 @@ import {
   YAxis,
   Bar,
 } from "recharts";
-import { fetchInvoiceByUser } from "@/services/invoice.api";
-import { InvoiceInfo } from "@/types/invoice";
+import { fetchInvoiceByUser, invoiceSummary } from "@/services/invoice.api";
+import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
   // ===================== STATE =====================
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+  const [summaryData, setSummaryData] = useState<IInvoiceSummaryByUser[]>([]);
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [isMobile, setIsMobile] = useState(false);
+
+  const { user } = useAuth();
 
   // ===================== EFFECTS =====================
   // Xác định kích thước màn hình
@@ -36,89 +40,69 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchInvoices = async () => {
+      if (!user) return;
+
       try {
-        const token = localStorage.getItem("token");
+        const res = await invoiceSummary(user._id);
 
-        const res = await fetchInvoiceByUser(token as string);
-
-        const data = res.data; // nếu backend trả trực tiếp mảng
-        // const data = res.data.result; // nếu backend trả { result: [...] }
-
-        setInvoices(data);
+        // console.log(res.data);
+        setSummaryData(res.data);
       } catch (err) {
         console.error("Lỗi khi tải hóa đơn:", err);
       }
     };
-
     fetchInvoices();
-  }, []);
+  }, [user]);
 
   // ===================== FILTER =====================
   const filteredInvoices = useMemo(() => {
-    return invoices.filter((inv) => {
+    return summaryData.filter((inv) => {
       const matchPeriod = filterPeriod === "all" ? true : inv.billing_period === filterPeriod;
       return matchPeriod;
     });
-  }, [invoices, filterPeriod]);
+  }, [summaryData, filterPeriod]);
 
   // ===================== TÍNH TOÁN SỐ LIỆU =====================
-  const parseAmount = (amount: string | number | null | undefined): number => {
-    if (!amount) return 0;
-    if (typeof amount === "number") return amount;
-    return Number(amount.replace(/\./g, "").replace(/,/g, ""));
-  };
+  const { totalCollected, totalNotCollected, collected, notCollected } = useMemo(() => {
+    const totalCollected = filteredInvoices.reduce((sum, inv) => sum + (inv.collectedTotal || 0), 0);
+    const totalNotCollected = filteredInvoices.reduce((sum, inv) => sum + (inv.notCollectedTotal || 0), 0);
+    const collected = filteredInvoices.reduce((sum, inv) => sum + (inv.collectedCount || 0), 0);
+    const notCollected = filteredInvoices.reduce((sum, inv) => sum + (inv.notCollectedCount || 0), 0);
 
-  const { collected, notCollected, totalCollected, totalNotCollected } = useMemo(() => {
-    const collected = filteredInvoices.filter((inv) => inv.collectionStatus === "collected");
-    const notCollected = filteredInvoices.filter((inv) => inv.collectionStatus === "not_collected");
-
-    const sum = (arr: InvoiceInfo[]) =>
-      arr
-        .map((inv) => parseAmount(inv.totalAmount))
-        .filter((v) => !isNaN(v))
-        .reduce((a, b) => a + b, 0);
-
-    return {
-      collected,
-      notCollected,
-      totalCollected: sum(collected),
-      totalNotCollected: sum(notCollected),
-    };
+    return { totalCollected, totalNotCollected, collected, notCollected };
   }, [filteredInvoices]);
 
   // ===================== DỮ LIỆU BIỂU ĐỒ =====================
   const chartData = [
-    { name: "Đã thu", value: collected.length },
-    { name: "Chưa thu", value: notCollected.length },
+    { name: "Đã thu", value: collected },
+    { name: "Chưa thu", value: notCollected },
   ];
 
   const monthlyData = useMemo(() => {
-    const map = new Map<string, { collected: number; notCollected: number }>();
+    const map = new Map<string, { collectedTotal: number; notCollectedTotal: number }>();
 
-    invoices.forEach((inv) => {
-      if (!inv.billing_period) return;
+    filteredInvoices.forEach((inv) => {
       const key = inv.billing_period;
-      const amount = parseAmount(inv.totalAmount);
-      if (isNaN(amount)) return;
+      if (!key) return;
 
-      if (!map.has(key)) map.set(key, { collected: 0, notCollected: 0 });
+      const collected = inv.collectedTotal || 0;
+      const notCollected = inv.notCollectedTotal || 0;
+
+      if (!map.has(key)) map.set(key, { collectedTotal: 0, notCollectedTotal: 0 });
+
       const item = map.get(key)!;
-      if (inv.collectionStatus === "collected") item.collected += amount;
-      else item.notCollected += amount;
+      item.collectedTotal += collected;
+      item.notCollectedTotal += notCollected;
     });
 
-    const years = Array.from(map.keys()).map((p) => Number(p.split("/")[1]));
-    const targetYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+    // Trả về mảng để dùng hiển thị biểu đồ
+    return Array.from(map.entries()).map(([period, values]) => ({
+      period,
+      ...values,
+    }));
+  }, [filteredInvoices]);
 
-    return Array.from({ length: 12 }, (_, i) => {
-      const month = (i + 1).toString().padStart(2, "0");
-      const key = `${month}/${targetYear}`;
-      const values = map.get(key) || { collected: 0, notCollected: 0 };
-      return { period: key, ...values };
-    });
-  }, [invoices]);
-
-  const billingPeriods = Array.from(new Set(invoices.map((inv) => inv.billing_period).filter(Boolean))).sort();
+  const billingPeriods = Array.from(new Set(summaryData.map((inv) => inv.billing_period).filter(Boolean))).sort();
 
   const COLORS = ["#4CAF50", "#F44336"];
 
@@ -185,8 +169,8 @@ export default function Dashboard() {
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v: number) => v.toLocaleString("vi-VN")} />
                   <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
-                  <Bar dataKey="collected" fill="#4CAF50" name="Đã thu" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="notCollected" fill="#F44336" name="Chưa thu" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="collectedTotal" fill="#4CAF50" name="Đã thu" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="notCollectedTotal" fill="#F44336" name="Chưa thu" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

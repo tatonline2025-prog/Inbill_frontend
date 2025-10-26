@@ -29,8 +29,10 @@ export const fetchallInvoice = async (
   return res;
 };
 
-export const invoiceSummary = async () => {
-  const res = await axios.get<IInvoiceSummaryByUser[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/summary`);
+export const invoiceSummary = async (userId?: string) => {
+  const res = await axios.get<IInvoiceSummaryByUser[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/summary`, {
+    params: { userId },
+  });
 
   return res;
 };

@@ -539,6 +539,7 @@ export default function InvoicesPage() {
                   {user.fullName || user.email}
                 </MenuItem>
               ))}
+              <MenuItem value="no_one">Chưa phụ trách</MenuItem>
             </Select>
           </FormControl>
 
