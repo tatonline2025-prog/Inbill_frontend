@@ -17,6 +17,7 @@ export default function UsersPage() {
 
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [formData, setFormData] = useState<Partial<IUser>>();
+  const [selectedProvince, setSelectedProvince] = useState("");
 
   const provinces = [
     "TP Hà Nội",
@@ -91,6 +92,8 @@ export default function UsersPage() {
       };
     });
 
+  const filteredUsers = selectedProvince ? mergedUsers.filter((u) => u.province === selectedProvince) : mergedUsers;
+
   // console.log(mergedUsers);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string) => {
@@ -131,7 +134,7 @@ export default function UsersPage() {
   };
 
   const totalAdmins = userData.filter((u) => u.role === "admin").length;
-  const totalUsers = userData.filter((u) => u.role === "user").length;
+  const totalUsers = filteredUsers.filter((u) => u.role === "user").length;
 
   const handleEditClick = (user: IUser) => {
     setEditingUser(user);
@@ -259,9 +262,32 @@ export default function UsersPage() {
             {/* --- DANH SÁCH USER --- */}
             <div>
               <h2 className="text-lg font-semibold text-green-600 mb-3">Tài khoản Người dùng (User)</h2>
-              <div className="flex-1 min-w-[250px] bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold shadow-sm">
-                Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalUsers}</span>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 min-w-[250px] bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold shadow-sm">
+                  Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalUsers}</span>
+                </div>
+
+                {/* Dropdown lọc tỉnh */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="provinceFilter" className="text-sm font-medium text-gray-600">
+                    Lọc theo tỉnh:
+                  </label>
+                  <select
+                    id="provinceFilter"
+                    value={selectedProvince}
+                    onChange={(e) => setSelectedProvince(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Tất cả</option>
+                    {Array.from(new Set(mergedUsers.map((u) => u.province))).map((province) => (
+                      <option key={province} value={province}>
+                        {province}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
               <div className="overflow-x-auto border border-green-200 rounded-lg">
                 <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
                   <thead>
@@ -290,48 +316,46 @@ export default function UsersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {mergedUsers
-                      // .filter((user) => user.role === "user")
-                      .map((user) => {
-                        return (
-                          <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
-                              {(user.collectedCount ?? 0) + (user.notCollectedCount ?? 0)}
-                            </td>
-                            <td className="px-6 py-4 text-center space-x-2">
-                              <button
-                                onClick={() => handleEditClick(user)}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
-                              >
-                                Sửa
-                              </button>
-                              <button
-                                onClick={() => handleDeleteUser(user._id)}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
-                              >
-                                Xoá
-                              </button>
-                            </td>
+                    {filteredUsers.map((user) => {
+                      return (
+                        <tr key={user._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
+                            {(user.collectedCount ?? 0) + (user.notCollectedCount ?? 0)}
+                          </td>
+                          <td className="px-6 py-4 text-center space-x-2">
+                            <button
+                              onClick={() => handleEditClick(user)}
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user._id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
+                            >
+                              Xoá
+                            </button>
+                          </td>
 
-                            <td className="px-6 py-4 text-center">
-                              <input
-                                type="file"
-                                id={`fileUpload-${user._id}`}
-                                accept=".xlsx, .xls"
-                                disabled={isLoading}
-                                onChange={(e) => handleFileChange(e, user._id)}
-                                className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
+                          <td className="px-6 py-4 text-center">
+                            <input
+                              type="file"
+                              id={`fileUpload-${user._id}`}
+                              accept=".xlsx, .xls"
+                              disabled={isLoading}
+                              onChange={(e) => handleFileChange(e, user._id)}
+                              className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
