@@ -49,7 +49,7 @@ export default function InvoiceSummary({
           Số mã khách hàng đang phụ trách
         </Typography>
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
-          {assignedCustomerCodes}
+          {assignedCustomerCodes - unassignedCustomerCodes}
         </Typography>
       </Box>
 
