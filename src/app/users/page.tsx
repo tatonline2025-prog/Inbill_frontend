@@ -151,6 +151,7 @@ export default function UsersPage() {
     if (!confirm("Bạn có chắc muốn xoá tài khoản này không?")) return;
     try {
       const token = localStorage.getItem("token");
+      setIsLoading(true);
       await deleteUserByAdmin(userId, token!);
 
       setUserData((prev) => prev.filter((u) => u._id !== userId));
@@ -158,6 +159,8 @@ export default function UsersPage() {
     } catch (err) {
       console.error(err);
       setMessage({ type: "error", text: getErrorMessage(err) });
+    } finally {
+      setIsLoading(false);
     }
   };
 
