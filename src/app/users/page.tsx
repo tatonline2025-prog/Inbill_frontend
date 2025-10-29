@@ -60,6 +60,8 @@ export default function UsersPage() {
     const fetchData = async () => {
       try {
         const res = await fetchallUser();
+        // console.log(res);
+
         setUserData(res.data.user);
       } catch (err) {
         console.error(err);
@@ -144,6 +146,7 @@ export default function UsersPage() {
       province: user.province || "",
       username: user.username || "",
       pass: user.pass || "",
+      phone: user.phone || "",
     });
   };
 
@@ -178,6 +181,7 @@ export default function UsersPage() {
         province: "",
         username: "",
         pass: "",
+        phone: "",
       });
     } catch (err) {
       console.error(err);
@@ -387,6 +391,15 @@ export default function UsersPage() {
                     type="email"
                     value={formData?.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
+                  <input
+                    type="text"
+                    value={formData?.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
                   />
                 </div>

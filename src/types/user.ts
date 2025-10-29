@@ -7,6 +7,7 @@ export interface IUser {
   province: string;
   pass: string;
   role: "admin" | "user";
+  phone: string;
   createdAt: string; // Hoặc Date nếu bạn parse nó
   updatedAt: string; // Hoặc Date
 }
