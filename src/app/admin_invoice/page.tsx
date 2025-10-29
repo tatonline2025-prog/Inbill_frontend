@@ -46,8 +46,8 @@ export default function InvoicesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [invoicesPerPage, setInvoicesPerPage] = useState(15);
   const [totalPages, setTotalPages] = useState(1);
-  const [assignedCustomerCodes, setAssignedCustomerCodes] = useState(1);
-  const [unassignedCustomerCodes, setUnAssignedCustomerCodes] = useState(1);
+  const [assignedCustomerCodes, setAssignedCustomerCodes] = useState(0);
+  const [unassignedCustomerCodes, setUnAssignedCustomerCodes] = useState(0);
 
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
