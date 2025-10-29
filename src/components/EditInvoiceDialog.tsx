@@ -43,6 +43,7 @@ export default function EditInvoiceDialog({
     totalAmount: "",
     note: "",
     assignedTo: "",
+    billing_period: "",
   });
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function EditInvoiceDialog({
         totalAmount: invoice.totalAmount || "",
         note: invoice.note || "",
         assignedTo: invoice.assignedTo?._id || "",
+        billing_period: invoice.billing_period || "",
       });
     }
   }, [invoice]);
@@ -130,6 +132,13 @@ export default function EditInvoiceDialog({
             type="number"
             value={formData.totalAmount}
             onChange={(e) => handleChange("totalAmount", e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Kỳ hoá đơn"
+            value={formData.billing_period}
+            onChange={(e) => handleChange("billing_period", e.target.value)}
+            placeholder="VD: 10/2025"
             fullWidth
           />
           <TextField

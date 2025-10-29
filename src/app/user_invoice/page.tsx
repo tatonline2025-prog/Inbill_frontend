@@ -266,7 +266,7 @@ export default function InvoicesPage() {
     { key: null, label: "Đã thu", sortable: false },
     { key: "collectionDate", label: "Ngày thu", sortable: true },
     { key: "issueDate", label: "Ngày giao", sortable: true },
-    { key: "billing_period", label: "Tháng nợ", sortable: true },
+    { key: "billing_period", label: "Kỳ", sortable: true },
     { key: null, label: "Hành động", sortable: false },
   ];
 

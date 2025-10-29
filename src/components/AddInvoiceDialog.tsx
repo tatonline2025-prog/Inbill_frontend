@@ -28,7 +28,7 @@ export default function AddInvoiceDialog({
   onClose: () => void;
   onSuccess: () => void;
   assignedUsers?: { _id: string; fullName: string }[];
-  billing_period: string;
+  billing_period?: string;
 }) {
   const [newInvoice, setNewInvoice] = useState({
     invoiceNumber: "",

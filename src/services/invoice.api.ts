@@ -119,3 +119,12 @@ export const deleteInvoice_API = async (invoiceNumber: string) => {
     console.error("Xoá hoá đơn thất bại thất bại:", err);
   }
 };
+
+// Xoá tất cả hoá đơn theo kỳ
+export const deleteInvoicesByBillingPeriod_API = async (billing_period: string) => {
+  const res = await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/deleteByBillingPeriod`, {
+    params: { billing_period },
+  });
+
+  return res;
+};
