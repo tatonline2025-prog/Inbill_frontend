@@ -1,13 +1,14 @@
 "use client";
 
 import AdminRoute from "@/components/AdminRoute";
+import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants";
 import { excelUp } from "@/services/excel.api";
 import { fetchallInvoice, invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
 import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 export default function UsersPage() {
   const [userData, setUserData] = useState<IUser[]>([]);
@@ -19,42 +20,12 @@ export default function UsersPage() {
   const [formData, setFormData] = useState<Partial<IUser>>();
   const [selectedProvince, setSelectedProvince] = useState("");
 
-  const provinces = [
-    "TP Hà Nội",
-    "TP Huế",
-    "Quảng Ninh",
-    "Cao Bằng",
-    "Lạng Sơn",
-    "Lai Châu",
-    "Điện Biên",
-    "Sơn La",
-    "Thanh Hóa",
-    "Nghệ An",
-    "Hà Tĩnh",
-    "Tuyên Quang",
-    "Lào Cai",
-    "Thái Nguyên",
-    "Phú Thọ",
-    "Bắc Ninh",
-    "Hưng Yên",
-    "TP Hải Phòng",
-    "Ninh Bình",
-    "Quảng Trị",
-    "TP Đà Nẵng",
-    "Quảng Ngãi",
-    "Gia Lai",
-    "Khánh Hòa",
-    "Lâm Đồng",
-    "Đắk Lắk",
-    "TP Hồ Chí Minh",
-    "Đồng Nai",
-    "Tây Ninh",
-    "TP Cần Thơ",
-    "Vĩnh Long",
-    "Đồng Tháp",
-    "Cà Mau",
-    "An Giang",
-  ];
+  const [selectedUserForUpload, setSelectedUserForUpload] = useState<IUser | null>(null);
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
+  const [showBillingModal, setShowBillingModal] = useState(false);
+
+  const provinces = useMemo(() => PROVINCES, []);
+  const billingPeriods = useMemo(() => generateBillingPeriods(), []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,7 +69,12 @@ export default function UsersPage() {
 
   // console.log(mergedUsers);
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string, billingPeriod?: string) => {
+    if (!billingPeriod) {
+      setMessage({ type: "error", text: "Vui lòng chọn kỳ hoá đơn trước khi tải file." });
+      return;
+    }
+
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       const validTypes = [
@@ -112,11 +88,12 @@ export default function UsersPage() {
       }
 
       setIsLoading(true);
-      setMessage({ type: "info", text: `Đang tải file lên cho user: ${userId}...` });
+      setMessage({ type: "info", text: `Đang tải file cho user: ${userId} (${billingPeriod})...` });
 
       const formData = new FormData();
       formData.append("excelFile", selectedFile);
-      formData.append("userId", userId); // ✅ gửi kèm id user
+      formData.append("userId", userId);
+      formData.append("billing_period", billingPeriod);
 
       try {
         const token = localStorage.getItem("token");
@@ -125,12 +102,15 @@ export default function UsersPage() {
         const response = await excelUp(formData, token);
         console.log("Upload thành công:", response.data);
 
-        setMessage({ type: "success", text: `Đã tải file cho user ${userId} thành công.` });
+        setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });
       } catch (error) {
         console.error(error);
         setMessage({ type: "error", text: getErrorMessage(error) });
       } finally {
         setIsLoading(false);
+        setShowBillingModal(false);
+        setSelectedBillingPeriod("");
+        setSelectedUserForUpload(null);
       }
     }
   };
@@ -318,7 +298,7 @@ export default function UsersPage() {
                         Hành động
                       </th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
-                        Upload Excel
+                        Chọn Excel
                       </th>
                     </tr>
                   </thead>
@@ -351,14 +331,16 @@ export default function UsersPage() {
                           </td>
 
                           <td className="px-6 py-4 text-center">
-                            <input
-                              type="file"
-                              id={`fileUpload-${user._id}`}
-                              accept=".xlsx, .xls"
+                            <button
+                              onClick={() => {
+                                setSelectedUserForUpload(user);
+                                setShowBillingModal(true);
+                              }}
                               disabled={isLoading}
-                              onChange={(e) => handleFileChange(e, user._id)}
-                              className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
-                            />
+                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm"
+                            >
+                              Chọn Excel
+                            </button>
                           </td>
                         </tr>
                       );
@@ -454,6 +436,60 @@ export default function UsersPage() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Lưu thay đổi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showBillingModal && selectedUserForUpload && (
+          <div className="fixed inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] z-50">
+            <div className="bg-white rounded-lg shadow-lg w-[400px] p-6">
+              <h2 className="text-lg font-semibold mb-4 text-gray-800">
+                Tải Excel lên cho {selectedUserForUpload.fullName}
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Chọn kỳ hoá đơn</label>
+                  <select
+                    value={selectedBillingPeriod}
+                    onChange={(e) => setSelectedBillingPeriod(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-green-200"
+                  >
+                    <option value="">-- Chọn kỳ hoá đơn --</option>
+                    {billingPeriods.map((period) => (
+                      <option key={period} value={period}>
+                        {period}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedBillingPeriod && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Chọn file Excel</label>
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      disabled={isLoading}
+                      onChange={(e) => handleFileChange(e, selectedUserForUpload._id, selectedBillingPeriod)}
+                      className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowBillingModal(false);
+                    setSelectedBillingPeriod("");
+                    setSelectedUserForUpload(null);
+                  }}
+                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                >
+                  Hủy
                 </button>
               </div>
             </div>
