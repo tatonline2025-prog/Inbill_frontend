@@ -3,8 +3,8 @@
 import { Box, Typography } from "@mui/material";
 
 interface InvoiceSummaryProps {
-  filterAssignedUser: string;
-  totalUsers: number;
+  filterAssignedUser?: string;
+  totalUsers?: number;
   assignedCustomerCodes: number;
   unassignedCustomerCodes: number;
   totalAmountInfo: number;

@@ -5,40 +5,49 @@ import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
 import { SelectChangeEvent } from "@mui/material/Select";
 
-// Định nghĩa props
+// Định nghĩa props (đã được cập nhật với dấu '?')
 interface InvoiceToolbarProps {
-  invoicesCount: number;
-  selectedDate: string;
-  onSelectedDateChange: (date: string) => void;
-  onExport: () => void;
-  onExportPrinted: () => void;
-  invoicesPerPage: number;
-  onInvoicesPerPageChange: (value: number) => void;
-  onOpenAddDialog: () => void;
-  selectedInvoicesCount: number;
-  onDeleteSelected: () => void;
-  onOpenDeleteAllModal: () => void;
-  onOpenUploadWithProvince: () => void;
-  searchInvoiceNumber: string;
-  onSearchChange: (search: string) => void;
+  invoicesCount?: number; // Cần cho logic 'disabled'
+  selectedDate?: string;
+  onSelectedDateChange?: (date: string) => void;
+  onExport?: () => void;
+  onExportPrinted?: () => void;
+  invoicesPerPage?: number;
+  onInvoicesPerPageChange?: (value: number) => void;
+  onOpenAddDialog?: () => void;
+  selectedInvoicesCount?: number; // Cần cho logic 'disabled'
+  onDeleteSelected?: () => void;
+  onOpenDeleteAllModal?: () => void;
+  onOpenUploadWithProvince?: () => void;
+  searchInvoiceNumber?: string;
+  onSearchChange?: (search: string) => void;
+  onOpenExportByUser?: () => void;
 }
 
 export default function InvoiceToolbar({
-  invoicesCount,
-  selectedDate,
+  // Gán giá trị mặc định cho các prop có thể ảnh hưởng đến logic
+  invoicesCount = 0,
+  selectedDate = "",
   onSelectedDateChange,
   onExport,
   onExportPrinted,
-  invoicesPerPage,
+  invoicesPerPage = 15,
   onInvoicesPerPageChange,
   onOpenAddDialog,
-  selectedInvoicesCount,
+  selectedInvoicesCount = 0,
   onDeleteSelected,
   onOpenDeleteAllModal,
   onOpenUploadWithProvince,
-  searchInvoiceNumber,
+  searchInvoiceNumber = "",
   onSearchChange,
+  onOpenExportByUser,
 }: InvoiceToolbarProps) {
+  // Kiểu 'sx' chung cho các nút để tránh lặp code
+  const commonButtonSx = {
+    borderRadius: 2,
+    textTransform: "none", // Giữ lại kiểu chữ thường
+  };
+
   return (
     <>
       {/* --- Thanh điều khiển trên cùng --- */}
@@ -53,143 +62,171 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<DownloadIcon />}
-            onClick={onExport}
-            disabled={invoicesCount === 0}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: { xs: "0.7rem", sm: "0.875rem" },
-              minWidth: { xs: "120px", sm: "160px" },
-            }}
-          >
-            Xuất ra Excel toàn bộ
-          </Button>
-          <TextField
-            label="Chọn ngày thu"
-            type="date"
-            size="small"
-            value={selectedDate}
-            onChange={(e) => onSelectedDateChange(e.target.value)}
-            sx={{
-              minWidth: { xs: 120, sm: 180 },
-              fontSize: { xs: "0.7rem", sm: "0.875rem" },
-            }}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={onExportPrinted}
-            disabled={invoicesCount === 0}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              backgroundColor: "#16a34a",
-              "&:hover": { backgroundColor: "#15803d" },
-              fontSize: { xs: "0.7rem", sm: "0.875rem" },
-              minWidth: { xs: "120px", sm: "160px" },
-            }}
-          >
-            Xuất ra Excel đã thu
-          </Button>
+          {/* Logic: Chỉ hiển thị nút nếu prop 'onExport' được truyền vào 
+            Toán tử '&&' sẽ làm việc này một cách hoàn hảo
+          */}
+
+          {/* Nút Xuất Excel toàn bộ */}
+          {onExport && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              startIcon={<DownloadIcon />}
+              onClick={onExport}
+              disabled={invoicesCount === 0}
+              sx={{
+                ...commonButtonSx,
+                minWidth: { xs: "120px", sm: "160px" },
+              }}
+            >
+              Xuất ra Excel toàn bộ
+            </Button>
+          )}
+
+          {/* Ô chọn ngày (Hiển thị nếu có hàm 'onSelectedDateChange') */}
+          {onSelectedDateChange && (
+            <TextField
+              label="Chọn ngày thu"
+              type="date"
+              size="small"
+              value={selectedDate}
+              onChange={(e) => onSelectedDateChange(e.target.value)}
+              sx={{
+                minWidth: { xs: 120, sm: 180 },
+              }}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          )}
+
+          {/* Nút Xuất Excel đã thu */}
+          {onExportPrinted && (
+            <Button
+              variant="contained"
+              color="success"
+              size="small"
+              startIcon={<DownloadIcon />}
+              onClick={onExportPrinted}
+              disabled={invoicesCount === 0}
+              sx={{
+                ...commonButtonSx,
+                minWidth: { xs: "120px", sm: "160px" },
+              }}
+            >
+              Xuất ra Excel đã thu
+            </Button>
+          )}
+
+          {/* Nút Xuất Excel theo người phụ trách */}
+          {onOpenExportByUser && (
+            <Button
+              variant="contained"
+              color="success"
+              size="small"
+              onClick={onOpenExportByUser}
+              sx={{
+                ...commonButtonSx,
+                minWidth: { xs: "120px", sm: "160px" },
+              }}
+            >
+              Xuất Excel Theo Người Phụ Trách
+            </Button>
+          )}
         </Box>
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 100, sm: 120 },
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          <InputLabel id="invoices-per-page-label">Hiển thị</InputLabel>
-          <Select
-            labelId="invoices-per-page-label"
-            value={invoicesPerPage}
-            label="Hiển thị"
-            onChange={(e: SelectChangeEvent<number>) => onInvoicesPerPageChange(Number(e.target.value))}
+
+        {/* Ô chọn số lượng hiển thị */}
+        {onInvoicesPerPageChange && (
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 100, sm: 120 },
+            }}
           >
-            <MenuItem value={15}>15</MenuItem>
-            <MenuItem value={20}>20</MenuItem>
-            <MenuItem value={50}>50</MenuItem>
-            <MenuItem value={100}>100</MenuItem>
-            <MenuItem value={200}>200</MenuItem>
-            <MenuItem value={300}>300</MenuItem>
-          </Select>
-        </FormControl>
+            <InputLabel id="invoices-per-page-label">Hiển thị</InputLabel>
+            <Select
+              labelId="invoices-per-page-label"
+              value={invoicesPerPage}
+              label="Hiển thị"
+              onChange={(e: SelectChangeEvent<number>) => onInvoicesPerPageChange(Number(e.target.value))}
+            >
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+              <MenuItem value={200}>200</MenuItem>
+              <MenuItem value={300}>300</MenuItem>
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       {/* --- Hàng nút hành động --- */}
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}>
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={<AddIcon />}
-          onClick={onOpenAddDialog}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          Thêm mới hoá đơn
-        </Button>
-        <Button
-          variant="contained"
-          color="error"
-          disabled={selectedInvoicesCount === 0}
-          onClick={onDeleteSelected}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          Xoá ({selectedInvoicesCount}) HĐ đã chọn
-        </Button>
-        <Button
-          variant="contained"
-          color="warning"
-          onClick={onOpenDeleteAllModal}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          Xoá tất cả hoá đơn theo kỳ
-        </Button>
-        <Button
-          variant="contained"
-          color="secondary"
-          startIcon={<AddIcon />}
-          onClick={onOpenUploadWithProvince}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          }}
-        >
-          Upload Excel + Tỉnh
-        </Button>
+        {/* Nút Thêm mới */}
+        {onOpenAddDialog && (
+          <Button
+            variant="contained"
+            color="success"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={onOpenAddDialog}
+            sx={commonButtonSx}
+          >
+            Thêm mới hoá đơn
+          </Button>
+        )}
+
+        {/* Nút Xoá đã chọn */}
+        {onDeleteSelected && (
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            disabled={selectedInvoicesCount === 0}
+            onClick={onDeleteSelected}
+            sx={commonButtonSx}
+          >
+            Xoá ({selectedInvoicesCount}) HĐ đã chọn
+          </Button>
+        )}
+
+        {/* Nút Xoá tất cả */}
+        {onOpenDeleteAllModal && (
+          <Button variant="contained" color="warning" size="small" onClick={onOpenDeleteAllModal} sx={commonButtonSx}>
+            Xoá tất cả hoá đơn theo kỳ
+          </Button>
+        )}
+
+        {/* Nút Upload Excel */}
+        {onOpenUploadWithProvince && (
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={onOpenUploadWithProvince}
+            sx={commonButtonSx}
+          >
+            Upload Excel + Tỉnh
+          </Button>
+        )}
       </Box>
 
       {/* --- Ô tìm kiếm --- */}
-      <TextField
-        label="Tìm theo Mã khách hàng"
-        size="small"
-        value={searchInvoiceNumber}
-        onChange={(e) => onSearchChange(e.target.value)}
-        sx={{
-          minWidth: { xs: 150, sm: 200 },
-          fontSize: { xs: "0.7rem", sm: "0.875rem" },
-          marginBottom: 3,
-        }}
-      />
+      {onSearchChange && (
+        <TextField
+          label="Tìm theo Mã khách hàng"
+          size="small"
+          value={searchInvoiceNumber}
+          onChange={(e) => onSearchChange(e.target.value)}
+          sx={{
+            minWidth: { xs: 150, sm: 200 },
+            marginBottom: 3,
+          }}
+        />
+      )}
     </>
   );
 }

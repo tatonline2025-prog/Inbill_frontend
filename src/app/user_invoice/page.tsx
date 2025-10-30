@@ -29,6 +29,8 @@ import AddIcon from "@mui/icons-material/Add";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import toast from "react-hot-toast";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
+import InvoiceSummary from "@/components/invoices/InvoiceSummary";
+import InvoiceFilterBar from "@/components/invoices/InvoiceFilterBar";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -137,18 +139,6 @@ export default function InvoicesPage() {
     setTotalPages(res.data.pagination.totalPages);
   };
 
-  // Lấy kỳ hiện tại
-  const now = new Date();
-  let month = now.getMonth();
-  let year = now.getFullYear();
-
-  if (month === 0) {
-    month = 12;
-    year -= 1;
-  }
-
-  const billing_period = `${month.toString().padStart(2, "0")}/${year}`;
-
   // --- Hàm xuất Excel ---
   const handleExport = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel`;
@@ -162,6 +152,13 @@ export default function InvoicesPage() {
 
     // Gửi ngày dưới dạng query param
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelPrinted?date=${selectedDate}`;
+  };
+
+  const createFilterChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
+    return (value: string) => {
+      setter(value);
+      setCurrentPage(1);
+    };
   };
 
   // --- Hàm đổi trang ---
@@ -503,48 +500,11 @@ export default function InvoicesPage() {
           </FormControl>
         </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-around",
-            alignItems: "center",
-            textAlign: "center",
-            backgroundColor: "#f9fafb",
-            borderRadius: 2,
-            p: 2,
-            mb: 3,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-            gap: 2,
-          }}
-        >
-          <Box sx={{ minWidth: 200 }}>
-            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
-              Số mã khách hàng đang phụ trách
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
-              {assignedCustomerCodes}
-            </Typography>
-          </Box>
-
-          <Box sx={{ minWidth: 200 }}>
-            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
-              Số mã khách hàng chưa được phụ trách
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#16a34a" }}>
-              {unassignedCustomerCodes}
-            </Typography>
-          </Box>
-
-          <Box sx={{ minWidth: 200 }}>
-            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontSize: "0.85rem" }}>
-              Tổng giá trị hoá đơn
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
-              {totalAmountInfo.toLocaleString("vi-VN")} đ
-            </Typography>
-          </Box>
-        </Box>
+        <InvoiceSummary
+          assignedCustomerCodes={assignedCustomerCodes}
+          unassignedCustomerCodes={unassignedCustomerCodes}
+          totalAmountInfo={totalAmountInfo}
+        />
 
         {/* --- Bảng dữ liệu --- */}
         <Box sx={{ overflowX: "auto" }}>
@@ -799,7 +759,6 @@ export default function InvoicesPage() {
           })();
         }}
         // assignedUsers={userData}
-        billing_period={billing_period}
       />
     </>
   );

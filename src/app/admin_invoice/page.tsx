@@ -6,7 +6,20 @@ import { useEffect, useMemo, useState } from "react";
 import { deleteInvoice_API, fetchallInvoice, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import AdminRoute from "@/components/AdminRoute";
-import { Box, Pagination, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Pagination,
+  Select,
+  Typography,
+} from "@mui/material";
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
@@ -31,6 +44,9 @@ export default function InvoicesPage() {
 
   const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo>();
   const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const [openExportByUser, setOpenExportByUser] = useState(false);
+  const [selectedExportUser, setSelectedExportUser] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +157,50 @@ export default function InvoicesPage() {
       return;
     }
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelPrinted?date=${selectedDate}`;
+  };
+
+  // --- Hàm xuất Excel theo người phụ trách ---
+  const handleExportByUserConfirm = async () => {
+    if (!selectedExportUser) {
+      alert("Vui lòng chọn người phụ trách!");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelByUser?assignedUserId=${selectedExportUser}`
+      );
+
+      // Nếu response không phải file Excel (tức là JSON lỗi)
+      if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
+        const errorData = await response.json();
+        alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
+        return;
+      }
+
+      // ✅ Tải file Excel (response là blob)
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Lấy tên file từ header (nếu có)
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-hoa-don.xlsx";
+
+      // Tạo link tải file
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+      setOpenExportByUser(false);
+    } catch (error) {
+      console.error("Lỗi khi xuất file:", error);
+      alert("Không thể kết nối tới máy chủ để xuất file.");
+    }
   };
 
   // --- Hàm đổi trang ---
@@ -267,6 +327,7 @@ export default function InvoicesPage() {
           onOpenUploadWithProvince={() => setOpenUploadWithProvince(true)}
           searchInvoiceNumber={searchInvoiceNumber}
           onSearchChange={handleSearchChange}
+          onOpenExportByUser={() => setOpenExportByUser(true)}
         />
 
         {/* === FILTER BAR === */}
@@ -373,6 +434,32 @@ export default function InvoicesPage() {
         billingPeriods={billingPeriods}
         onDeleteSuccess={reloadInvoices}
       />
+
+      <Dialog open={openExportByUser} onClose={() => setOpenExportByUser(false)}>
+        <DialogTitle>Chọn Người Phụ Trách</DialogTitle>
+        <DialogContent sx={{ minWidth: 300 }}>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Người phụ trách</InputLabel>
+            <Select
+              value={selectedExportUser}
+              label="Người phụ trách"
+              onChange={(e) => setSelectedExportUser(e.target.value)}
+            >
+              {userData.map((user) => (
+                <MenuItem key={user._id} value={user._id}>
+                  {user.fullName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenExportByUser(false)}>Hủy</Button>
+          <Button variant="contained" color="success" onClick={handleExportByUserConfirm}>
+            Xuất Excel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AdminRoute>
   );
 }
