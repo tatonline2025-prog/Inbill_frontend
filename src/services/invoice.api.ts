@@ -122,8 +122,12 @@ export const deleteInvoice_API = async (invoiceNumber: string) => {
 
 // Xoá tất cả hoá đơn theo kỳ
 export const deleteInvoicesByBillingPeriod_API = async (billing_period: string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
   const res = await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/deleteByBillingPeriod`, {
     params: { billing_period },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   return res;
