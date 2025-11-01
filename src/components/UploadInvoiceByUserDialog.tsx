@@ -16,7 +16,6 @@ interface Props {
 }
 
 const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assignedUserId, assignedUserName }) => {
-  const [billingPeriod, setBillingPeriod] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -28,15 +27,14 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
       return;
     }
 
-    if (!uploadFile || !billingPeriod) {
-      toast.error("Vui lòng chọn kỳ hóa đơn và file!");
+    if (!uploadFile) {
+      toast.error("Vui lòng chọn file cần upload!");
       return;
     }
 
     const formData = new FormData();
     formData.append("excelFile", uploadFile);
     formData.append("userId", assignedUserId);
-    formData.append("billing_period", billingPeriod);
 
     setLoading(true);
     try {
@@ -56,38 +54,16 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
     }
   };
 
-  const currentYear = new Date().getFullYear();
-  const billingPeriods = Array.from({ length: 12 }, (_, i) => {
-    const month = String(i + 1).padStart(2, "0");
-    return `${month}/${currentYear}`;
-  });
-
   return (
     <Dialog open={open} onClose={onClose}>
       <Box sx={{ p: 3, minWidth: 300 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Upload Excel kỳ {province}
+          Upload Excel
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
           Người phụ trách: <b>{assignedUserName}</b>
         </Typography>
-
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="billing-label">Kỳ hóa đơn</InputLabel>
-          <Select
-            labelId="billing-label"
-            value={billingPeriod}
-            label="Kỳ hóa đơn"
-            onChange={(e) => setBillingPeriod(e.target.value)}
-          >
-            {billingPeriods.map((period) => (
-              <MenuItem key={period} value={period}>
-                {period}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
 
         <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
           Chọn file Excel
@@ -102,7 +78,7 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
           </Button>
           <Button
             variant="contained"
-            disabled={!uploadFile || !billingPeriod || loading}
+            disabled={!uploadFile || loading}
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >

@@ -21,7 +21,6 @@ export default function Dashboard() {
   // ===================== STATE =====================
   const [summaryData, setSummaryData] = useState<IInvoiceSummaryByUser[]>([]);
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
-  const [filterPeriod, setFilterPeriod] = useState("all");
   const [isMobile, setIsMobile] = useState(false);
 
   // ===================== EFFECTS =====================
@@ -39,7 +38,7 @@ export default function Dashboard() {
       try {
         const res = await invoiceSummary();
 
-        // console.log(res.data);
+        console.log(res.data);
         setSummaryData(res.data);
       } catch (err) {
         console.error("Lỗi khi tải hóa đơn:", err);
@@ -52,10 +51,10 @@ export default function Dashboard() {
   const filteredInvoices = useMemo(() => {
     return summaryData.filter((inv) => {
       const matchUser = filterAssignedUser === "all" ? true : inv.assignedTo?._id === filterAssignedUser;
-      const matchPeriod = filterPeriod === "all" ? true : inv.billing_period === filterPeriod;
-      return matchUser && matchPeriod;
+
+      return matchUser;
     });
-  }, [summaryData, filterAssignedUser, filterPeriod]);
+  }, [summaryData, filterAssignedUser]);
 
   // ===================== TÍNH TOÁN SỐ LIỆU =====================
   const { totalCollected, totalNotCollected, collected, notCollected } = useMemo(() => {
@@ -72,32 +71,6 @@ export default function Dashboard() {
     { name: "Đã thu", value: collected },
     { name: "Chưa thu", value: notCollected },
   ];
-
-  const monthlyData = useMemo(() => {
-    const map = new Map<string, { collectedTotal: number; notCollectedTotal: number }>();
-
-    filteredInvoices.forEach((inv) => {
-      const key = inv.billing_period;
-      if (!key) return;
-
-      const collected = inv.collectedTotal || 0;
-      const notCollected = inv.notCollectedTotal || 0;
-
-      if (!map.has(key)) map.set(key, { collectedTotal: 0, notCollectedTotal: 0 });
-
-      const item = map.get(key)!;
-      item.collectedTotal += collected;
-      item.notCollectedTotal += notCollected;
-    });
-
-    // Trả về mảng để dùng hiển thị biểu đồ
-    return Array.from(map.entries()).map(([period, values]) => ({
-      period,
-      ...values,
-    }));
-  }, [filteredInvoices]);
-
-  const billingPeriods = Array.from(new Set(summaryData.map((inv) => inv.billing_period).filter(Boolean))).sort();
 
   const COLORS = ["#4CAF50", "#F44336"];
 
@@ -120,23 +93,6 @@ export default function Dashboard() {
             {summaryData.map((user) => (
               <option key={user?.assignedTo?._id} value={user?.assignedTo?._id}>
                 {user?.assignedTo?.fullName || user?.assignedTo?.email}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Kỳ thanh toán */}
-        <div>
-          <label className="block text-sm font-semibold mb-1">Tháng nợ:</label>
-          <select
-            value={filterPeriod}
-            onChange={(e) => setFilterPeriod(e.target.value)}
-            className="border px-3 py-2 rounded-md text-sm"
-          >
-            <option value="all">Tất cả</option>
-            {billingPeriods.map((period) => (
-              <option key={period} value={period}>
-                {period}
               </option>
             ))}
           </select>
@@ -167,26 +123,6 @@ export default function Dashboard() {
               <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
             </PieChart>
           </ResponsiveContainer>
-        </div>
-
-        {/* Biểu đồ cột */}
-        <div className="w-full md:w-1/2 bg-white shadow-lg rounded-2xl p-6">
-          <h3 className="text-center font-semibold mb-4 text-gray-700">Tổng tiền theo tháng</h3>
-          <div className="overflow-x-auto">
-            <div className="min-w-[600px] h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: number) => v.toLocaleString("vi-VN")} />
-                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
-                  <Bar dataKey="collectedTotal" fill="#4CAF50" name="Đã thu" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="notCollectedTotal" fill="#F44336" name="Chưa thu" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
         </div>
       </div>
 

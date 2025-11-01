@@ -26,7 +26,6 @@ interface Props {
 
 const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuccess }) => {
   const [selectedProvince, setSelectedProvince] = useState("");
-  const [billingPeriod, setBillingPeriod] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +35,6 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     const formData = new FormData();
     formData.append("file", uploadFile);
     formData.append("province", selectedProvince);
-    formData.append("billing_period", billingPeriod);
 
     setLoading(true);
     try {
@@ -94,12 +92,6 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     "An Giang",
   ];
 
-  const currentYear = new Date().getFullYear();
-  const billingPeriods = Array.from({ length: 12 }, (_, i) => {
-    const month = String(i + 1).padStart(2, "0");
-    return `${month}/${currentYear}`;
-  });
-
   return (
     <>
       <Dialog open={open} onClose={onClose}>
@@ -122,22 +114,6 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
                 </MenuItem>
               ))}
               {/* Add các tỉnh khác */}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="billing-label">Kỳ hóa đơn</InputLabel>
-            <Select
-              labelId="billing-label"
-              value={billingPeriod}
-              label="Kỳ hóa đơn"
-              onChange={(e) => setBillingPeriod(e.target.value)}
-            >
-              {billingPeriods.map((period) => (
-                <MenuItem key={period} value={period}>
-                  {period}
-                </MenuItem>
-              ))}
             </Select>
           </FormControl>
 

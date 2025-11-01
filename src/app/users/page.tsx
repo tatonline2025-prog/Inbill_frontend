@@ -24,8 +24,9 @@ export default function UsersPage() {
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
   const [showBillingModal, setShowBillingModal] = useState(false);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const provinces = useMemo(() => PROVINCES, []);
-  const billingPeriods = useMemo(() => generateBillingPeriods(), []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,54 +70,49 @@ export default function UsersPage() {
 
   // console.log(mergedUsers);
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, userId: string, billingPeriod?: string) => {
-    if (!billingPeriod) {
-      setMessage({ type: "error", text: "Vui lòng chọn kỳ hoá đơn trước khi tải file." });
+  const handleFileChange = async (userId: string, billingPeriod?: string) => {
+    if (!selectedFile) return;
+
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+    ];
+
+    if (!validTypes.includes(selectedFile.type)) {
+      setMessage({ type: "error", text: "Vui lòng chọn file Excel (.xlsx hoặc .xls)." });
       return;
     }
 
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      const validTypes = [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel",
-      ];
+    setIsLoading(true);
+    setMessage({ type: "info", text: `Đang tải file cho user: ${userId} (${billingPeriod})...` });
 
-      if (!validTypes.includes(selectedFile.type)) {
-        setMessage({ type: "error", text: "Vui lòng chọn file Excel (.xlsx hoặc .xls)." });
-        return;
-      }
+    const formData = new FormData();
+    formData.append("excelFile", selectedFile);
+    formData.append("userId", userId);
 
-      setIsLoading(true);
-      setMessage({ type: "info", text: `Đang tải file cho user: ${userId} (${billingPeriod})...` });
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Bạn chưa đăng nhập!");
 
-      const formData = new FormData();
-      formData.append("excelFile", selectedFile);
-      formData.append("userId", userId);
-      formData.append("billing_period", billingPeriod);
+      const response = await excelUp(formData, token);
+      console.log("Upload thành công:", response.data);
 
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Bạn chưa đăng nhập!");
-
-        const response = await excelUp(formData, token);
-        console.log("Upload thành công:", response.data);
-
-        setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });
-      } catch (error) {
-        console.error(error);
-        setMessage({ type: "error", text: getErrorMessage(error) });
-      } finally {
-        setIsLoading(false);
-        setShowBillingModal(false);
-        setSelectedBillingPeriod("");
-        setSelectedUserForUpload(null);
-      }
+      setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setIsLoading(false);
+      setShowBillingModal(false);
+      setSelectedBillingPeriod("");
+      setSelectedUserForUpload(null);
     }
   };
 
   const totalAdmins = userData.filter((u) => u.role === "admin").length;
   const totalUsers = filteredUsers.filter((u) => u.role === "user").length;
+
+  console.log(filteredUsers);
 
   const handleEditClick = (user: IUser) => {
     setEditingUser(user);
@@ -451,43 +447,43 @@ export default function UsersPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Chọn kỳ hoá đơn</label>
-                  <select
-                    value={selectedBillingPeriod}
-                    onChange={(e) => setSelectedBillingPeriod(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-green-200"
-                  >
-                    <option value="">-- Chọn kỳ hoá đơn --</option>
-                    {billingPeriods.map((period) => (
-                      <option key={period} value={period}>
-                        {period}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Chọn file Excel</label>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    disabled={isLoading}
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer 
+                       file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 
+                       file:bg-green-600 file:text-white hover:file:bg-green-700"
+                  />
                 </div>
-
-                {selectedBillingPeriod && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chọn file Excel</label>
-                    <input
-                      type="file"
-                      accept=".xlsx, .xls"
-                      disabled={isLoading}
-                      onChange={(e) => handleFileChange(e, selectedUserForUpload._id, selectedBillingPeriod)}
-                      className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
-                    />
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    if (!selectedFile) {
+                      alert("Vui lòng chọn file trước khi tải lên!");
+                      return;
+                    }
+                    handleFileChange(selectedUserForUpload._id, selectedBillingPeriod);
+                  }}
+                  disabled={isLoading}
+                  className={`px-4 py-2 rounded-md text-white transition-colors ${
+                    isLoading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  {isLoading ? "Đang tải..." : "Tải lên"}
+                </button>
+
                 <button
                   onClick={() => {
                     setShowBillingModal(false);
                     setSelectedBillingPeriod("");
                     setSelectedUserForUpload(null);
                   }}
-                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                  className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
                 >
                   Hủy
                 </button>
