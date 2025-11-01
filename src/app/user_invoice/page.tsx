@@ -31,6 +31,7 @@ import toast from "react-hot-toast";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
 import InvoiceSummary from "@/components/invoices/InvoiceSummary";
 import InvoiceFilterBar from "@/components/invoices/InvoiceFilterBar";
+import UploadInvoiceDialog from "@/components/UploadInvoiceByUserDialog";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -39,6 +40,7 @@ export default function InvoicesPage() {
 
   const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo>();
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [openUploadDialog, setOpenUploadDialog] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [invoicesPerPage, setInvoicesPerPage] = useState(15);
@@ -335,14 +337,20 @@ export default function InvoicesPage() {
               Xuất ra Excel đã thu
             </Button>
 
-            <input
-              type="file"
-              id={`fileUpload-${user?._id || "me"}`}
-              accept=".xlsx, .xls"
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => setOpenUploadDialog(true)}
               disabled={isLoading}
-              onChange={(e) => handleFileChange(e, user?._id || "")}
-              className="border border-gray-300 rounded-md px-2 py-1 text-sm cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
-            />
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                minWidth: { xs: "120px", sm: "160px" },
+              }}
+            >
+              Upload Excel
+            </Button>
           </Box>
 
           {/* Chọn số lượng hiển thị */}
@@ -759,6 +767,14 @@ export default function InvoicesPage() {
           })();
         }}
         // assignedUsers={userData}
+      />
+
+      <UploadInvoiceDialog
+        open={openUploadDialog}
+        onClose={() => setOpenUploadDialog(false)}
+        province={user?.province || "TP Cần Thơ"} // ✅ truyền tỉnh vào từ user hoặc props cha
+        assignedUserId={user?._id || "Người phụ trách"} // ✅ truyền người phụ trách
+        assignedUserName={user?.fullName || "Người phụ trách"} // ✅ truyền người phụ trách
       />
     </>
   );
