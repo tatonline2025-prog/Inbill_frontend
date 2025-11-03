@@ -9,7 +9,9 @@ export const fetchallInvoice = async (
   assignedUserId?: string, // 👈 Thêm dòng này
   province?: string,
   searchInvoiceNumber?: string,
-  userprovince?: string
+  userprovince?: string,
+  sortField?: string | null,
+  sortDirection?: "asc" | "desc"
 ) => {
   // console.log(currentPage, invoicesPerPage, printStatus, collectionStatus, assignedUserId, province, userprovince);
 
@@ -23,6 +25,8 @@ export const fetchallInvoice = async (
       province,
       searchInvoiceNumber,
       userprovince,
+      sortField,
+      sortDirection,
     },
   });
 

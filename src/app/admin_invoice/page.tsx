@@ -18,6 +18,7 @@ import {
   MenuItem,
   Pagination,
   Select,
+  TextField,
   Typography,
 } from "@mui/material";
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
@@ -50,7 +51,6 @@ export default function InvoicesPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState("");
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,6 +70,13 @@ export default function InvoicesPage() {
   const [totalAmountInfo, setTotalAmountInfo] = useState(0);
   const [openAddDialog, setOpenAddDialog] = useState(false);
 
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | "none">("none");
+
+  const [openExportCollected, setOpenExportCollected] = useState(false);
+  const [selectedCollectedDate, setSelectedCollectedDate] = useState("");
+  const [selectedCollectedUser, setSelectedCollectedUser] = useState("all");
+
   // Lấy hằng số bằng useMemo
   const billingPeriods = useMemo(() => generateBillingPeriods(), []);
   const provinces = useMemo(() => PROVINCES, []);
@@ -86,6 +93,20 @@ export default function InvoicesPage() {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedInvoice(null);
+  };
+
+  const handleSort = (field: string) => {
+    const isNewField = sortField !== field;
+
+    setSortField(field);
+    setSortDirection((prev) => {
+      if (isNewField) return "desc";
+      if (prev === "desc") return "asc";
+      if (prev === "asc") return "none";
+      return "desc";
+    });
+
+    setCurrentPage(1);
   };
 
   // --- Gọi API khi component mount ---
@@ -106,6 +127,10 @@ export default function InvoicesPage() {
     try {
       setLoading(true);
       setError(null);
+
+      const sortFieldToSend = sortDirection !== "none" ? sortField : undefined;
+      const sortDirectionToSend = sortDirection !== "none" ? sortDirection : undefined;
+
       const res = await fetchallInvoice(
         page,
         perPage,
@@ -113,7 +138,10 @@ export default function InvoicesPage() {
         filterCollection !== "all" ? (filterCollection === "notCollected" ? "not_collected" : "collected") : undefined,
         filterAssignedUser !== "all" ? filterAssignedUser : undefined,
         selectedProvince !== "all" ? selectedProvince : undefined,
-        searchInvoiceNumber || undefined
+        searchInvoiceNumber || undefined,
+        undefined,
+        sortFieldToSend,
+        sortDirectionToSend
       );
 
       setTotalPages(res.data.pagination.totalPages);
@@ -140,6 +168,8 @@ export default function InvoicesPage() {
     filterAssignedUser,
     selectedProvince,
     searchInvoiceNumber,
+    sortField,
+    sortDirection,
   ]);
 
   const reloadInvoices = () => {
@@ -152,11 +182,62 @@ export default function InvoicesPage() {
   };
 
   const handleExportPrinted = () => {
-    if (!selectedDate) {
-      alert("Vui lòng chọn ngày trước khi xuất!");
+    setOpenExportCollected(true);
+  };
+
+  // --- HÀM MỚI: Xử lý xuất file từ modal đã thu ---
+  const handleExportCollectedConfirm = async () => {
+    if (!selectedCollectedDate) {
+      alert("Vui lòng chọn ngày thu!");
       return;
     }
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelPrinted?date=${selectedDate}`;
+
+    // Xây dựng query params
+    const params = new URLSearchParams({
+      date: selectedCollectedDate,
+    });
+
+    // Chỉ thêm assignedUserId nếu nó không phải là 'all'
+    if (selectedCollectedUser !== "all") {
+      params.append("assignedUserId", selectedCollectedUser);
+    }
+
+    // 💡 API endpoint mới (bạn sẽ cần tạo nó ở backend)
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
+
+    try {
+      // (Copy logic fetch/download file từ hàm handleExportByUserConfirm)
+      const response = await fetch(apiUrl);
+
+      if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
+        const errorData = await response.json();
+        alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-da-thu.xlsx";
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+      setOpenExportCollected(false); // Đóng modal khi thành công
+      // Reset state
+      setSelectedCollectedDate("");
+      setSelectedCollectedUser("all");
+    } catch (error) {
+      console.error("Lỗi khi xuất file:", error);
+      alert("Không thể kết nối tới máy chủ để xuất file.");
+    }
   };
 
   // --- Hàm xuất Excel theo người phụ trách ---
@@ -314,8 +395,6 @@ export default function InvoicesPage() {
         {/* === TOOLBAR === */}
         <InvoiceToolbar
           invoicesCount={invoices.length}
-          selectedDate={selectedDate}
-          onSelectedDateChange={setSelectedDate}
           onExport={handleExport}
           onExportPrinted={handleExportPrinted}
           invoicesPerPage={invoicesPerPage}
@@ -365,6 +444,9 @@ export default function InvoicesPage() {
             invoicesPerPage={invoicesPerPage}
             onToggleStatus={handleToggle}
             onMenuOpen={handleMenuOpen}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
           />
 
           {/* --- Phân trang --- */}
@@ -456,6 +538,46 @@ export default function InvoicesPage() {
         <DialogActions>
           <Button onClick={() => setOpenExportByUser(false)}>Hủy</Button>
           <Button variant="contained" color="success" onClick={handleExportByUserConfirm}>
+            Xuất Excel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openExportCollected} onClose={() => setOpenExportCollected(false)}>
+        <DialogTitle>Xuất Excel Hóa Đơn Đã Thu</DialogTitle>
+        <DialogContent sx={{ minWidth: 400, paddingTop: "16px !important" }}>
+          <TextField
+            label="Chọn ngày thu"
+            type="date"
+            fullWidth
+            margin="dense"
+            value={selectedCollectedDate}
+            onChange={(e) => setSelectedCollectedDate(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Người phụ trách</InputLabel>
+            <Select
+              value={selectedCollectedUser}
+              label="Người phụ trách"
+              onChange={(e) => setSelectedCollectedUser(e.target.value)}
+            >
+              <MenuItem value="all">
+                <em>Tất cả người phụ trách</em>
+              </MenuItem>
+              {userData.map((user) => (
+                <MenuItem key={user._id} value={user._id}>
+                  {user.fullName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenExportCollected(false)}>Hủy</Button>
+          <Button variant="contained" color="success" onClick={handleExportCollectedConfirm}>
             Xuất Excel
           </Button>
         </DialogActions>

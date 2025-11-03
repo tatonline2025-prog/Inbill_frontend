@@ -4,6 +4,7 @@ import { InvoiceInfo } from "@/types/invoice";
 import { Box, Switch, Typography, IconButton } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
+import { useMemo, useState } from "react";
 
 interface InvoiceTableProps {
   loading: boolean;
@@ -15,6 +16,9 @@ interface InvoiceTableProps {
   invoicesPerPage: number;
   onToggleStatus: (invoiceId: string, field: "printStatus" | "collectionStatus") => void;
   onMenuOpen: (event: React.MouseEvent<HTMLElement>, invoice: InvoiceInfo) => void;
+  sortField: string | null;
+  sortDirection: "asc" | "desc" | "none";
+  onSort: (field: string) => void;
 }
 
 export default function InvoiceTable({
@@ -27,7 +31,14 @@ export default function InvoiceTable({
   invoicesPerPage,
   onToggleStatus,
   onMenuOpen,
+  sortField,
+  sortDirection,
+  onSort,
 }: InvoiceTableProps) {
+  const handleSortClick = (field: string) => {
+    onSort(field);
+  };
+
   if (loading) {
     return <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>;
   }
@@ -53,6 +64,7 @@ export default function InvoiceTable({
             {TABLE_HEADERS.map((header) => (
               <th
                 key={header.key}
+                onClick={header.key === "collectionDate" ? () => handleSortClick("collectionDate") : undefined}
                 style={{
                   border: "1px solid #e0e0e0",
                   padding: "8px 6px",
@@ -68,6 +80,19 @@ export default function InvoiceTable({
                     <input type="checkbox" checked={isAllSelected} onChange={(e) => onSelectAll(e.target.checked)} />
                   ) : (
                     header.label
+                  )}
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  {header.key === "collectionDate" && (
+                    <span style={{ fontSize: "0.7rem", color: "#666" }}>
+                      {sortField === "collectionDate"
+                        ? sortDirection === "desc"
+                          ? "↓"
+                          : sortDirection === "asc"
+                          ? "↑"
+                          : "↕"
+                        : "↕"}
+                    </span>
                   )}
                 </Box>
               </th>

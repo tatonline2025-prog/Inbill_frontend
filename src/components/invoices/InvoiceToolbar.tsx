@@ -8,8 +8,6 @@ import { SelectChangeEvent } from "@mui/material/Select";
 // Định nghĩa props (đã được cập nhật với dấu '?')
 interface InvoiceToolbarProps {
   invoicesCount?: number; // Cần cho logic 'disabled'
-  selectedDate?: string;
-  onSelectedDateChange?: (date: string) => void;
   onExport?: () => void;
   onExportPrinted?: () => void;
   invoicesPerPage?: number;
@@ -27,8 +25,6 @@ interface InvoiceToolbarProps {
 export default function InvoiceToolbar({
   // Gán giá trị mặc định cho các prop có thể ảnh hưởng đến logic
   invoicesCount = 0,
-  selectedDate = "",
-  onSelectedDateChange,
   onExport,
   onExportPrinted,
   invoicesPerPage = 15,
@@ -82,23 +78,6 @@ export default function InvoiceToolbar({
             >
               Xuất ra Excel toàn bộ
             </Button>
-          )}
-
-          {/* Ô chọn ngày (Hiển thị nếu có hàm 'onSelectedDateChange') */}
-          {onSelectedDateChange && (
-            <TextField
-              label="Chọn ngày thu"
-              type="date"
-              size="small"
-              value={selectedDate}
-              onChange={(e) => onSelectedDateChange(e.target.value)}
-              sx={{
-                minWidth: { xs: 120, sm: 180 },
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
           )}
 
           {/* Nút Xuất Excel đã thu */}
