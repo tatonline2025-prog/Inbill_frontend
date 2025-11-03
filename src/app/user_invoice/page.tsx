@@ -265,9 +265,8 @@ export default function InvoicesPage() {
   };
 
   // --- 5. Export Handlers ---
-
   const handleExport = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?userId=${user?._id}&userRole=${user?.role}`;
   };
 
   const handleOpenExportCollected = () => {
