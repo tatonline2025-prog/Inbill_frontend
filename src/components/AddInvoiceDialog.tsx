@@ -14,21 +14,18 @@ import {
   Select,
   Box,
 } from "@mui/material";
-import { createInvoice_API } from "@/services/invoice.api";
-// import { createInvoice_API } from "@/services/invoice.api"; // 👉 bạn cần có hàm API này
+import { createInvoice_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 
 export default function AddInvoiceDialog({
   open,
   onClose,
   onSuccess,
   assignedUsers = [],
-  billing_period,
 }: {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   assignedUsers?: { _id: string; fullName: string }[];
-  billing_period?: string;
 }) {
   const [newInvoice, setNewInvoice] = useState({
     invoiceNumber: "",
@@ -37,20 +34,37 @@ export default function AddInvoiceDialog({
     customerAddress: "",
     billing_period: "",
     currentAmount: "",
-    previousAmount: "",
+    previousAmount: "0",
     assignedTo: "",
   });
 
+  const [billingPeriod, setBillingPeriod] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchLatestPeriod = async () => {
+      try {
+        const res = await fetchLatestPeriod_API();
+
+        if (res.billing_period) {
+          setBillingPeriod(res.billing_period);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchLatestPeriod();
+  }, []);
 
   useEffect(() => {
     if (open) {
       setNewInvoice((prev) => ({
         ...prev,
-        billing_period: billing_period || "",
+        billing_period: billingPeriod || "",
       }));
     }
-  }, [open, billing_period]);
+  }, [open, billingPeriod]);
 
   const handleChange = (field: string, value: string) => {
     setNewInvoice((prev) => ({ ...prev, [field]: value }));

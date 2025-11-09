@@ -136,3 +136,13 @@ export const deleteInvoicesByBillingPeriod_API = async (billing_period: string) 
 
   return res;
 };
+
+interface LatestPeriodResponse {
+  billing_period: string;
+}
+export const fetchLatestPeriod_API = async () => {
+  const res = await axios.get<LatestPeriodResponse>(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/latest-period`
+  );
+  return res.data;
+};
