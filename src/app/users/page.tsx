@@ -95,7 +95,7 @@ export default function UsersPage() {
       if (!token) throw new Error("Bạn chưa đăng nhập!");
 
       const response = await excelUp(formData, token);
-      console.log("Upload thành công:", response.data);
+      // console.log("Upload thành công:", response.data);
 
       setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });
     } catch (error) {
@@ -112,7 +112,7 @@ export default function UsersPage() {
   const totalAdmins = userData.filter((u) => u.role === "admin").length;
   const totalUsers = filteredUsers.filter((u) => u.role === "user").length;
 
-  console.log(filteredUsers);
+  // console.log(filteredUsers);
 
   const handleEditClick = (user: IUser) => {
     setEditingUser(user);
