@@ -4,7 +4,8 @@ import { InvoiceInfo } from "@/types/invoice";
 import { Box, Switch, Typography, IconButton } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchLatestPeriod_API } from "@/services/invoice.api";
 
 interface InvoiceTableProps {
   loading: boolean;
@@ -39,18 +40,45 @@ export default function InvoiceTable({
     onSort(field);
   };
 
-  if (loading) {
-    return <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>;
-  }
+  // if (loading) {
+  //   return <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>;
+  // }
 
-  if (invoices.length === 0) {
-    return <Typography sx={{ p: 4, textAlign: "center" }}>Không có hóa đơn nào được tìm thấy.</Typography>;
-  }
+  // if (invoices.length === 0) {
+  //   return <Typography sx={{ p: 4, textAlign: "center" }}>Không có hóa đơn nào được tìm thấy.</Typography>;
+  // }
 
   const isAllSelected = selectedInvoices.length === invoices.length && invoices.length > 0;
 
+  const [billingPeriod, setBillingPeriod] = useState("");
+  useEffect(() => {
+    const fetchLatestPeriod = async () => {
+      try {
+        const res = await fetchLatestPeriod_API();
+
+        if (res.billing_period) {
+          setBillingPeriod(res.billing_period);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchLatestPeriod();
+  }, []);
+
   return (
     <Box sx={{ overflowX: "auto" }}>
+      <>
+        {loading ? (
+          <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>
+        ) : invoices.length === 0 ? (
+          <Typography sx={{ p: 4, textAlign: "center" }}>Không có hóa đơn nào được tìm thấy.</Typography>
+        ) : (
+          <Box sx={{ overflowX: "auto" }}>{/* Bảng hóa đơn */}</Box>
+        )}
+      </>
+
       <table
         style={{
           width: "100%",
@@ -166,9 +194,7 @@ export default function InvoiceTable({
                 {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
               </td>
               {/* Kỳ */}
-              <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
-                {invoice.billing_period}
-              </td>
+              <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>{billingPeriod}</td>
               {/* Hành động */}
               <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
                 <IconButton size="small" onClick={(e) => onMenuOpen(e, invoice)}>
