@@ -195,6 +195,9 @@ export default function InvoiceTable({
               </td>
               {/* Kỳ */}
               <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>{billingPeriod}</td>
+              <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                {invoice.recordBookCode}
+              </td>
               {/* Hành động */}
               <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
                 <IconButton size="small" onClick={(e) => onMenuOpen(e, invoice)}>

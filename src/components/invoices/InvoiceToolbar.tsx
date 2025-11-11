@@ -5,6 +5,8 @@ import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
 import { SelectChangeEvent } from "@mui/material/Select";
 
+type SearchType = "customerCode" | "stationCode";
+
 // Định nghĩa props (đã được cập nhật với dấu '?')
 interface InvoiceToolbarProps {
   invoicesCount?: number; // Cần cho logic 'disabled'
@@ -17,9 +19,11 @@ interface InvoiceToolbarProps {
   onDeleteSelected?: () => void;
   onOpenDeleteAllModal?: () => void;
   onOpenUploadWithProvince?: () => void;
-  searchInvoiceNumber?: string;
+  searchValue?: string;
   onSearchChange?: (search: string) => void;
   onOpenExportByUser?: () => void;
+  searchType: SearchType; // Loại tìm kiếm hiện tại
+  onSearchTypeChange: (type: SearchType) => void;
 }
 
 export default function InvoiceToolbar({
@@ -34,14 +38,27 @@ export default function InvoiceToolbar({
   onDeleteSelected,
   onOpenDeleteAllModal,
   onOpenUploadWithProvince,
-  searchInvoiceNumber = "",
+  searchValue = "",
   onSearchChange,
   onOpenExportByUser,
+  searchType,
+  onSearchTypeChange,
 }: InvoiceToolbarProps) {
   // Kiểu 'sx' chung cho các nút để tránh lặp code
   const commonButtonSx = {
     borderRadius: 2,
     textTransform: "none", // Giữ lại kiểu chữ thường
+  };
+
+  const searchLabel = searchType === "customerCode" ? "Tìm theo Mã khách hàng" : "Tìm theo Mã trạm";
+
+  const handleSearchTypeChange = (event: SelectChangeEvent) => {
+    // Ép kiểu giá trị thành SearchType
+    onSearchTypeChange(event.target.value as SearchType);
+    // Khi thay đổi loại tìm kiếm, có thể bạn muốn xóa giá trị tìm kiếm cũ
+    if (onSearchChange) {
+      onSearchChange("");
+    }
   };
 
   return (
@@ -194,17 +211,34 @@ export default function InvoiceToolbar({
       </Box>
 
       {/* --- Ô tìm kiếm --- */}
+
       {onSearchChange && (
-        <TextField
-          label="Tìm theo Mã khách hàng"
-          size="small"
-          value={searchInvoiceNumber}
-          onChange={(e) => onSearchChange(e.target.value)}
-          sx={{
-            minWidth: { xs: 150, sm: 200 },
-            marginBottom: 3,
-          }}
-        />
+        <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
+          {/* 1. Select cho loại tìm kiếm */}
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: 120, sm: 150 },
+            }}
+          >
+            <InputLabel id="search-type-label">Tìm theo</InputLabel>
+            <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeChange}>
+              <MenuItem value="customerCode">Mã khách hàng</MenuItem>
+              <MenuItem value="stationCode">Mã trạm</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* 2. TextField cho giá trị tìm kiếm */}
+          <TextField
+            label={searchLabel}
+            size="small"
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
+            sx={{
+              minWidth: { xs: 150, sm: 200 },
+            }}
+          />
+        </Box>
       )}
     </>
   );

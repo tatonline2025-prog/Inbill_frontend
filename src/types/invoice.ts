@@ -9,6 +9,8 @@ export interface InvoiceInfo {
 
   billing_period: string;
 
+  recordBookCode: string;
+
   // 💰 Các trường tiền tệ
   currentAmount: string; // Tiền kỳ này
   previousAmount: string; // Tiền kỳ trước

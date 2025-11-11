@@ -68,5 +68,6 @@ export const TABLE_HEADERS: {
   { key: "collectionDate", label: "Ngày thu", sortable: true },
   { key: "issueDate", label: "Ngày giao", sortable: true },
   { key: "billing_period", label: "Kỳ", sortable: true },
+  { key: "recordBookCode", label: "Trạm", sortable: false },
   { key: "actions", label: "Hành động", sortable: false },
 ];

@@ -6,14 +6,25 @@ export const fetchallInvoice = async (
   invoicesPerPage: number,
   printStatus?: "printed" | "not_printed",
   collectionStatus?: "collected" | "not_collected",
-  assignedUserId?: string, // 👈 Thêm dòng này
+  assignedUserId?: string,
   province?: string,
-  searchInvoiceNumber?: string,
+  customerCode?: string, // 👈 Đổi tên từ searchInvoiceNumber sang customerCode
+  stationCode?: string, // 👈 THÊM tham số tìm kiếm theo Mã trạm
   userprovince?: string,
   sortField?: string | null,
   sortDirection?: "asc" | "desc"
 ) => {
-  // console.log(currentPage, invoicesPerPage, printStatus, collectionStatus, assignedUserId, province, userprovince);
+  console.log(
+    currentPage,
+    invoicesPerPage,
+    printStatus,
+    collectionStatus,
+    assignedUserId,
+    province,
+    userprovince,
+    customerCode,
+    stationCode
+  );
 
   const res = await axios.get<FetchInvoiceResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`, {
     params: {
@@ -23,7 +34,8 @@ export const fetchallInvoice = async (
       collectionStatus,
       assignedUserId,
       province,
-      searchInvoiceNumber,
+      customerCode,
+      stationCode,
       userprovince,
       sortField,
       sortDirection,
