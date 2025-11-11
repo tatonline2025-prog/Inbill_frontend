@@ -21,7 +21,7 @@ const useDebounce = (value: string, delay: number) => {
 };
 
 interface UseUserInvoiceManagementProps {
-  user: IUser;
+  user?: IUser | null;
 }
 
 export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps) => {
@@ -81,11 +81,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         invoicesPerPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
         filterCollection !== "all" ? (filterCollection === "notCollected" ? "not_collected" : "collected") : undefined,
-        user._id, // **GỬI USER ID CỦA NGƯỜI DÙNG HIỆN TẠI**
+        user?._id, // **GỬI USER ID CỦA NGƯỜI DÙNG HIỆN TẠI**
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
         searchParams.stationCode,
-        user.province, // **GỬI PROVINCE CỦA NGƯỜI DÙNG HIỆN TẠI**
+        user?.province, // **GỬI PROVINCE CỦA NGƯỜI DÙNG HIỆN TẠI**
         sortFieldToSend,
         sortDirectionToSend
       );
@@ -119,8 +119,9 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   };
 
   useEffect(() => {
+    if (!user?._id) return;
     fetchInvoices();
-  }, [fetchInvoices]); // --- 2. Event Handlers (UI/Sort) ---
+  }, [fetchInvoices, user?._id]);
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     if (value >= 1 && value <= totalPages) {

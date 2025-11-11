@@ -29,22 +29,16 @@ import UploadInvoiceDialog from "@/components/UploadInvoiceByUserDialog";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
 import { useUserInvoiceManagement } from "@/hooks/useUserInvoiceManagement";
 import { IUser } from "@/types/user";
+import LoadingComponent from "@/components/common/LoadingComponent";
 
 export default function InvoicesPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useAuth(); // Hook 1
 
-  const defaultUser: IUser = {
-    _id: "",
-    username: "",
-    fullName: "",
-    email: "",
-    province: "",
-    pass: "",
-    role: "user",
-    phone: "",
-    createdAt: "", // Hoặc Date nếu bạn parse nó
-    updatedAt: "", // Hoặc Date
-  };
+  // 💡 Định nghĩa đối tượng IUser mặc định (Placeholder)
+
+  // 💡 GỌI HOOK TRƯỚC EARLY RETURN
+  // Truyền user (nếu có) hoặc defaultUser (nếu user là null)
+  const currentUser = user;
 
   const {
     loading,
@@ -101,14 +95,15 @@ export default function InvoicesPage() {
     handleExportCollectedConfirm,
     handleAddSuccess,
     handleEditSuccess,
-  } = useUserInvoiceManagement({ user: user || defaultUser }); // Truyền user
+  } = useUserInvoiceManagement({ user: currentUser }); // Truyền user
+
+  // 💡 SỬ DỤNG HOOK ĐỂ LẤY TẤT CẢ LOGIC
 
   if (!isAuthenticated || !user) {
     return <p style={{ padding: "2rem" }}>Vui lòng đăng nhập...</p>;
   }
 
-  // 💡 SỬ DỤNG HOOK ĐỂ LẤY TẤT CẢ LOGIC
-
+  // 💡 Logic kiểm tra lỗi (sử dụng error từ hook)
   if (error) {
     return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
   }
