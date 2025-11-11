@@ -14,17 +14,17 @@ export const fetchallInvoice = async (
   sortField?: string | null,
   sortDirection?: "asc" | "desc"
 ) => {
-  console.log(
-    currentPage,
-    invoicesPerPage,
-    printStatus,
-    collectionStatus,
-    assignedUserId,
-    province,
-    userprovince,
-    customerCode,
-    stationCode
-  );
+  // console.log(
+  //   currentPage,
+  //   invoicesPerPage,
+  //   printStatus,
+  //   collectionStatus,
+  //   assignedUserId,
+  //   province,
+  //   userprovince,
+  //   customerCode,
+  //   stationCode
+  // );
 
   const res = await axios.get<FetchInvoiceResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`, {
     params: {
@@ -101,6 +101,7 @@ export const createInvoice_API = async (newInvoice: {
   customerAddress: string;
   billing_period: string;
   currentAmount: string;
+  recordBookCode: string;
   assignedTo: string;
 }) => {
   try {
@@ -116,6 +117,7 @@ export const createInvoice_API = async (newInvoice: {
     return res;
   } catch (err) {
     console.error("Cập nhật trạng thái thất bại:", err);
+    throw err;
   }
 };
 

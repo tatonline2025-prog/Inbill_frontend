@@ -42,6 +42,7 @@ export default function EditInvoiceDialog({
     previousAmount: "",
     totalAmount: "",
     note: "",
+    recordBookCode: "",
     assignedTo: "",
     billing_period: "",
   });
@@ -56,6 +57,7 @@ export default function EditInvoiceDialog({
         previousAmount: invoice.previousAmount || "",
         totalAmount: invoice.totalAmount || "",
         note: invoice.note || "",
+        recordBookCode: invoice.recordBookCode || "",
         assignedTo: invoice.assignedTo?._id || "",
         billing_period: invoice.billing_period || "",
       });
@@ -141,10 +143,18 @@ export default function EditInvoiceDialog({
             placeholder="VD: 10/2025"
             fullWidth
           />
+
           <TextField
             label="Ghi chú"
             value={formData.note}
             onChange={(e) => handleChange("note", e.target.value)}
+            fullWidth
+          />
+
+          <TextField
+            label="Trạm"
+            value={formData.recordBookCode}
+            onChange={(e) => handleChange("recordBookCode", e.target.value)}
             fullWidth
           />
 

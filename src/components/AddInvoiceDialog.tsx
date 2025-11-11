@@ -35,6 +35,7 @@ export default function AddInvoiceDialog({
     billing_period: "",
     currentAmount: "",
     previousAmount: "0",
+    recordBookCode: "",
     assignedTo: "",
   });
 
@@ -81,8 +82,6 @@ export default function AddInvoiceDialog({
       alert("Vui lòng nhập đầy đủ thông tin bắt buộc!");
       return;
     }
-
-    console.log("Hoá đơn mới: ", newInvoice);
 
     try {
       setLoading(true);
@@ -159,6 +158,13 @@ export default function AddInvoiceDialog({
             onChange={(e) => handleChange("previousAmount", e.target.value)}
             fullWidth
             required
+          />
+
+          <TextField
+            label="Trạm"
+            value={newInvoice.recordBookCode}
+            onChange={(e) => handleChange("recordBookCode", e.target.value)}
+            fullWidth
           />
 
           {assignedUsers && assignedUsers.length > 0 && (
