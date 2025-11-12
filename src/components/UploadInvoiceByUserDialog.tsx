@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { excelUp, excelUpProvince } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
 import { InvoiceInfo } from "@/types/invoice";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ interface Props {
 const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assignedUserId, assignedUserName }) => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
 
   const handleUpload = async () => {
     const token = localStorage.getItem("token");
@@ -35,6 +37,7 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
     const formData = new FormData();
     formData.append("excelFile", uploadFile);
     formData.append("userId", assignedUserId);
+    formData.append("billing_period", selectedBillingPeriod);
 
     setLoading(true);
     try {
@@ -64,6 +67,23 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
         <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
           Người phụ trách: <b>{assignedUserName}</b>
         </Typography>
+
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="billing-period-label">Chọn tháng</InputLabel>
+          <Select
+            labelId="billing-period-label"
+            value={selectedBillingPeriod}
+            label="Chọn tháng"
+            onChange={(e) => setSelectedBillingPeriod(e.target.value)}
+          >
+            <MenuItem value="">-- Chọn tháng --</MenuItem>
+            {generateBillingPeriods().map((period) => (
+              <MenuItem key={period} value={period}>
+                {period}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
           Chọn file Excel

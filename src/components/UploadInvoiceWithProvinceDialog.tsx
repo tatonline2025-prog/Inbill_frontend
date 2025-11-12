@@ -17,6 +17,7 @@ import { fetchallInvoice } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { excelUpProvince } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 
 interface Props {
   open: boolean;
@@ -28,6 +29,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
   const [selectedProvince, setSelectedProvince] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState("");
 
   const handleUpload = async () => {
     if (!uploadFile || !selectedProvince) return;
@@ -35,6 +37,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     const formData = new FormData();
     formData.append("file", uploadFile);
     formData.append("province", selectedProvince);
+    formData.append("billing_period", billingPeriod);
 
     setLoading(true);
     try {
@@ -92,6 +95,8 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     "An Giang",
   ];
 
+  const billingPeriods = generateBillingPeriods();
+
   return (
     <>
       <Dialog open={open} onClose={onClose}>
@@ -114,6 +119,22 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
                 </MenuItem>
               ))}
               {/* Add các tỉnh khác */}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="billing-period-label">Chọn tháng</InputLabel>
+            <Select
+              labelId="billing-period-label"
+              value={billingPeriod}
+              label="Chọn Kỳ"
+              onChange={(e) => setBillingPeriod(e.target.value)}
+            >
+              {billingPeriods.map((period) => (
+                <MenuItem key={period} value={period}>
+                  {period}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 

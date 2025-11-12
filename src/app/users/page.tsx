@@ -89,6 +89,7 @@ export default function UsersPage() {
     const formData = new FormData();
     formData.append("excelFile", selectedFile);
     formData.append("userId", userId);
+    formData.append("billing_period", selectedBillingPeriod);
 
     try {
       const token = localStorage.getItem("token");
@@ -444,6 +445,25 @@ export default function UsersPage() {
               <h2 className="text-lg font-semibold mb-4 text-gray-800">
                 Tải Excel lên cho {selectedUserForUpload.fullName}
               </h2>
+
+              <div className="space-y-4">
+                {/* 🔹 Chọn tháng */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Chọn Kỳ</label>
+                  <select
+                    value={selectedBillingPeriod}
+                    onChange={(e) => setSelectedBillingPeriod(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                  >
+                    <option value="">-- Chọn tháng --</option>
+                    {generateBillingPeriods().map((period) => (
+                      <option key={period} value={period}>
+                        {period}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
               <div className="space-y-4">
                 <div>

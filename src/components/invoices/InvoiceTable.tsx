@@ -194,7 +194,9 @@ export default function InvoiceTable({
                 {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "---"}
               </td>
               {/* Kỳ */}
-              <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>{billingPeriod}</td>
+              <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
+                {invoice.billing_period}
+              </td>
               <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                 {invoice.recordBookCode}
               </td>
