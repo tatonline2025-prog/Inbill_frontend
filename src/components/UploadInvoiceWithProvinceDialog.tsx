@@ -123,7 +123,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
           </FormControl>
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="billing-period-label">Chọn tháng</InputLabel>
+            <InputLabel id="billing-period-label">Chọn Kỳ</InputLabel>
             <Select
               labelId="billing-period-label"
               value={billingPeriod}

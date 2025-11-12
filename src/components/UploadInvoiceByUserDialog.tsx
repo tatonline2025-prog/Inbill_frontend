@@ -73,10 +73,10 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
           <Select
             labelId="billing-period-label"
             value={selectedBillingPeriod}
-            label="Chọn tháng"
+            label="Chọn Kỳ"
             onChange={(e) => setSelectedBillingPeriod(e.target.value)}
           >
-            <MenuItem value="">-- Chọn tháng --</MenuItem>
+            <MenuItem value="">-- Chọn Kỳ --</MenuItem>
             {generateBillingPeriods().map((period) => (
               <MenuItem key={period} value={period}>
                 {period}

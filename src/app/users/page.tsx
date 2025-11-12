@@ -455,7 +455,7 @@ export default function UsersPage() {
                     onChange={(e) => setSelectedBillingPeriod(e.target.value)}
                     className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
                   >
-                    <option value="">-- Chọn tháng --</option>
+                    <option value="">-- Chọn Kỳ --</option>
                     {generateBillingPeriods().map((period) => (
                       <option key={period} value={period}>
                         {period}
