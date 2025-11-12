@@ -122,24 +122,12 @@ export default function AddInvoiceDialog({
             fullWidth
             required
           />
-          <TextField
-            label="Số điện thoại"
-            value={newInvoice.customerPhone}
-            onChange={(e) => handleChange("customerPhone", e.target.value)}
-            fullWidth
-          />
+
           <TextField
             label="Địa chỉ"
             value={newInvoice.customerAddress}
             onChange={(e) => handleChange("customerAddress", e.target.value)}
             fullWidth
-          />
-          <TextField
-            label="Tháng nợ (VD: 10/2025)"
-            value={newInvoice.billing_period}
-            onChange={(e) => handleChange("billing_period", e.target.value)}
-            fullWidth
-            required
           />
 
           <TextField
@@ -161,9 +149,24 @@ export default function AddInvoiceDialog({
           />
 
           <TextField
+            label="Tháng nợ (VD: 10/2025)"
+            value={newInvoice.billing_period}
+            onChange={(e) => handleChange("billing_period", e.target.value)}
+            fullWidth
+            required
+          />
+
+          <TextField
             label="Trạm"
             value={newInvoice.recordBookCode}
             onChange={(e) => handleChange("recordBookCode", e.target.value)}
+            fullWidth
+          />
+
+          <TextField
+            label="Số điện thoại"
+            value={newInvoice.customerPhone}
+            onChange={(e) => handleChange("customerPhone", e.target.value)}
             fullWidth
           />
 

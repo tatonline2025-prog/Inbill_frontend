@@ -109,12 +109,7 @@ export default function EditInvoiceDialog({
             onChange={(e) => handleChange("customerAddress", e.target.value)}
             fullWidth
           />
-          <TextField
-            label="Số điện thoại"
-            value={formData.customerPhone}
-            onChange={(e) => handleChange("customerPhone", e.target.value)}
-            fullWidth
-          />
+
           <TextField
             label="Kỳ này"
             type="number"
@@ -136,13 +131,6 @@ export default function EditInvoiceDialog({
             onChange={(e) => handleChange("totalAmount", e.target.value)}
             fullWidth
           />
-          <TextField
-            label="Kỳ hoá đơn"
-            value={formData.billing_period}
-            onChange={(e) => handleChange("billing_period", e.target.value)}
-            placeholder="VD: 10/2025"
-            fullWidth
-          />
 
           <TextField
             label="Ghi chú"
@@ -152,9 +140,24 @@ export default function EditInvoiceDialog({
           />
 
           <TextField
+            label="Kỳ hoá đơn"
+            value={formData.billing_period}
+            onChange={(e) => handleChange("billing_period", e.target.value)}
+            placeholder="VD: 10/2025"
+            fullWidth
+          />
+
+          <TextField
             label="Trạm"
             value={formData.recordBookCode}
             onChange={(e) => handleChange("recordBookCode", e.target.value)}
+            fullWidth
+          />
+
+          <TextField
+            label="Số điện thoại"
+            value={formData.customerPhone}
+            onChange={(e) => handleChange("customerPhone", e.target.value)}
             fullWidth
           />
 
