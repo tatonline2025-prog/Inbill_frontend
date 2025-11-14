@@ -27,7 +27,10 @@ export default function AddInvoiceDialog({
   onSuccess: () => void;
   assignedUsers?: { _id: string; fullName: string }[];
 }) {
-  const [newInvoice, setNewInvoice] = useState({
+  const [billingPeriod, setBillingPeriod] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const DEFAULT_INVOICE = {
     invoiceNumber: "",
     customerName: "",
     customerPhone: "",
@@ -37,10 +40,9 @@ export default function AddInvoiceDialog({
     previousAmount: "0",
     recordBookCode: "",
     assignedTo: "",
-  });
+  };
 
-  const [billingPeriod, setBillingPeriod] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [newInvoice, setNewInvoice] = useState(DEFAULT_INVOICE);
 
   useEffect(() => {
     const fetchLatestPeriod = async () => {
@@ -86,6 +88,12 @@ export default function AddInvoiceDialog({
     try {
       setLoading(true);
       await createInvoice_API(newInvoice);
+
+      setNewInvoice({
+        ...DEFAULT_INVOICE,
+        billing_period: billingPeriod || "", // nếu muốn giữ lại tháng nợ mặc định
+      });
+
       onSuccess();
       onClose();
     } catch (error) {

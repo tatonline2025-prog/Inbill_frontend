@@ -19,6 +19,7 @@ import InvoiceSummary from "@/components/invoices/InvoiceSummary";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
 import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
+import toast from "react-hot-toast";
 
 export default function InvoicesPage() {
   // 💡 Sử dụng Custom Hook để lấy toàn bộ state và handlers
@@ -199,7 +200,7 @@ export default function InvoicesPage() {
         onClose={() => setOpenAddDialog(false)}
         onSuccess={() => {
           reloadInvoices();
-          // toast.success("Thêm hoá đơn thành công!"); // Có thể thêm toast nếu bạn muốn
+          toast.success("Thêm hoá đơn thành công!");
         }}
         assignedUsers={userData}
       />
