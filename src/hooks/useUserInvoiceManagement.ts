@@ -50,7 +50,10 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [openExportCollected, setOpenExportCollected] = useState(false);
-  const [selectedCollectedDate, setSelectedCollectedDate] = useState("");
+
+  const today = new Date().toLocaleDateString("en-CA");
+  const [selectedCollectedDate, setSelectedCollectedDate] = useState(today);
+
   const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo>();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -317,7 +320,6 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
       window.URL.revokeObjectURL(url);
       setOpenExportCollected(false);
-      setSelectedCollectedDate("");
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
       alert("Không thể kết nối tới máy chủ để xuất file.");

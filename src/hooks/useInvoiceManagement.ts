@@ -68,7 +68,10 @@ export const useInvoiceManagement = () => {
   const [selectedExportUser, setSelectedExportUser] = useState<string>("");
 
   const [openExportCollected, setOpenExportCollected] = useState(false);
-  const [selectedCollectedDate, setSelectedCollectedDate] = useState("");
+
+  const today = new Date().toLocaleDateString("en-CA");
+  const [selectedCollectedDate, setSelectedCollectedDate] = useState(today);
+
   const [selectedCollectedUser, setSelectedCollectedUser] = useState("all");
 
   // --- Hằng số ---
@@ -367,7 +370,6 @@ export const useInvoiceManagement = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
       setOpenExportCollected(false);
-      setSelectedCollectedDate("");
       setSelectedCollectedUser("all");
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
