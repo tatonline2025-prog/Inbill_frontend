@@ -190,6 +190,7 @@ export default function InvoicesPage() {
           >
             Thêm mới hoá đơn
           </Button>
+
           <Button
             variant="contained"
             color="error"
@@ -270,6 +271,7 @@ export default function InvoicesPage() {
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={handleSort}
+          showIsPaidColumn={false}
         />
         {!loading && sortedInvoices.length > 0 && (
           <Box sx={{ mt: 2, display: "flex", justifyContent: "center", alignItems: "center" }}>

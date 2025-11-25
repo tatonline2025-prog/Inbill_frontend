@@ -19,6 +19,7 @@ interface InvoiceToolbarProps {
   onDeleteSelected?: () => void;
   onOpenDeleteAllModal?: () => void;
   onOpenUploadWithProvince?: () => void;
+  onOpenUploadPaidInvoices?: () => void;
   searchValue?: string;
   onSearchChange?: (search: string) => void;
   onOpenExportByUser?: () => void;
@@ -38,6 +39,7 @@ export default function InvoiceToolbar({
   onDeleteSelected,
   onOpenDeleteAllModal,
   onOpenUploadWithProvince,
+  onOpenUploadPaidInvoices,
   searchValue = "",
   onSearchChange,
   onOpenExportByUser,
@@ -206,6 +208,20 @@ export default function InvoiceToolbar({
             sx={commonButtonSx}
           >
             Upload Excel + Tỉnh
+          </Button>
+        )}
+
+        {onOpenUploadPaidInvoices && (
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            startIcon={<AddIcon />}
+            // Sửa tên hàm ở đây
+            onClick={onOpenUploadPaidInvoices}
+            sx={commonButtonSx}
+          >
+            Hoá đơn đã đóng cước
           </Button>
         )}
       </Box>

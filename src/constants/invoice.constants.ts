@@ -48,7 +48,7 @@ export const generateBillingPeriods = () => {
 };
 
 export const TABLE_HEADERS: {
-  key: keyof InvoiceInfo | "checkbox" | "stt" | "actions" | "totalDebt" | "print" | "collect";
+  key: keyof InvoiceInfo | "checkbox" | "stt" | "actions" | "totalAmount" | "print" | "collect";
   label: string;
   sortable: boolean;
 }[] = [
@@ -59,12 +59,13 @@ export const TABLE_HEADERS: {
   { key: "customerAddress", label: "Địa Chỉ", sortable: true },
   { key: "currentAmount", label: "Kỳ này", sortable: true },
   { key: "previousAmount", label: "Kỳ trước", sortable: true },
-  { key: "totalDebt", label: "Tổng tiền nợ", sortable: false }, // Đổi key từ totalAmount
+  { key: "totalAmount", label: "Tổng tiền nợ", sortable: false }, // Đổi key từ totalAmount
   { key: "customerPhone", label: "SĐT", sortable: true },
   { key: "note", label: "Ghi chú", sortable: false },
   { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false },
   { key: "print", label: "Đã in bill", sortable: false },
   { key: "collect", label: "Đã thu", sortable: false },
+  { key: "isPaid", label: "Đã đóng cước", sortable: false },
   { key: "collectionDate", label: "Ngày thu", sortable: true },
   { key: "issueDate", label: "Ngày giao", sortable: true },
   { key: "billing_period", label: "Kỳ", sortable: true },

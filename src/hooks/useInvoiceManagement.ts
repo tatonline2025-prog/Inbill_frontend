@@ -1,7 +1,7 @@
 // hooks/useInvoiceManagement.ts
 
 import { useEffect, useMemo, useState } from "react";
-import { deleteInvoice_API, fetchallInvoice, handleToggle_API } from "@/services/invoice.api";
+import { deleteInvoice_API, fetchallInvoice, handleToggle_API, handleToggleIsPaid_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
@@ -57,6 +57,7 @@ export const useInvoiceManagement = () => {
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [openUploadWithProvince, setOpenUploadWithProvince] = useState(false);
+  const [openUploadpaidInvoice, setOpenUploadPaidInvoice] = useState(false);
 
   const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo>();
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -293,6 +294,26 @@ export const useInvoiceManagement = () => {
     }
   };
 
+  const handleToggleIsPaid = async (invoiceId: string) => {
+    try {
+      await handleToggleIsPaid_API(invoiceId);
+      // Cập nhật state cục bộ để UI phản hồi nhanh hơn
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv._id === invoiceId
+            ? {
+                ...inv,
+                isPaid: !inv.isPaid, // 1. Đảo ngược trạng thái isPaid
+              }
+            : inv
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi cập nhật trạng thái!");
+    }
+  };
+
   // --- Hàm Export (Vẫn giữ lại logic trong hook để dễ quản lý state modal) ---
   const handleExport = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel`;
@@ -400,6 +421,7 @@ export const useInvoiceManagement = () => {
     openAddDialog,
     openDeleteAllModal,
     openUploadWithProvince,
+    openUploadpaidInvoice,
     editingInvoice,
     editModalOpen,
     selectedInvoices,
@@ -424,6 +446,7 @@ export const useInvoiceManagement = () => {
     setEditModalOpen,
     setOpenDeleteAllModal,
     setOpenUploadWithProvince,
+    setOpenUploadPaidInvoice,
     setSelectedExportUser,
     setOpenExportByUser,
     setSelectedCollectedDate,
@@ -445,6 +468,7 @@ export const useInvoiceManagement = () => {
     handleSelectAll,
     handleSelectOne,
     handleToggle,
+    handleToggleIsPaid,
     handleExport,
     handleExportPrinted,
     handleExportByUserConfirm,

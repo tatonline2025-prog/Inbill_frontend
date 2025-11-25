@@ -41,6 +41,7 @@ export interface InvoiceInfo {
   uploadFileId?: string | null;
 
   note?: string | null;
+  isPaid?: boolean;
 
   // ⏱ Timestamps
   createdAt?: string;

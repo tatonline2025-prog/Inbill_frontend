@@ -6,6 +6,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
 import { useEffect, useMemo, useState } from "react";
 import { fetchLatestPeriod_API } from "@/services/invoice.api";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import toast from "react-hot-toast";
 
 interface InvoiceTableProps {
   loading: boolean;
@@ -16,10 +18,12 @@ interface InvoiceTableProps {
   currentPage: number;
   invoicesPerPage: number;
   onToggleStatus: (invoiceId: string, field: "printStatus" | "collectionStatus") => void;
+  onToggleIsPaid?: (invoiceId: string) => void;
   onMenuOpen: (event: React.MouseEvent<HTMLElement>, invoice: InvoiceInfo) => void;
   sortField: string | null;
   sortDirection: "asc" | "desc" | "none";
   onSort: (field: string) => void;
+  showIsPaidColumn?: boolean;
 }
 
 export default function InvoiceTable({
@@ -31,22 +35,16 @@ export default function InvoiceTable({
   currentPage,
   invoicesPerPage,
   onToggleStatus,
+  onToggleIsPaid,
   onMenuOpen,
   sortField,
   sortDirection,
   onSort,
+  showIsPaidColumn = true,
 }: InvoiceTableProps) {
   const handleSortClick = (field: string) => {
     onSort(field);
   };
-
-  // if (loading) {
-  //   return <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>;
-  // }
-
-  // if (invoices.length === 0) {
-  //   return <Typography sx={{ p: 4, textAlign: "center" }}>Không có hóa đơn nào được tìm thấy.</Typography>;
-  // }
 
   const isAllSelected = selectedInvoices.length === invoices.length && invoices.length > 0;
 
@@ -66,6 +64,26 @@ export default function InvoiceTable({
 
     fetchLatestPeriod();
   }, []);
+
+  interface CopyableKey {
+    key: Extract<keyof InvoiceInfo, "invoiceNumber" | "totalAmount">;
+    label: string;
+    sortable: boolean;
+  }
+  const handleCopyColumn = (data: CopyableKey) => {
+    const columnData = invoices.map((invoice) => (invoice[data.key] ?? "").toString()).join("\n");
+
+    navigator.clipboard
+      .writeText(columnData)
+      .then(() => toast.success(`Đã copy cột ${data.label}!`))
+      .catch((err) => console.error("Lỗi copy:", err));
+  };
+
+  // Lọc cột (nào hiển thị nào không)
+  const visibleHeaders = useMemo(() => {
+    if (showIsPaidColumn) return TABLE_HEADERS;
+    return TABLE_HEADERS.filter((header) => header.key !== "isPaid");
+  }, [showIsPaidColumn]);
 
   return (
     <Box sx={{ overflowX: "auto" }}>
@@ -89,7 +107,7 @@ export default function InvoiceTable({
       >
         <thead>
           <tr style={{ backgroundColor: "#f9fafb" }}>
-            {TABLE_HEADERS.map((header) => (
+            {visibleHeaders.map((header) => (
               <th
                 key={header.key}
                 onClick={header.key === "collectionDate" ? () => handleSortClick("collectionDate") : undefined}
@@ -101,6 +119,14 @@ export default function InvoiceTable({
                   fontSize: "0.75rem",
                   cursor: header.sortable ? "pointer" : "default",
                   userSelect: "none",
+                }}
+                onMouseEnter={(e) => {
+                  const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
+                  if (btn) btn.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
+                  if (btn) btn.style.opacity = "0";
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -121,6 +147,21 @@ export default function InvoiceTable({
                           : "↕"
                         : "↕"}
                     </span>
+                  )}
+
+                  {(header.key === "invoiceNumber" || header.key === "totalAmount") && (
+                    <IconButton
+                      className="copy-btn"
+                      size="small"
+                      style={{ opacity: 0, transition: "opacity 0.2s" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyColumn(header as CopyableKey);
+                      }}
+                      title="Copy cả cột"
+                    >
+                      <ContentCopyIcon style={{ fontSize: "14px", color: "#000000ff" }} />
+                    </IconButton>
                   )}
                 </Box>
               </th>
@@ -185,6 +226,18 @@ export default function InvoiceTable({
                   sx={{ transform: "scale(0.8)" }}
                 />
               </td>
+
+              {showIsPaidColumn && (
+                <td style={{ border: "1px solid #ddd", padding: "6px", textAlign: "center" }}>
+                  <Switch
+                    checked={invoice.isPaid ?? false}
+                    onChange={() => onToggleIsPaid && onToggleIsPaid(invoice._id)}
+                    color="success"
+                    sx={{ transform: "scale(0.8)" }}
+                  />
+                </td>
+              )}
+
               {/* Ngày thu */}
               <td style={{ border: "1px solid #ddd", padding: "6px", fontSize: "0.75rem" }}>
                 {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : "---"}

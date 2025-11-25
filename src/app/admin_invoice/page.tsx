@@ -20,6 +20,7 @@ import InvoiceTable from "@/components/invoices/InvoiceTable";
 import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
 import toast from "react-hot-toast";
+import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
 
 export default function InvoicesPage() {
   // 💡 Sử dụng Custom Hook để lấy toàn bộ state và handlers
@@ -45,6 +46,7 @@ export default function InvoicesPage() {
     openAddDialog,
     openDeleteAllModal,
     openUploadWithProvince,
+    openUploadpaidInvoice,
     editingInvoice,
     editModalOpen,
     selectedInvoices,
@@ -67,6 +69,7 @@ export default function InvoicesPage() {
     setEditModalOpen,
     setOpenDeleteAllModal,
     setOpenUploadWithProvince,
+    setOpenUploadPaidInvoice,
     setSelectedExportUser,
     setOpenExportByUser,
     setSelectedCollectedDate,
@@ -87,6 +90,7 @@ export default function InvoicesPage() {
     handleSelectAll,
     handleSelectOne,
     handleToggle,
+    handleToggleIsPaid,
     handleExport,
     handleExportPrinted,
     handleExportByUserConfirm,
@@ -114,6 +118,7 @@ export default function InvoicesPage() {
           onDeleteSelected={handleDeleteSelected}
           onOpenDeleteAllModal={() => setOpenDeleteAllModal(true)}
           onOpenUploadWithProvince={() => setOpenUploadWithProvince(true)}
+          onOpenUploadPaidInvoices={() => setOpenUploadPaidInvoice(true)}
           searchType={searchType}
           onSearchTypeChange={handleSearchTypeChange}
           searchValue={searchValue} // Dùng searchValue
@@ -155,6 +160,7 @@ export default function InvoicesPage() {
             currentPage={currentPage}
             invoicesPerPage={invoicesPerPage}
             onToggleStatus={handleToggle}
+            onToggleIsPaid={handleToggleIsPaid}
             onMenuOpen={handleMenuOpen}
             sortField={sortField}
             sortDirection={sortDirection}
@@ -217,6 +223,14 @@ export default function InvoicesPage() {
         open={openUploadWithProvince}
         onClose={() => setOpenUploadWithProvince(false)}
         onSuccess={(data) => {
+          reloadInvoices();
+        }}
+      />
+
+      <UploadPaidInvoicesDialog
+        open={openUploadpaidInvoice}
+        onClose={() => setOpenUploadPaidInvoice(false)}
+        onSuccess={() => {
           reloadInvoices();
         }}
       />

@@ -8,8 +8,8 @@ export const fetchallInvoice = async (
   collectionStatus?: "collected" | "not_collected",
   assignedUserId?: string,
   province?: string,
-  customerCode?: string, // 👈 Đổi tên từ searchInvoiceNumber sang customerCode
-  stationCode?: string, // 👈 THÊM tham số tìm kiếm theo Mã trạm
+  customerCode?: string,
+  stationCode?: string,
   userprovince?: string,
   sortField?: string | null,
   sortDirection?: "asc" | "desc"
@@ -25,6 +25,7 @@ export const fetchallInvoice = async (
   //   customerCode,
   //   stationCode
   // );
+  const token = localStorage.getItem("token");
 
   const res = await axios.get<FetchInvoiceResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`, {
     params: {
@@ -39,6 +40,10 @@ export const fetchallInvoice = async (
       userprovince,
       sortField,
       sortDirection,
+    },
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -92,6 +97,42 @@ export const handleToggle_API = async (invoiceId: string, field: "printStatus" |
     return res;
   } catch (err) {
     console.error("Cập nhật trạng thái thất bại:", err);
+  }
+};
+
+export const handleToggleIsPaid_API = async (invoiceId: string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  try {
+    const res = await axios.patch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/${invoiceId}/toggleispaid`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res;
+  } catch (err) {
+    console.error("Cập nhật trạng thái thất bại:", err);
+    throw err;
+  }
+};
+
+export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[] }) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  try {
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/mark-paid-list`,
+      { data },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res;
+  } catch (err) {
+    console.error("Cập nhật trạng thái thất bại:", err);
+    throw err;
   }
 };
 
