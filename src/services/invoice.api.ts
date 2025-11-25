@@ -12,7 +12,8 @@ export const fetchallInvoice = async (
   stationCode?: string,
   userprovince?: string,
   sortField?: string | null,
-  sortDirection?: "asc" | "desc"
+  sortDirection?: "asc" | "desc",
+  isPaid?: boolean
 ) => {
   // console.log(
   //   currentPage,
@@ -40,6 +41,7 @@ export const fetchallInvoice = async (
       userprovince,
       sortField,
       sortDirection,
+      isPaid,
     },
     headers: {
       "Content-Type": "multipart/form-data",

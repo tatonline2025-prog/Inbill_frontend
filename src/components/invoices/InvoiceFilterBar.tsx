@@ -1,6 +1,6 @@
 // components/invoices/InvoiceFilterBar.tsx
 
-import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { IUser } from "@/types/user";
 
@@ -15,6 +15,8 @@ interface InvoiceFilterBarProps {
   onSelectedProvinceChange: (value: string) => void;
   userData: IUser[];
   provinces: string[];
+  isPaid: boolean;
+  onIsPaidChange: (checked: boolean) => void;
 }
 
 export default function InvoiceFilterBar({
@@ -28,6 +30,8 @@ export default function InvoiceFilterBar({
   onSelectedProvinceChange,
   userData,
   provinces,
+  isPaid,
+  onIsPaidChange,
 }: InvoiceFilterBarProps) {
   return (
     <Box
@@ -124,6 +128,24 @@ export default function InvoiceFilterBar({
           ))}
         </Select>
       </FormControl>
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={isPaid} // Biến boolean (true/false)
+            onChange={(e) => onIsPaidChange(e.target.checked)}
+            size="small"
+            color="primary"
+          />
+        }
+        label="Đã đóng cước"
+        sx={{
+          // Giữ lại style responsive cho label nếu cần
+          "& .MuiFormControlLabel-label": {
+            fontSize: { xs: "0.875rem", sm: "1rem" },
+          },
+        }}
+      />
     </Box>
   );
 }

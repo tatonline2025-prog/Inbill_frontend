@@ -38,6 +38,7 @@ export default function InvoicesPage() {
     filterPrint,
     filterCollection,
     filterAssignedUser,
+    isPaidFilter,
     selectedProvince,
     searchType,
     searchValue,
@@ -64,6 +65,7 @@ export default function InvoicesPage() {
     setFilterPrint,
     setFilterCollection,
     setFilterAssignedUser,
+    setIsPaidFilter,
     setSelectedProvince,
     setOpenAddDialog,
     setEditModalOpen,
@@ -138,6 +140,8 @@ export default function InvoicesPage() {
           onSelectedProvinceChange={createFilterChangeHandler(setSelectedProvince)}
           userData={userData}
           provinces={provinces}
+          isPaid={isPaidFilter}
+          onIsPaidChange={(checked) => setIsPaidFilter(checked)}
         />
 
         {/* === SUMMARY === */}

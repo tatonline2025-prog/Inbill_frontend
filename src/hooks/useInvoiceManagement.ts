@@ -43,6 +43,7 @@ export const useInvoiceManagement = () => {
   const [filterCollection, setFilterCollection] = useState("all");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("all");
+  const [isPaidFilter, setIsPaidFilter] = useState(false);
 
   // --- State Tìm kiếm & Sắp xếp ---
   const [searchType, setSearchType] = useState<SearchType>("customerCode");
@@ -110,7 +111,8 @@ export const useInvoiceManagement = () => {
         searchParams.stationCode,
         undefined, // userprovince
         sortFieldToSend,
-        sortDirectionToSend
+        sortDirectionToSend,
+        isPaidFilter
       );
 
       setTotalPages(res.data.pagination.totalPages);
@@ -160,6 +162,7 @@ export const useInvoiceManagement = () => {
     searchType,
     sortField,
     sortDirection,
+    isPaidFilter,
   ]);
 
   // --- Handlers ---
@@ -441,6 +444,8 @@ export const useInvoiceManagement = () => {
     setFilterPrint,
     setFilterCollection,
     setFilterAssignedUser,
+    setIsPaidFilter,
+    isPaidFilter,
     setSelectedProvince,
     setOpenAddDialog,
     setEditModalOpen,
