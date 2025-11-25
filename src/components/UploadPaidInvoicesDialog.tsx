@@ -25,9 +25,14 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
       return;
     }
 
-    // 1. Xử lý text: Tách dòng (\n), xóa khoảng trắng thừa, loại bỏ dòng trống
+    // 1. Xử lý text
     const invoiceList = invoiceText
-      .split("\n")
+      // Cắt chuỗi bằng regex:
+      // \n : Xuống dòng
+      // ,  : Dấu phẩy
+      // \s : Khoảng trắng (space, tab...)
+      // +  : Nếu có nhiều dấu liên tiếp (ví dụ ",   ") thì gom lại cắt 1 lần
+      .split(/[\n,\s]+/)
       .map((item) => item.trim())
       .filter((item) => item !== "");
 
@@ -47,8 +52,6 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
       const res = await handleToggleIsPaidList_API(payload);
 
       console.log(res);
-
-      // if (res?.status === 200) { ... }
 
       // Giả lập thành công để test UI
       await new Promise((resolve) => setTimeout(resolve, 1000));
