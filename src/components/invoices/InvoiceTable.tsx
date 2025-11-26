@@ -101,71 +101,93 @@ export default function InvoiceTable({
         style={{
           width: "100%",
           borderCollapse: "collapse",
-          minWidth: 900,
           fontSize: "0.875rem",
         }}
       >
         <thead>
           <tr style={{ backgroundColor: "#f9fafb" }}>
-            {visibleHeaders.map((header) => (
-              <th
-                key={header.key}
-                onClick={header.key === "collectionDate" ? () => handleSortClick("collectionDate") : undefined}
-                style={{
-                  border: "1px solid #e0e0e0",
-                  padding: "8px 6px",
-                  textAlign: "left",
-                  backgroundColor: "#f5f5f5",
-                  fontSize: "0.75rem",
-                  cursor: header.sortable ? "pointer" : "default",
-                  userSelect: "none",
-                }}
-                onMouseEnter={(e) => {
-                  const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
-                  if (btn) btn.style.opacity = "1";
-                }}
-                onMouseLeave={(e) => {
-                  const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
-                  if (btn) btn.style.opacity = "0";
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  {header.key === "checkbox" ? (
-                    <input type="checkbox" checked={isAllSelected} onChange={(e) => onSelectAll(e.target.checked)} />
-                  ) : (
-                    header.label
-                  )}
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  {header.key === "collectionDate" && (
-                    <span style={{ fontSize: "0.7rem", color: "#666" }}>
-                      {sortField === "collectionDate"
-                        ? sortDirection === "desc"
-                          ? "↓"
-                          : sortDirection === "asc"
-                          ? "↑"
-                          : "↕"
-                        : "↕"}
-                    </span>
-                  )}
+            {visibleHeaders.map((header) => {
+              return (
+                <th
+                  key={header.key}
+                  onClick={header.key === "collectionDate" ? () => handleSortClick("collectionDate") : undefined}
+                  style={{
+                    border: "1px solid #e0e0e0",
+                    padding: "8px 6px",
+                    textAlign: "center", // 1. Căn giữa text của thẻ th
+                    backgroundColor: "#f5f5f5",
+                    fontSize: "0.75rem",
+                    cursor: header.sortable ? "pointer" : "default",
+                    userSelect: "none",
+                    whiteSpace: "nowrap",
+                    verticalAlign: "middle",
+                  }}
+                  onMouseEnter={(e) => {
+                    const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
+                    if (btn) btn.style.opacity = "1";
+                  }}
+                  onMouseLeave={(e) => {
+                    const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
+                    if (btn) btn.style.opacity = "0";
+                  }}
+                >
+                  {/* 2. Dùng Box flex để gom icon và chữ vào 1 hàng + căn giữa */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center", // Căn giữa nội dung trong Flex
+                      gap: 0.5, // Khoảng cách giữa chữ và icon
+                      width: "100%",
+                    }}
+                  >
+                    {/* Phần Chữ (Label) */}
+                    <Box component="span">
+                      {header.key === "checkbox" ? (
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={(e) => onSelectAll(e.target.checked)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      ) : (
+                        header.label
+                      )}
+                    </Box>
 
-                  {(header.key === "invoiceNumber" || header.key === "totalAmount") && (
-                    <IconButton
-                      className="copy-btn"
-                      size="small"
-                      style={{ opacity: 0, transition: "opacity 0.2s" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopyColumn(header as CopyableKey);
-                      }}
-                      title="Copy cả cột"
-                    >
-                      <ContentCopyIcon style={{ fontSize: "14px", color: "#000000ff" }} />
-                    </IconButton>
-                  )}
-                </Box>
-              </th>
-            ))}
+                    {/* Phần Icon (Sort + Copy) - Gom lại thành 1 cụm để không rớt dòng */}
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      {header.key === "collectionDate" && (
+                        <span style={{ fontSize: "0.7rem", color: "#666" }}>
+                          {sortField === "collectionDate"
+                            ? sortDirection === "desc"
+                              ? "↓"
+                              : sortDirection === "asc"
+                              ? "↑"
+                              : "↕"
+                            : "↕"}
+                        </span>
+                      )}
+
+                      {(header.key === "invoiceNumber" || header.key === "totalAmount") && (
+                        <IconButton
+                          className="copy-btn"
+                          size="small"
+                          style={{ opacity: 0, transition: "opacity 0.2s", padding: 2 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyColumn(header as CopyableKey);
+                          }}
+                          title="Copy cả cột"
+                        >
+                          <ContentCopyIcon style={{ fontSize: "14px", color: "#000000ff" }} />
+                        </IconButton>
+                      )}
+                    </Box>
+                  </Box>
+                </th>
+              );
+            })}
           </tr>
         </thead>
 

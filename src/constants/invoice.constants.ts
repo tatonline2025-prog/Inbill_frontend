@@ -54,12 +54,12 @@ export const TABLE_HEADERS: {
 }[] = [
   { key: "checkbox", label: "✓", sortable: false },
   { key: "stt", label: "STT", sortable: false },
-  { key: "invoiceNumber", label: "Mã Khách Hàng", sortable: true },
-  { key: "customerName", label: "Tên Khách Hàng", sortable: true },
+  { key: "invoiceNumber", label: "Mã KH", sortable: true },
+  { key: "customerName", label: "Tên", sortable: true },
   { key: "customerAddress", label: "Địa Chỉ", sortable: true },
   { key: "currentAmount", label: "Kỳ này", sortable: true },
   { key: "previousAmount", label: "Kỳ trước", sortable: true },
-  { key: "totalAmount", label: "Tổng tiền nợ", sortable: false }, // Đổi key từ totalAmount
+  { key: "totalAmount", label: "Tổng tiền", sortable: false }, // Đổi key từ totalAmount
   { key: "customerPhone", label: "SĐT", sortable: true },
   { key: "note", label: "Ghi chú", sortable: false },
   { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false },
