@@ -3,11 +3,6 @@
 import React, { useState } from "react";
 import axios from "axios"; // Giả sử bạn đang dùng axios (có thể thay bằng fetch)
 
-// --- Khai báo Hằng số và Interface (Giả định, có thể bỏ qua nếu dùng JavaScript) ---
-const API_ENDPOINT = "http://localhost:5000/api/v1/finance/optimal-sum";
-// Thay thế bằng địa chỉ API thực tế của bạn
-// const API_ENDPOINT = "/api/v1/finance/optimal-sum";
-
 interface Result {
   success: boolean;
   message: string;
@@ -62,9 +57,9 @@ const OptimalSumFinder = () => {
       };
 
       // 2. Gọi API Backend
-      const res = await axios.post(API_ENDPOINT, payload);
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/finance/optimal-sum`, payload);
 
-      console.log(res.data);
+      // console.log(res.data);
 
       // 3. Xử lý kết quả
       setResult(res.data as Result);
