@@ -204,7 +204,7 @@ const OptimalSumFinder = () => {
                 color: "#333",
               }}
             >
-              Danh sách Số tiền (ngăn cách bằng dấu phẩy):
+              Danh sách Số tiền:
             </label>
 
             <textarea
@@ -254,7 +254,10 @@ const OptimalSumFinder = () => {
                   fontSize: "14px",
                   transition: "0.25s",
                 }}
-                onFocus={(e) => (e.target.style.border = "1px solid #007bff")}
+                onFocus={(e) => {
+                  e.target.style.border = "1px solid #007bff";
+                  e.target.select();
+                }}
                 onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
                 required
               />
@@ -287,7 +290,10 @@ const OptimalSumFinder = () => {
                   fontSize: "14px",
                   transition: "0.25s",
                 }}
-                onFocus={(e) => (e.target.style.border = "1px solid #007bff")}
+                onFocus={(e) => {
+                  e.target.style.border = "1px solid #007bff";
+                  e.target.select();
+                }}
                 onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
                 required
               />
