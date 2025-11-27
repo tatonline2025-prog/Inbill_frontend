@@ -3,7 +3,7 @@
 "use client";
 
 import { Box, Pagination, Typography } from "@mui/material";
-import AdminRoute from "@/components/AdminRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
 import UploadInvoiceWithProvinceDialog from "@/components/UploadInvoiceWithProvinceDialog";
@@ -102,7 +102,7 @@ export default function InvoicesPage() {
   if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
 
   return (
-    <AdminRoute fallback={<p>Redirecting...</p>}>
+    <ProtectedRoute fallback={<p>Redirecting...</p>}>
       <Box sx={{ p: 4 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Danh Sách Hóa Đơn
@@ -262,6 +262,6 @@ export default function InvoicesPage() {
         setSelectedCollectedUser={setSelectedCollectedUser}
         handleExportCollectedConfirm={handleExportCollectedConfirm}
       />
-    </AdminRoute>
+    </ProtectedRoute>
   );
 }

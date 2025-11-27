@@ -17,37 +17,59 @@ export default function Header() {
           </span>
 
           {user?.role === "admin" && (
-            <Link href="/users" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-              Tài khoản
-            </Link>
+            <>
+              <Link href="/users" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Tài khoản
+              </Link>
+
+              <Link href="/admin_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Quản lý hoá đơn
+              </Link>
+
+              <Link href="/register" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Đăng ký tài khoản con
+              </Link>
+
+              <Link href="/dashboard" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Thống kê
+              </Link>
+
+              <Link href="/optimalsumfinder" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Tool tính toán
+              </Link>
+            </>
           )}
 
-          <Link
-            href={user?.role === "admin" ? "/admin_invoice" : "/user_invoice"}
-            className="nav-item"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Quản lý hoá đơn
-          </Link>
-
-          {user?.role === "admin" && (
-            <Link href="/register" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-              Đăng ký tài khoản con
-            </Link>
+          {user?.usertype === "collaborator" && (
+            <>
+              <Link href="/optimalsumfinder" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Tool tính toán
+              </Link>
+            </>
           )}
 
-          <Link
-            href={user?.role === "admin" ? "/dashboard" : "/userdashboard"}
-            className="nav-item"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Thống kê
-          </Link>
+          {user?.role !== "admin" && user?.usertype !== "collaborator" && (
+            <>
+              <Link href="/user_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Quản lý hoá đơn
+              </Link>
 
+              <Link href="/userdashboard" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Thống kê
+              </Link>
+
+              <Link href="/optimalsumfinder" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Tool tính toán
+              </Link>
+            </>
+          )}
+
+          {/* Đổi mật khẩu cho tất cả user */}
           <Link href="/changepass" className="nav-item" onClick={() => setIsMenuOpen(false)}>
             Đổi mật khẩu
           </Link>
 
+          {/* Đăng xuất */}
           <button
             onClick={() => {
               logout();

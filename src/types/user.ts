@@ -8,6 +8,7 @@ export interface IUser {
   pass: string;
   role: "admin" | "user";
   phone: string;
+  usertype: string;
   createdAt: string; // Hoặc Date nếu bạn parse nó
   updatedAt: string; // Hoặc Date
 }

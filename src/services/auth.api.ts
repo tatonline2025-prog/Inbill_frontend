@@ -14,7 +14,8 @@ export const register = async (
   email: string,
   password: string,
   fullName: string,
-  province: string
+  province: string,
+  usertype: string
 ) => {
   const token = localStorage.getItem("token");
 
@@ -26,6 +27,7 @@ export const register = async (
       password,
       fullName,
       province,
+      usertype,
     },
     {
       headers: {

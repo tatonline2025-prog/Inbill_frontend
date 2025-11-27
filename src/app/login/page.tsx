@@ -34,8 +34,13 @@ export default function LoginPage() {
 
       // Chuyển hướng sau 1.5 giây (ví dụ về trang tài khoản)
       setTimeout(() => {
-        if (res.data.user.role === "admin") {
+        const role = res.data.user.role;
+        const userType = res.data.user.usertype;
+
+        if (role === "admin") {
           window.location.href = "/dashboard";
+        } else if (userType === "collaborator") {
+          window.location.href = "/optimalsumfinder";
         } else {
           window.location.href = "/userdashboard";
         }

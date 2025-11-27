@@ -1,6 +1,6 @@
 "use client";
 
-import AdminRoute from "@/components/AdminRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants";
 import { excelUp } from "@/services/excel.api";
 import { fetchallInvoice, invoiceSummary } from "@/services/invoice.api";
@@ -168,7 +168,7 @@ export default function UsersPage() {
   };
 
   return (
-    <AdminRoute fallback={<p>Redirecting...</p>}>
+    <ProtectedRoute fallback={<p>Redirecting...</p>}>
       <div className="p-4">
         <h1 className="text-3xl font-bold mb-6 text-orange-600">Danh Sách Tài Khoản Người Dùng</h1>
 
@@ -512,7 +512,7 @@ export default function UsersPage() {
           </div>
         )}
       </div>
-    </AdminRoute>
+    </ProtectedRoute>
   );
 }
 

@@ -30,6 +30,7 @@ import InvoiceTable from "@/components/invoices/InvoiceTable";
 import { useUserInvoiceManagement } from "@/hooks/useUserInvoiceManagement";
 import { IUser } from "@/types/user";
 import LoadingComponent from "@/components/common/LoadingComponent";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function InvoicesPage() {
   const { isAuthenticated, user } = useAuth(); // Hook 1
@@ -109,7 +110,7 @@ export default function InvoicesPage() {
   }
 
   return (
-    <>
+    <ProtectedRoute allowedRoles={["admin", "internal"]} redirectTo="/optimalsumfinder">
       <Box sx={{ p: 4 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Danh Sách Hóa Đơn
@@ -343,6 +344,6 @@ export default function InvoicesPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </ProtectedRoute>
   );
 }
