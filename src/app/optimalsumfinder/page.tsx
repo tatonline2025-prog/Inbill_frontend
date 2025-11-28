@@ -3,18 +3,23 @@
 import React, { useState } from "react";
 import axios from "axios"; // Giả sử bạn đang dùng axios (có thể thay bằng fetch)
 
+interface ComboOption {
+  sum: number;
+  count: number;
+  subset: number[];
+}
+
 interface Result {
   success: boolean;
   message: string;
-  bestSum: number;
-  bestSubset: number[];
+  results: ComboOption[]; // Thay thế cho bestSum và bestSubset đơn lẻ cũ
 }
 
 // --- Component Chính ---
 const OptimalSumFinder = () => {
   const [moneyListInput, setMoneyListInput] = useState<string>("");
   const [targetAmount, setTargetAmount] = useState<number>(0);
-  const [count, setCount] = useState<number>(0);
+  const [count, setCount] = useState<number>(9);
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -59,7 +64,7 @@ const OptimalSumFinder = () => {
       // 2. Gọi API Backend
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/finance/optimal-sum`, payload);
 
-      // console.log(res.data);
+      console.log(res.data);
 
       // 3. Xử lý kết quả
       setResult(res.data as Result);
@@ -70,14 +75,14 @@ const OptimalSumFinder = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    if (isNaN(amount) || amount === null) return "N/A";
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
-  };
+  // const formatCurrency = (amount: number) => {
+  //   if (isNaN(amount) || amount === null) return "N/A";
+  //   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+  // };
 
   const renderResult = () => {
     if (loading) {
-      return <p>Đang tính toán tối ưu... (Có thể mất vài giây nếu số lượng lớn)</p>;
+      return <p>Đang tính toán tối ưu... (Có thể mất vài giây vì thuật toán Monte Carlo)</p>;
     }
     if (error) {
       return <p style={{ color: "red" }}>Lỗi: {error}</p>;
@@ -86,39 +91,85 @@ const OptimalSumFinder = () => {
       return null;
     }
 
+    // Đảm bảo results luôn là mảng (phòng trường hợp api cũ trả về object)
+    const resultsList = Array.isArray(result.results) ? result.results : [];
+
     return (
       <div
         style={{
-          marginTop: "20px",
           padding: "15px",
-          border: `1px solid ${result.success ? "green" : "orange"}`,
-          borderRadius: "5px",
+          border: `2px solid ${result.success ? "#4caf50" : "#ff9800"}`, // Viền đậm hơn chút
+          borderRadius: "8px",
+          backgroundColor: "#fff",
         }}
       >
-        <h3 style={{ color: result.success ? "green" : "orange" }}>
-          {result.success ? "✅ THÀNH CÔNG" : "⚠️ KHÔNG THỎA MÃN CHÍNH XÁC"}
+        <h3 style={{ color: result.success ? "#2e7d32" : "#e65100", marginTop: 0 }}>
+          {result.success ? "✅ ĐÃ TÌM THẤY KẾT QUẢ" : "⚠️ KHÔNG TÌM THẤY TỔ HỢP PHÙ HỢP"}
         </h3>
-        <p>
+
+        <p style={{ fontStyle: "italic", marginBottom: "20px" }}>
           <strong>Thông báo:</strong> {result.message}
         </p>
-        <hr />
-        <h4>Kết quả Tối ưu</h4>
-        <p>
-          <strong>Tổng tiền tốt nhất:</strong> {formatCurrency(result.bestSum)}
-        </p>
-        <p>
-          <strong>Các số tiền được chọn:</strong>
-          <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
-            {result.bestSubset.map((item, index) => (
-              <li
-                key={index}
-                style={{ background: "#f0f0f0", margin: "3px 0", padding: "2px 5px", borderRadius: "3px" }}
+
+        {resultsList.length === 0 && <p>Không có dữ liệu chi tiết để hiển thị.</p>}
+
+        {resultsList.map((combo, index) => (
+          <div
+            key={index}
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              backgroundColor: "#f8f9fa",
+              border: "1px solid #dee2e6",
+              borderRadius: "6px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+                borderBottom: "1px solid #eee",
+                paddingBottom: "8px",
+              }}
+            >
+              <h4 style={{ margin: 0, color: "#333" }}>Tổ hợp {index + 1}</h4>
+              <span
+                style={{
+                  fontSize: "0.9em",
+                  color: "#666",
+                  background: "#e9ecef",
+                  padding: "2px 8px",
+                  borderRadius: "10px",
+                }}
               >
-                {formatCurrency(item)}
-              </li>
-            ))}
-          </ul>
-        </p>
+                {combo.count} số hạng
+              </span>
+            </div>
+
+            <div
+              style={{
+                fontSize: "1.1em",
+                color: "#333",
+                lineHeight: "1.6",
+                fontFamily: "Arial, Helvetica, sans-serif",
+              }}
+            >
+              {combo.subset.map((item, idx) => (
+                <span key={idx} style={{ display: "inline-block" }}>
+                  {item}
+
+                  {idx < combo.subset.length - 1 ? <span style={{ color: "#999", margin: "0 5px" }}>+</span> : ""}
+                </span>
+              ))}
+
+              <span style={{ color: "#999", margin: "0 5px" }}>=</span>
+              <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.2em" }}>{combo.sum}</span>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -162,6 +213,26 @@ const OptimalSumFinder = () => {
         Công cụ sử dụng thuật toán để giúp bạn tìm ra tổ hợp các số tiền có tổng gần nhất với giá trị mong muốn —{" "}
         <b>nhanh chóng, chính xác và tối ưu chi phí</b>.
       </p>
+
+      <div
+        style={{
+          background: "#fff3cd",
+          border: "1px solid #ffeeba",
+          padding: "12px 15px",
+          borderRadius: "8px",
+          color: "#856404",
+          fontSize: "14px",
+          lineHeight: "1.5",
+          marginBottom: "18px",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+        }}
+      >
+        <b>⚠️ Lưu ý quan trọng:</b> Để thuật toán tìm được kết quả <b>chính xác và tối ưu nhất</b>, vui lòng nhập danh
+        sách khoảng <b>100 số tiền</b>. Nếu nhập quá nhiều, kết quả trả về có thể không phải là phương án tốt nhất.
+        <br />
+        Đồng thời, hệ thống sẽ tự động tìm kiếm các tổ hợp có <b>số lượng số hạng linh hoạt</b> (từ 1 đến số lượng tối
+        đa bạn chọn) và sẽ trả về <b>1 - 5 tổ hợp </b>để đảm bảo tìm ra tổng tiền sát nhất.
+      </div>
 
       {/* --- THÊM FLEX ROW 2 CỘT --- */}
       <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
@@ -273,7 +344,7 @@ const OptimalSumFinder = () => {
                   color: "#333",
                 }}
               >
-                Số lượng Số hạng:
+                Số lượng số hạng tối đa:
               </label>
 
               <input
@@ -326,26 +397,7 @@ const OptimalSumFinder = () => {
 
         {/* CỘT PHẢI: KẾT QUẢ */}
 
-        <div style={{ flex: 1, minWidth: "350px" }}>
-          <div
-            style={{
-              background: "#fff3cd",
-              border: "1px solid #ffeeba",
-              padding: "12px 15px",
-              borderRadius: "8px",
-              color: "#856404",
-              fontSize: "14px",
-              lineHeight: "1.5",
-              marginBottom: "18px",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-            }}
-          >
-            <b>⚠️ Lưu ý:</b> Hệ thống chỉ chấp nhận danh sách khoảng <b>500 số tiền</b> với số lượng số hạng là{" "}
-            <b>9 số hạng</b>. Nếu lớn hơn, hệ thống có thể quá tải và không thể tính toán được.
-          </div>
-
-          {renderResult()}
-        </div>
+        <div style={{ flex: 1, minWidth: "350px" }}>{renderResult()}</div>
       </div>
     </div>
   );
