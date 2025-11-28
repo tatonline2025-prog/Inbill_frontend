@@ -318,8 +318,10 @@ export const useInvoiceManagement = () => {
   };
 
   // --- Hàm Export (Vẫn giữ lại logic trong hook để dễ quản lý state modal) ---
-  const handleExport = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel`;
+  const handleExport = async () => {
+    const token = await localStorage.getItem("token");
+
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?token=${token}`;
   };
 
   const handleExportPrinted = () => {

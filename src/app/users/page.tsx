@@ -56,7 +56,7 @@ export default function UsersPage() {
   }, []);
 
   const mergedUsers = userData
-    .filter((u) => u.role === "user")
+    .filter((u) => u.usertype === "internal" || u.usertype === "collaborator")
     .map((u) => {
       const summary = summaryData.find((s) => s.assignedTo?._id === u._id);
       return {
@@ -111,7 +111,8 @@ export default function UsersPage() {
   };
 
   const totalAdmins = userData.filter((u) => u.role === "admin").length;
-  const totalUsers = filteredUsers.filter((u) => u.role === "user").length;
+  const totalInternalUsers = filteredUsers.filter((u) => u.usertype === "internal").length;
+  const totalCollaboratorUsers = filteredUsers.filter((u) => u.usertype === "collaborator").length;
 
   // console.log(filteredUsers);
 
@@ -124,6 +125,7 @@ export default function UsersPage() {
       username: user.username || "",
       pass: user.pass || "",
       phone: user.phone || "",
+      usertype: user.usertype || "",
     });
   };
 
@@ -159,6 +161,7 @@ export default function UsersPage() {
         username: "",
         pass: "",
         phone: "",
+        usertype: "",
       });
     } catch (err) {
       console.error(err);
@@ -248,7 +251,7 @@ export default function UsersPage() {
               <h2 className="text-lg font-semibold text-green-600 mb-3">Tài khoản Người dùng (User)</h2>
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex-1 min-w-[250px] bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold shadow-sm">
-                  Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalUsers}</span>
+                  Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalInternalUsers}</span>
                 </div>
 
                 {/* Dropdown lọc tỉnh */}
@@ -300,48 +303,116 @@ export default function UsersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredUsers.map((user) => {
-                      return (
-                        <tr key={user._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
-                            {(user.collectedCount ?? 0) + (user.notCollectedCount ?? 0)}
-                          </td>
-                          <td className="px-6 py-4 text-center space-x-2">
-                            <button
-                              onClick={() => handleEditClick(user)}
-                              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
-                            >
-                              Sửa
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user._id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
-                            >
-                              Xoá
-                            </button>
-                          </td>
+                    {filteredUsers
+                      .filter((user) => user.usertype === "internal")
+                      .map((user) => {
+                        return (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
+                              {(user.collectedCount ?? 0) + (user.notCollectedCount ?? 0)}
+                            </td>
+                            <td className="px-6 py-4 text-center space-x-2">
+                              <button
+                                onClick={() => handleEditClick(user)}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user._id)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Xoá
+                              </button>
+                            </td>
 
-                          <td className="px-6 py-4 text-center">
-                            <button
-                              onClick={() => {
-                                setSelectedUserForUpload(user);
-                                setShowBillingModal(true);
-                              }}
-                              disabled={isLoading}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm"
-                            >
-                              Chọn Excel
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            <td className="px-6 py-4 text-center">
+                              <button
+                                onClick={() => {
+                                  setSelectedUserForUpload(user);
+                                  setShowBillingModal(true);
+                                }}
+                                disabled={isLoading}
+                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Chọn Excel
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-semibold text-purple-600 mb-3">Cộng tác viên (Collaborator)</h2>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 min-w-[250px] bg-purple-50 border border-purple-200 rounded-lg p-4 text-purple-700 font-semibold shadow-sm">
+                  Tổng số Cộng tác viên: <span className="text-purple-900">{totalCollaboratorUsers}</span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto border border-purple-200 rounded-lg">
+                <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tên
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tỉnh
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày tạo
+                      </th>
+
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
+                        Hành động
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredUsers
+                      .filter((user) => user.usertype === "collaborator")
+                      .map((user) => {
+                        return (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                            </td>
+
+                            <td className="px-6 py-4 text-center space-x-2">
+                              <button
+                                onClick={() => handleEditClick(user)}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user._id)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
+                              >
+                                Xoá
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
@@ -350,87 +421,133 @@ export default function UsersPage() {
         )}
 
         {editingUser && (
-          <div className="fixed inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] z-50">
-            <div className="bg-white rounded-lg shadow-lg w-[400px] p-6">
-              <h2 className="text-lg font-semibold mb-4 text-gray-800">Chỉnh sửa tài khoản</h2>
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+              {/* HEADER */}
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Chỉnh sửa thông tin</h2>
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
 
-              <div className="space-y-3">
+              {/* BODY */}
+              <div className="p-6 space-y-4">
+                {/* Hàng 1: Họ tên (Full width) */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Họ tên</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Họ và tên</label>
                   <input
                     type="text"
                     value={formData?.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                    placeholder="Nhập họ và tên..."
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    value={formData?.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
-                  <input
-                    type="text"
-                    value={formData?.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tỉnh</label>
-                  <select
-                    value={formData?.province || ""}
-                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
-                  >
-                    <option value="">-- Chọn tỉnh --</option>
-                    {provinces.map((province) => (
-                      <option key={province} value={province}>
-                        {province}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
-                  <input
-                    type="text"
-                    value={formData?.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
-                  />
+                {/* Hàng 2: Loại tài khoản & Tỉnh (Grid 2 cột) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Thay đổi vai trò */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Loại tài khoản</label>
+                    <select
+                      value={formData?.usertype}
+                      onChange={(e) => setFormData({ ...formData, usertype: e.target.value })}
+                      className={`w-full border rounded-lg px-3 py-2 font-medium outline-none focus:ring-2 ${
+                        formData?.usertype === "internal"
+                          ? "border-green-300 bg-green-50 text-green-800 focus:ring-green-500"
+                          : "border-purple-300 bg-purple-50 text-purple-800 focus:ring-purple-500"
+                      }`}
+                    >
+                      <option value="internal">Nhân viên nội bộ</option>
+                      <option value="collaborator">Cộng tác viên</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tỉnh / Thành phố</label>
+                    <select
+                      value={formData?.province || ""}
+                      onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                      <option value="">-- Chọn tỉnh --</option>
+                      {provinces.map((province) => (
+                        <option key={province} value={province}>
+                          {province}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
-                  <input
-                    type="text"
-                    value={formData?.pass}
-                    onChange={(e) => setFormData({ ...formData, pass: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:ring focus:ring-blue-200"
-                  />
-                  <span className="text-red-500 text-sm">
-                    Lưu ý: Thay đổi mật khẩu không qua xác minh. Hãy cân nhắc.
-                  </span>
+
+                {/* Hàng 3: Email & Phone (Grid 2 cột) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={formData?.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Số điện thoại</label>
+                    <input
+                      type="text"
+                      value={formData?.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <hr className="border-gray-100 my-2" />
+
+                {/* Hàng 4: Username & Pass (Grid 2 cột) - Khu vực bảo mật */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tên đăng nhập</label>
+                    <input
+                      type="text"
+                      value={formData?.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mật khẩu mới</label>
+                    <input
+                      type="text"
+                      placeholder="Nhập để đổi pass..."
+                      value={formData?.pass}
+                      onChange={(e) => setFormData({ ...formData, pass: e.target.value })}
+                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-red-500 outline-none"
+                    />
+                  </div>
+                  <div className="col-span-1 sm:col-span-2">
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      ⚠️ Lưu ý: Mật khẩu sẽ được đổi ngay lập tức mà không cần xác minh cũ.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              {/* FOOTER */}
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
                 <button
                   onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                  className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                 >
-                  Hủy
+                  Hủy bỏ
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2"
                 >
                   Lưu thay đổi
                 </button>

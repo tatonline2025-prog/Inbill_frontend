@@ -271,9 +271,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     }
   }; // --- 5. Export Handlers ---
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const token = await localStorage.getItem("token");
+
     // Export file của riêng user này
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?assignedUserId=${user?._id}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?token=${token}`;
   };
 
   const handleOpenExportCollected = () => {
