@@ -79,6 +79,12 @@ const OptimalSumFinder = () => {
         return;
       }
 
+      if (minTarget > maxTarget) {
+        setError(`Số tiền tối thiểu phải nhỏ hơn số tiền tối đa.`);
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         moneyList,
         minTarget,
@@ -426,7 +432,7 @@ const OptimalSumFinder = () => {
                   fontSize: "13px",
                 }}
               >
-                Số lượng tối đa:
+                Số lượng số hạng tối đa:
               </label>
               <input
                 type="number"
