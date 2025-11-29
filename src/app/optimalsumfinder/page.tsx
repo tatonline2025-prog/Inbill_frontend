@@ -280,7 +280,7 @@ const OptimalSumFinder = () => {
             boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
           }}
         >
-          <b>⚠️ Mẹo để có kết quả chính xác & nhanh nhất:</b>
+          <b>⚠️ Lưu ý / Mẹo để có kết quả chính xác & nhanh nhất:</b>
           <ul style={{ margin: "5px 0 0 0", paddingLeft: "20px" }}>
             <li style={{ marginBottom: "4px" }}>
               <b>Dữ liệu nhập:</b> Khuyến khích nhập <b>khoảng 100 số tiền</b> trở xuống để tối ưu tốc độ.
