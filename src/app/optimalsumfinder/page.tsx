@@ -275,18 +275,28 @@ const OptimalSumFinder = () => {
             borderRadius: "8px",
             color: "#856404",
             fontSize: "14px",
-            lineHeight: "1.5",
+            lineHeight: "1.6", // Tăng khoảng cách dòng một chút cho dễ đọc
             marginBottom: "18px",
             boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
           }}
         >
-          <b>⚠️ Lưu ý quan trọng:</b>
-          Để thuật toán hoạt động <b>chính xác và tối ưu nhất</b>, vui lòng chỉ nhập khoảng <b>trên dưới 100 số tiền</b>
-          . Đồng thời, hãy <b>hạn chế chọn số lượng số hạng tối đa quá lớn</b> — tốt nhất là <b>5 đến 6 đổ lại</b>, và
-          không nên chọn <b>9</b>. Nếu nhập quá nhiều số tiền hoặc chọn số lượng số hạng tối đa quá cao, hệ thống có thể{" "}
-          <b>không tính toán được</b> do độ phức tạp quá lớn, hoặc trả về kết quả <b>không tối ưu</b>. Hệ thống sẽ tự
-          động tìm tổ hợp với số lượng số hạng linh hoạt (từ 1 đến số lượng tối đa bạn chọn) và trả về <b>1–5 tổ hợp</b>{" "}
-          sát nhất với tổng tiền mục tiêu.
+          <b>⚠️ Mẹo để có kết quả chính xác & nhanh nhất:</b>
+          <ul style={{ margin: "5px 0 0 0", paddingLeft: "20px" }}>
+            <li style={{ marginBottom: "4px" }}>
+              <b>Dữ liệu nhập:</b> Khuyến khích nhập <b>khoảng 100 số tiền</b> trở xuống để tối ưu tốc độ.
+            </li>
+            <li style={{ marginBottom: "4px" }}>
+              <b>Số hạng tối đa:</b> Nên chọn từ <b>5 đến 6</b>.
+              <br />
+              <span style={{ fontSize: "0.9em", opacity: 0.9 }}>
+                (Chỉ nên chọn 7-9 khi danh sách tiền rất ít, dưới 50 số tiền hoặc trên một chút).
+              </span>
+            </li>
+            <li>
+              <b>Nếu hệ thống tự ngắt (do quá lâu):</b> Vui lòng <b>giảm số hạng tối đa</b> hoặc điều chỉnh số tiền mục
+              tiêu gần hơn với các số tiền trong danh sách nhập.
+            </li>
+          </ul>
         </div>
 
         {/* --- THÊM FLEX ROW 2 CỘT --- */}
