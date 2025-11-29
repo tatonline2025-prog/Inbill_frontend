@@ -274,7 +274,11 @@ export default function InvoiceTable({
                     padding: "4px",
                     textAlign: "right",
                     fontWeight: "bold",
-                    color: "#d32f2f",
+                    color: invoice.isPaid
+                      ? "#2e7d32" // Màu Xanh lá (Đã đóng cước)
+                      : Number(invoice.previousAmount) > 0
+                      ? "#d32f2f" // Màu Đỏ (Chưa trả + Có nợ cũ)
+                      : "#f9a825", // Màu Vàng đậm/Cam (Chưa trả + Không nợ cũ)
                   }}
                 >
                   {invoice.totalAmount}
@@ -301,7 +305,7 @@ export default function InvoiceTable({
                 </td>
               )}
 
-              {isColVisible("assignedTo") && ( // Lưu ý: Cần đảm bảo key trong TABLE_HEADERS là 'assignedTo'
+              {isColVisible("assignedTo") && (
                 <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.assignedTo?.fullName}</td>
               )}
 
@@ -359,7 +363,9 @@ export default function InvoiceTable({
               )}
 
               {isColVisible("recordBookCode") && (
-                <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.recordBookCode}</td>
+                <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap" }}>
+                  {invoice.recordBookCode}
+                </td>
               )}
 
               {/* Action 3 chấm: Luôn hiện (hoặc check key action nếu có trong headers) */}

@@ -7,6 +7,7 @@ interface ComboOption {
   sum: number;
   count: number;
   subset: number[];
+  indices: number[];
 }
 
 interface Result {
@@ -18,25 +19,48 @@ interface Result {
 // --- Component Chính ---
 const OptimalSumFinder = () => {
   const [moneyListInput, setMoneyListInput] = useState<string>("");
-  const [targetAmount, setTargetAmount] = useState<number>(0);
+  const [minTarget, setMinTarget] = useState<number>(0);
+  const [maxTarget, setMaxTarget] = useState<number>(0);
   const [count, setCount] = useState<number>(9);
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [originalFormatMap, setOriginalFormatMap] = useState<Record<number, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setResult(null);
     setError("");
+    setOriginalFormatMap({});
 
     try {
-      // 1. Chuẩn bị dữ liệu
-      const moneyList = moneyListInput
-        .split(/[\n,\s]+/)
+      // Tách chuỗi thô ra
+      const rawStrings = moneyListInput
+        .split(/[\n\s]+/)
         .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-        .map(Number);
+        .filter((s) => s.length > 0);
+
+      const moneyList: number[] = [];
+      const tempMap: Record<number, string> = {};
+
+      // Duyệt qua từng chuỗi thô để vừa lấy số, vừa lưu format
+      for (const str of rawStrings) {
+        // Chuyển sang số để tính toán (bỏ dấu . ,)
+        const numVal = Number(str.replace(/[.,]/g, ""));
+
+        if (!isNaN(numVal)) {
+          moneyList.push(numVal);
+          // Lưu vào map: Key là số tính toán, Value là chuỗi gốc (VD: 123456 -> "123.456")
+          // Chỉ lưu nếu chưa có (để tránh ghi đè nếu có số trùng)
+          if (tempMap[numVal] === undefined) {
+            tempMap[numVal] = str;
+          }
+        }
+      }
+
+      // Lưu map vào state để dùng lúc render
+      setOriginalFormatMap(tempMap);
 
       if (moneyList.some(isNaN)) {
         setError("Danh sách tiền chứa các giá trị không hợp lệ.");
@@ -57,7 +81,8 @@ const OptimalSumFinder = () => {
 
       const payload = {
         moneyList,
-        targetAmount,
+        minTarget,
+        maxTarget,
         count,
       };
 
@@ -70,15 +95,19 @@ const OptimalSumFinder = () => {
       setResult(res.data as Result);
     } catch (err) {
       console.log(err);
+      setError("Có lỗi xảy ra khi kết nối tới server.");
     } finally {
       setLoading(false);
     }
   };
 
-  // const formatCurrency = (amount: number) => {
-  //   if (isNaN(amount) || amount === null) return "N/A";
-  //   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
-  // };
+  const renderMoneyItem = (val: number) => {
+    if (originalFormatMap[val]) {
+      return originalFormatMap[val];
+    }
+    // Fallback nếu không tìm thấy trong map (thường là cho biến Sum tổng)
+    return new Intl.NumberFormat("vi-VN").format(val);
+  };
 
   const renderResult = () => {
     if (loading) {
@@ -98,7 +127,7 @@ const OptimalSumFinder = () => {
       <div
         style={{
           padding: "15px",
-          border: `2px solid ${result.success ? "#4caf50" : "#ff9800"}`, // Viền đậm hơn chút
+          border: `2px solid ${result.success ? "#4caf50" : "#ff9800"}`,
           borderRadius: "8px",
           backgroundColor: "#fff",
         }}
@@ -151,22 +180,37 @@ const OptimalSumFinder = () => {
 
             <div
               style={{
-                fontSize: "1.1em",
-                color: "#333",
-                lineHeight: "1.6",
+                display: "flex",
+                flexWrap: "wrap", // Cho phép xuống dòng nếu quá dài
+                alignItems: "center", // Căn giữa theo chiều dọc của dòng
+                gap: "10px", // Khoảng cách giữa các phần tử
                 fontFamily: "Arial, Helvetica, sans-serif",
               }}
             >
               {combo.subset.map((item, idx) => (
-                <span key={idx} style={{ display: "inline-block" }}>
-                  {item}
+                <React.Fragment key={idx}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <span style={{ fontSize: "1.1em", fontWeight: "bold", color: "#333" }}>
+                      {renderMoneyItem(item)}
+                    </span>
 
-                  {idx < combo.subset.length - 1 ? <span style={{ color: "#999", margin: "0 5px" }}>+</span> : ""}
-                </span>
+                    <span style={{ fontSize: "0.75em", color: "#888", marginTop: "2px" }}>
+                      ({combo.indices ? combo.indices[idx] + 1 : "?"})
+                    </span>
+                  </div>
+
+                  {idx < combo.subset.length - 1 && (
+                    <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.2em" }}>+</span>
+                  )}
+                </React.Fragment>
               ))}
 
-              <span style={{ color: "#999", margin: "0 5px" }}>=</span>
-              <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.2em" }}>{combo.sum}</span>
+              <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.2em" }}>=</span>
+
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.3em" }}>{combo.sum}</span>
+                <span style={{ fontSize: "0.75em", color: "#d32f2f", marginTop: "2px" }}>(Tổng tiền)</span>
+              </div>
             </div>
           </div>
         ))}
@@ -299,7 +343,7 @@ const OptimalSumFinder = () => {
             />
           </div>
 
-          <div style={{ display: "flex", gap: "20px", marginBottom: "22px" }}>
+          <div style={{ display: "flex", gap: "15px", marginBottom: "22px" }}>
             <div style={{ flex: 1 }}>
               <label
                 style={{
@@ -307,15 +351,16 @@ const OptimalSumFinder = () => {
                   marginBottom: "6px",
                   fontWeight: "600",
                   color: "#333",
+                  fontSize: "13px",
                 }}
               >
-                Tổng tiền Mong muốn:
+                Số tiền tối thiểu:
               </label>
-
               <input
                 type="number"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(Number(e.target.value))}
+                value={minTarget}
+                onChange={(e) => setMinTarget(Number(e.target.value))}
+                placeholder="VD: 10000000"
                 style={{
                   padding: "10px",
                   width: "100%",
@@ -324,6 +369,7 @@ const OptimalSumFinder = () => {
                   outline: "none",
                   fontSize: "14px",
                   transition: "0.25s",
+                  boxSizing: "border-box", // Quan trọng để không bị vỡ layout
                 }}
                 onFocus={(e) => {
                   e.target.style.border = "1px solid #007bff";
@@ -332,7 +378,6 @@ const OptimalSumFinder = () => {
                 onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
                 required
               />
-              <small style={{ color: "#777" }}>VND (Ví dụ: 10000000)</small>
             </div>
 
             <div style={{ flex: 1 }}>
@@ -342,11 +387,47 @@ const OptimalSumFinder = () => {
                   marginBottom: "6px",
                   fontWeight: "600",
                   color: "#333",
+                  fontSize: "13px",
                 }}
               >
-                Số lượng số hạng tối đa:
+                Số tiền tối đa:
               </label>
+              <input
+                type="number"
+                value={maxTarget}
+                onChange={(e) => setMaxTarget(Number(e.target.value))}
+                placeholder="VD: 10500000"
+                style={{
+                  padding: "10px",
+                  width: "100%",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                  outline: "none",
+                  fontSize: "14px",
+                  transition: "0.25s",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) => {
+                  e.target.style.border = "1px solid #007bff";
+                  e.target.select();
+                }}
+                onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
+                required
+              />
+            </div>
 
+            <div style={{ flex: 1 }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                  color: "#333",
+                  fontSize: "13px",
+                }}
+              >
+                Số lượng tối đa:
+              </label>
               <input
                 type="number"
                 value={count}
@@ -360,6 +441,7 @@ const OptimalSumFinder = () => {
                   outline: "none",
                   fontSize: "14px",
                   transition: "0.25s",
+                  boxSizing: "border-box",
                 }}
                 onFocus={(e) => {
                   e.target.style.border = "1px solid #007bff";
@@ -368,7 +450,6 @@ const OptimalSumFinder = () => {
                 onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
                 required
               />
-              <small style={{ color: "#777" }}>Giới hạn an toàn: {9}</small>
             </div>
           </div>
 
