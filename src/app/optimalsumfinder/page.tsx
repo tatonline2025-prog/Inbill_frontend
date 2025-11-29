@@ -117,7 +117,7 @@ const OptimalSumFinder = () => {
 
   const renderResult = () => {
     if (loading) {
-      return <p>Đang tính toán tối ưu... (Có thể mất vài giây vì thuật toán Monte Carlo)</p>;
+      return <p>Đang tính toán tối ưu... (Có thể mất vài giây nếu như số lượng lớn)</p>;
     }
     if (error) {
       return <p style={{ color: "red" }}>Lỗi: {error}</p>;
