@@ -42,7 +42,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     setLoading(true);
     try {
       const res = await excelUpProvince(formData);
-      console.log(res);
+      // console.log(res);
 
       if (res?.status === 200) {
         toast.success("Upload file tổng thành công!");

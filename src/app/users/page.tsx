@@ -8,6 +8,7 @@ import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/u
 import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
+import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 export default function UsersPage() {
@@ -210,7 +211,25 @@ export default function UsersPage() {
           <div className="space-y-10">
             {/* --- DANH SÁCH ADMIN --- */}
             <div>
-              <h2 className="text-lg font-semibold text-blue-600 mb-3">Tài khoản Quản trị (Admin)</h2>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+                <h2 className="text-lg font-semibold text-blue-600">Tài khoản Quản trị (Admin)</h2>
+
+                <Link
+                  href="/register"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Đăng ký tài khoản con
+                </Link>
+              </div>
               <div className="flex-1 min-w-[250px] bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-700 font-semibold shadow-sm">
                 Tổng số tài khoản Quản trị (Admin): <span className="text-blue-900">{totalAdmins}</span>
               </div>
@@ -249,21 +268,21 @@ export default function UsersPage() {
             {/* --- DANH SÁCH USER --- */}
             <div>
               <h2 className="text-lg font-semibold text-green-600 mb-3">Tài khoản Người dùng (User)</h2>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex-1 min-w-[250px] bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                <div className="w-full md:flex-1 md:min-w-[250px] bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold shadow-sm">
                   Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalInternalUsers}</span>
                 </div>
 
                 {/* Dropdown lọc tỉnh */}
-                <div className="flex items-center gap-2">
-                  <label htmlFor="provinceFilter" className="text-sm font-medium text-gray-600">
+                <div className="flex items-center gap-2 w-full md:w-auto bg-white md:bg-transparent p-1 md:p-0 rounded-md">
+                  <label htmlFor="provinceFilter" className="text-sm font-medium text-gray-600 whitespace-nowrap">
                     Lọc theo tỉnh:
                   </label>
                   <select
                     id="provinceFilter"
                     value={selectedProvince}
                     onChange={(e) => setSelectedProvince(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500"
+                    className="flex-1 md:flex-none border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none"
                   >
                     <option value="">Tất cả</option>
                     {Array.from(new Set(mergedUsers.map((u) => u.province))).map((province) => (

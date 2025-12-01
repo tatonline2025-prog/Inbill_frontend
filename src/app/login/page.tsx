@@ -24,7 +24,7 @@ export default function LoginPage() {
     try {
       const res = await login(userName, password);
 
-      console.log(res.data.user.role);
+      // console.log(res.data.user.role);
 
       // **LƯU TOKEN VÀO LOCAL STORAGE (hoặc Cookie)**
       localStorage.setItem("token", res.data.token);
@@ -38,11 +38,11 @@ export default function LoginPage() {
         const userType = res.data.user.usertype;
 
         if (role === "admin") {
-          window.location.href = "/dashboard";
+          window.location.href = "/home";
         } else if (userType === "collaborator") {
           window.location.href = "/optimalsumfinder";
         } else {
-          window.location.href = "/userdashboard";
+          window.location.href = "/userhome";
         }
       }, 500);
     } catch (err) {

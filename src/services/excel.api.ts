@@ -13,7 +13,7 @@ export const excelUp = async (formData: FormData, token: string) => {
 export const excelUpProvince = async (formData: FormData) => {
   const token = localStorage.getItem("token");
 
-  console.log(formData);
+  // console.log(formData);
 
   const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/uploadWithProvince`, formData, {
     headers: {

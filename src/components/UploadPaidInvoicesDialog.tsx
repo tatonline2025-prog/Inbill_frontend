@@ -51,7 +51,7 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
       // 3. Gọi API (Thay thế hàm này bằng API thực tế của bạn)
       const res = await handleToggleIsPaidList_API(payload);
 
-      console.log(res);
+      // console.log(res);
 
       // Giả lập thành công để test UI
       await new Promise((resolve) => setTimeout(resolve, 1000));

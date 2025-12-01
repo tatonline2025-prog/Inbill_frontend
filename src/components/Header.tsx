@@ -7,6 +7,103 @@ import Link from "next/link";
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [ctvOpen, setCtvOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const CTVDropdown = () => (
+    <div className="relative group">
+      {/* Nút cha CTV */}
+      <button
+        onClick={() => setCtvOpen(!ctvOpen)}
+        className="nav-item flex items-center justify-between w-full md:w-auto gap-1 cursor-pointer"
+      >
+        <span>CTV</span>
+        {/* Icon mũi tên */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-4 w-4 transition-transform duration-200 ${
+            ctvOpen ? "rotate-180" : ""
+          } md:group-hover:rotate-180`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <div
+        className={`
+    transition-all duration-300 overflow-hidden
+    ${ctvOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0 md:opacity-100 md:max-h-none"}
+    md:absolute md:hidden md:group-hover:block md:top-full md:left-0 md:mt-0 md:pt-2 md:w-56 z-50
+  `}
+      >
+        <div className="md:bg-white md:rounded-md md:shadow-2xl md:border md:border-gray-200 md:py-1 md:overflow-hidden">
+          <Link
+            href="/optimalsumfinder"
+            className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Tool tính toán
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
+  const UserDropdown = () => (
+    <div className="relative group">
+      <button
+        onClick={() => setUserMenuOpen(!userMenuOpen)}
+        className="nav-item flex items-center justify-between w-full md:w-auto gap-2 cursor-pointer text-blue-100 hover:text-white"
+      >
+        <div className="flex items-center gap-1">
+          <span>Tài khoản</span>
+        </div>
+
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-4 w-4 transition-transform duration-200 ${
+            userMenuOpen ? "rotate-180" : ""
+          } md:group-hover:rotate-180`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <div
+        className={`
+          transition-all duration-300 overflow-hidden
+          ${userMenuOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0 md:opacity-100 md:max-h-none"}
+          md:absolute md:hidden md:group-hover:block md:top-full md:left-0 md:mt-0 md:pt-2 md:w-56 z-50
+        `}
+      >
+        <div className="md:bg-white md:rounded-md md:shadow-2xl md:border md:border-gray-200 md:py-1 md:overflow-hidden">
+          {user?.role === "admin" && (
+            <Link
+              href="/users"
+              className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-gray-100"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Quản lý người dùng
+            </Link>
+          )}
+
+          <Link
+            href="/changepass"
+            className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Đổi mật khẩu
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 
   const NavLinks = () => (
     <>
@@ -18,56 +115,43 @@ export default function Header() {
 
           {user?.role === "admin" && (
             <>
-              <Link href="/users" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Tài khoản
+              <Link href="/home" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Trang chủ
               </Link>
+
+              <UserDropdown />
 
               <Link href="/admin_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
                 Quản lý hoá đơn
               </Link>
 
-              <Link href="/register" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Đăng ký tài khoản con
-              </Link>
-
-              <Link href="/dashboard" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Thống kê
-              </Link>
-
-              <Link href="/optimalsumfinder" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Tool tính toán
-              </Link>
+              <CTVDropdown />
             </>
           )}
 
           {user?.usertype === "collaborator" && (
             <>
-              <Link href="/optimalsumfinder" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Tool tính toán
-              </Link>
+              <UserDropdown />
+
+              <CTVDropdown />
             </>
           )}
 
           {user?.role !== "admin" && user?.usertype !== "collaborator" && (
             <>
+              <Link href="/userhome" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+                Trang chủ
+              </Link>
+
+              <UserDropdown />
+
               <Link href="/user_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
                 Quản lý hoá đơn
               </Link>
 
-              <Link href="/userdashboard" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Thống kê
-              </Link>
-
-              <Link href="/optimalsumfinder" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Tool tính toán
-              </Link>
+              <CTVDropdown />
             </>
           )}
-
-          {/* Đổi mật khẩu cho tất cả user */}
-          <Link href="/changepass" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-            Đổi mật khẩu
-          </Link>
 
           {/* Đăng xuất */}
           <button
@@ -84,9 +168,6 @@ export default function Header() {
         <>
           <Link href="/login" className="nav-item" onClick={() => setIsMenuOpen(false)}>
             Đăng nhập
-          </Link>
-          <Link href="/register" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-            Đăng ký
           </Link>
         </>
       )}

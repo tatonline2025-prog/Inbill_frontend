@@ -26,7 +26,7 @@ export function useAuth() {
         },
       })
       .then((res) => {
-        console.log(res);
+        // console.log(res);
         setUser(res.data.user);
         setIsAuthenticated(true);
       })

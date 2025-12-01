@@ -96,7 +96,7 @@ const OptimalSumFinder = () => {
       // 2. Gọi API Backend
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/finance/optimal-sum`, payload);
 
-      console.log(res.data);
+      // console.log(res.data);
 
       // 3. Xử lý kết quả
       setResult(res.data as Result);
@@ -227,7 +227,7 @@ const OptimalSumFinder = () => {
   };
 
   return (
-    <ProtectedRoute fallback={<p>Redirecting...</p>}>
+    <ProtectedRoute allowedRoles={["admin", "user", "collaborator"]} fallback={<p>Redirecting...</p>}>
       <div
         style={{
           padding: "20px",
