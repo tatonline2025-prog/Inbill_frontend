@@ -15,6 +15,7 @@ import {
   Box,
 } from "@mui/material";
 import { createInvoice_API, fetchLatestPeriod_API } from "@/services/invoice.api";
+import axios, { AxiosError } from "axios";
 
 export default function AddInvoiceDialog({
   open,
@@ -97,8 +98,13 @@ export default function AddInvoiceDialog({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Lỗi khi tạo hoá đơn:", error);
-      alert("Không thể tạo hóa đơn. Vui lòng thử lại!");
+      if (axios.isAxiosError(error)) {
+        console.error("Lỗi khi tạo hoá đơn:", error.response?.data.message);
+        alert(error.response?.data.message);
+      } else {
+        console.error("Lỗi không xác định:", error);
+        alert("Lỗi không xác định:");
+      }
     } finally {
       setLoading(false);
     }
