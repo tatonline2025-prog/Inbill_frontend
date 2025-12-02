@@ -22,7 +22,7 @@ const OptimalSumFinder = () => {
   const [moneyListInput, setMoneyListInput] = useState<string>("");
   const [minTarget, setMinTarget] = useState<number>(0);
   const [maxTarget, setMaxTarget] = useState<number>(0);
-  const [count, setCount] = useState<number>(5);
+  const [count, setCount] = useState<number>(3);
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -95,8 +95,6 @@ const OptimalSumFinder = () => {
 
       // 2. Gọi API Backend
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/finance/optimal-sum`, payload);
-
-      // console.log(res.data);
 
       // 3. Xử lý kết quả
       setResult(res.data as Result);
@@ -172,7 +170,7 @@ const OptimalSumFinder = () => {
                 paddingBottom: "8px",
               }}
             >
-              <h4 style={{ margin: 0, color: "#333" }}>Tổ hợp {index + 1}</h4>
+              <h4 style={{ margin: 0, color: "#333" }}># {index + 1}</h4>
               <span
                 style={{
                   fontSize: "0.9em",
@@ -269,87 +267,72 @@ const OptimalSumFinder = () => {
 
         <div
           style={{
-            background: "#fff3cd",
-            border: "1px solid #ffeeba",
-            padding: "12px 15px",
-            borderRadius: "8px",
-            color: "#856404",
-            fontSize: "14px",
-            lineHeight: "1.6", // Tăng khoảng cách dòng một chút cho dễ đọc
-            marginBottom: "18px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+            display: "flex",
+            gap: "20px",
+            alignItems: "flex-start",
+            width: "100%",
+            padding: "20px",
+            boxSizing: "border-box",
+            flexWrap: "wrap", // <--- QUAN TRỌNG: Cho phép rớt dòng khi màn hình nhỏ
           }}
         >
-          <b>⚠️ Lưu ý / Mẹo để có kết quả chính xác & nhanh nhất:</b>
-          <ul style={{ margin: "5px 0 0 0", paddingLeft: "20px" }}>
-            <li style={{ marginBottom: "4px" }}>
-              <b>Dữ liệu nhập:</b> Khuyến khích nhập <b>khoảng 100 số tiền</b> trở xuống để tối ưu tốc độ.
-            </li>
-            <li style={{ marginBottom: "4px" }}>
-              <b>Số hạng tối đa:</b> Nên chọn từ <b>5 đến 6</b>.
-              <br />
-              <span style={{ fontSize: "0.9em", opacity: 0.9 }}>
-                (Chỉ nên chọn 7-9 khi danh sách tiền rất ít, dưới 50 số tiền hoặc trên một chút).
-              </span>
-            </li>
-            <li>
-              <b>Nếu hệ thống tự ngắt (do quá lâu):</b> Vui lòng <b>giảm số hạng tối đa</b> hoặc điều chỉnh số tiền mục
-              tiêu gần hơn với các số tiền trong danh sách nhập.
-            </li>
-          </ul>
-        </div>
-
-        {/* --- THÊM FLEX ROW 2 CỘT --- */}
-        <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap" }}>
-          {/* CỘT TRÁI: FORM NHẬP LIỆU */}
           <form
             onSubmit={handleSubmit}
             style={{
-              flex: "1 1 400px",
               width: "100%",
-
-              background: "white",
-              borderRadius: "12px",
-              padding: "22px 25px",
-
-              border: "1px solid #e0e0e0",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              transition: "0.25s ease",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "20px",
+              alignItems: "flex-start",
             }}
           >
-            {/* Tiêu đề nhỏ cho form */}
-            <h3
+            <div
               style={{
-                marginBottom: "15px",
-                fontSize: "20px",
-                fontWeight: "700",
-                color: "#007bff",
-                textAlign: "center",
-                letterSpacing: "0.3px",
+                flex: "1 1 50px",
+                minHeight: "550px",
+                display: "flex",
+                flexDirection: "column",
+                background: "white",
+                borderRadius: "12px",
+                padding: "22px 25px",
+                border: "1px solid #e0e0e0",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                transition: "0.25s ease",
               }}
             >
-              Nhập Dữ Liệu Tính Toán
-            </h3>
-
-            <div style={{ marginBottom: "18px" }}>
-              <label
+              {/* NÚT SUBMIT */}
+              <button
+                type="submit"
+                disabled={loading}
                 style={{
-                  display: "block",
-                  marginBottom: "6px",
+                  padding: "12px 20px",
+                  background: "#007bff",
+                  color: "white",
                   fontWeight: "600",
-                  color: "#333",
+                  border: "none",
+                  borderRadius: "8px",
+                  width: "100%",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
+                  transition: "0.2s",
+                  marginBottom: "20px",
                 }}
+                onMouseEnter={(e) => ((e.target as HTMLElement).style.background = "#005dc1")}
+                onMouseLeave={(e) => ((e.target as HTMLElement).style.background = "#007bff")}
               >
-                Danh sách Số tiền:
-              </label>
+                {loading ? "Đang Xử lý..." : "Tìm Tổng Tối Ưu"}
+              </button>
 
+              {/* TEXTAREA DANH SÁCH SỐ TIỀN */}
               <textarea
                 value={moneyListInput}
                 onChange={(e) => setMoneyListInput(e.target.value)}
-                rows={7}
-                placeholder="Ví dụ: 3656500, 180198, 171342, ..."
+                rows={25}
+                placeholder={`Danh sách số tiền:\n3656500\n180198\n171342\n...`}
                 style={{
                   width: "100%",
+                  flexGrow: 1,
                   padding: "10px 12px",
                   borderRadius: "8px",
                   border: "1px solid #ccc",
@@ -364,144 +347,199 @@ const OptimalSumFinder = () => {
               />
             </div>
 
-            <div style={{ display: "flex", gap: "15px", marginBottom: "22px", flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 150px" }}>
-                {" "}
-                {/* Thêm flex-basis 150px để tự co giãn */}
-                <label
+            {/* CỘT PHẢI: CHỨA INPUTS, LƯU Ý VÀ KẾT QUẢ */}
+            <div
+              style={{
+                flex: "1 1 400px", // <--- QUAN TRỌNG: Trên desktop sẽ nằm cạnh, trên mobile sẽ xuống dòng và chiếm 100%
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
+              {/* HÀNG TRÊN: INPUT FIELDS + LƯU Ý */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap", // <--- QUAN TRỌNG: Để inputs và lưu ý tự xếp chồng trên màn hình nhỏ
+                }}
+              >
+                {/* 1. KHU VỰC INPUTS MIN/MAX/COUNT */}
+                <div
                   style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "600",
-                    color: "#333",
-                    fontSize: "13px",
+                    flex: "1 1 250px", // Linh hoạt co giãn
+                    background: "white",
+                    borderRadius: "12px",
+                    padding: "22px 25px",
+                    border: "1px solid #e0e0e0",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    transition: "0.25s ease",
                   }}
                 >
-                  Số tiền tối thiểu:
-                </label>
-                <input
-                  type="number"
-                  value={minTarget}
-                  onChange={(e) => setMinTarget(Number(e.target.value))}
-                  placeholder="VD: 10000000"
+                  <div style={{ marginBottom: "15px" }}>
+                    {/* Số tiền tối thiểu */}
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: "600",
+                        color: "#333",
+                        fontSize: "13px",
+                      }}
+                    >
+                      Số tiền tối thiểu:
+                    </label>
+                    <input
+                      type="number"
+                      value={minTarget}
+                      onChange={(e) => setMinTarget(Number(e.target.value))}
+                      placeholder="VD: 10000000"
+                      style={{
+                        padding: "10px",
+                        width: "100%",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        outline: "none",
+                        fontSize: "14px",
+                        boxSizing: "border-box",
+                        transition: "0.25s",
+                        marginBottom: "15px",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = "1px solid #007bff";
+                        e.target.select();
+                      }}
+                      onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
+                      required
+                    />
+
+                    {/* Số tiền tối đa */}
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: "600",
+                        color: "#333",
+                        fontSize: "13px",
+                      }}
+                    >
+                      Số tiền tối đa:
+                    </label>
+                    <input
+                      type="number"
+                      value={maxTarget}
+                      onChange={(e) => setMaxTarget(Number(e.target.value))}
+                      placeholder="VD: 10500000"
+                      style={{
+                        padding: "10px",
+                        width: "100%",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        outline: "none",
+                        fontSize: "14px",
+                        boxSizing: "border-box",
+                        transition: "0.25s",
+                        marginBottom: "15px",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = "1px solid #007bff";
+                        e.target.select();
+                      }}
+                      onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
+                      required
+                    />
+
+                    {/* Số lượng số hạng tối đa */}
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: "600",
+                        color: "#333",
+                        fontSize: "13px",
+                      }}
+                    >
+                      Số lượng số hạng tối đa:
+                    </label>
+                    <input
+                      type="number"
+                      value={count}
+                      onChange={(e) => setCount(Number(e.target.value))}
+                      min="1"
+                      style={{
+                        padding: "10px",
+                        width: "100%",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        outline: "none",
+                        fontSize: "14px",
+                        boxSizing: "border-box",
+                        transition: "0.25s",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = "1px solid #007bff";
+                        e.target.select();
+                      }}
+                      onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* 2. KHU VỰC LƯU Ý */}
+                <div
                   style={{
-                    padding: "10px",
-                    width: "100%",
+                    flex: "1 1 300px", // Linh hoạt co giãn, tối thiểu 300px để không bị bóp quá nhỏ
+                    background: "#fff3cd",
+                    border: "1px solid #ffeeba",
+                    padding: "22px 25px",
                     borderRadius: "8px",
-                    border: "1px solid #ccc",
-                    outline: "none",
+                    color: "#856404",
                     fontSize: "14px",
-                    transition: "0.25s",
-                    boxSizing: "border-box",
+                    lineHeight: "1.6",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
                   }}
-                  onFocus={(e) => {
-                    e.target.style.border = "1px solid #007bff";
-                    e.target.select();
-                  }}
-                  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
-                  required
-                />
+                >
+                  <b>⚠️ Lưu ý / Mẹo để có kết quả chính xác & nhanh nhất:</b>
+                  <ul style={{ margin: "5px 0 0 0", paddingLeft: "20px" }}>
+                    <li style={{ marginBottom: "4px" }}>
+                      <b>Dữ liệu nhập:</b> Khuyến khích nhập <b>khoảng 100 số tiền</b> trở xuống để tối ưu tốc độ.
+                    </li>
+                    <li style={{ marginBottom: "4px" }}>
+                      <b>Số hạng tối đa:</b> Nên chọn từ <b>5 đến 6</b>.
+                    </li>
+                    <li>
+                      <b>Nếu hệ thống tự ngắt:</b> Vui lòng <b>giảm số hạng tối đa</b>.
+                    </li>
+                  </ul>
+                </div>
               </div>
 
-              <div style={{ flex: "1 1 150px" }}>
-                <label
+              {/* HÀNG DƯỚI: KHU VỰC HIỂN THỊ KẾT QUẢ */}
+              <div
+                style={{
+                  flex: "1 1 auto",
+                  width: "100%",
+                  minHeight: "200px",
+                }}
+              >
+                <div
                   style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "600",
-                    color: "#333",
-                    fontSize: "13px",
-                  }}
-                >
-                  Số tiền tối đa:
-                </label>
-                <input
-                  type="number"
-                  value={maxTarget}
-                  onChange={(e) => setMaxTarget(Number(e.target.value))}
-                  placeholder="VD: 10500000"
-                  style={{
-                    padding: "10px",
-                    width: "100%",
-                    borderRadius: "8px",
-                    border: "1px solid #ccc",
-                    outline: "none",
-                    fontSize: "14px",
-                    transition: "0.25s",
+                    background: "#f8f9fa",
+                    border: "1px solid #e9ecef",
+                    padding: "22px 25px",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    height: "100%",
                     boxSizing: "border-box",
                   }}
-                  onFocus={(e) => {
-                    e.target.style.border = "1px solid #007bff";
-                    e.target.select();
-                  }}
-                  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
-                  required
-                />
-              </div>
-
-              <div style={{ flex: "1 1 150px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "600",
-                    color: "#333",
-                    fontSize: "13px",
-                  }}
                 >
-                  Số lượng số hạng tối đa:
-                </label>
-                <input
-                  type="number"
-                  value={count}
-                  onChange={(e) => setCount(Number(e.target.value))}
-                  min="1"
-                  style={{
-                    padding: "10px",
-                    width: "100%",
-                    borderRadius: "8px",
-                    border: "1px solid #ccc",
-                    outline: "none",
-                    fontSize: "14px",
-                    transition: "0.25s",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = "1px solid #007bff";
-                    e.target.select();
-                  }}
-                  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
-                  required
-                />
+                  {renderResult()}
+                </div>
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: "12px 20px",
-                background: "#007bff",
-                color: "white",
-                fontWeight: "600",
-                border: "none",
-                borderRadius: "8px",
-                width: "100%",
-                cursor: "pointer",
-                fontSize: "15px",
-                boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
-                transition: "0.2s",
-              }}
-              onMouseEnter={(e) => ((e.target as HTMLInputElement).style.background = "#005dc1")}
-              onMouseLeave={(e) => ((e.target as HTMLInputElement).style.background = "#007bff")}
-            >
-              {loading ? "Đang Xử lý..." : "🔍 Tìm Tổng Tối Ưu"}
-            </button>
           </form>
-
-          {/* CỘT PHẢI: KẾT QUẢ */}
-
-          <div style={{ flex: "1 1 400px", width: "100%" }}>{renderResult()}</div>
         </div>
       </div>
     </ProtectedRoute>
