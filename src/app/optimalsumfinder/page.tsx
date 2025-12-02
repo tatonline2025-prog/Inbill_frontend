@@ -507,7 +507,7 @@ const OptimalSumFinder = () => {
                       <b>Dữ liệu nhập:</b> Khuyến khích nhập <b>khoảng 100 số tiền</b> trở xuống để tối ưu tốc độ.
                     </li>
                     <li style={{ marginBottom: "4px" }}>
-                      <b>Số hạng tối đa:</b> Nên chọn từ <b>5 đến 6</b>.
+                      <b>Số hạng tối đa:</b> Nên chọn từ <b>5 đến 6 trở xuống</b>.
                     </li>
                     <li>
                       <b>Nếu hệ thống tự ngắt:</b> Vui lòng <b>giảm số hạng tối đa</b>.
