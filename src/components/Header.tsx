@@ -47,6 +47,36 @@ export default function Header() {
           >
             Tool tính toán
           </Link>
+
+          {user?.role === "admin" && (
+            <>
+              <Link
+                href="/transaction/admin/dashboard"
+                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Quản lý giao dịch
+              </Link>
+
+              <Link
+                href="/transaction/admin/report"
+                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-b-0"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Thống kê giao dịch
+              </Link>
+            </>
+          )}
+
+          {user?.usertype === "collaborator" && (
+            <Link
+              href="/transaction/user/dashboard"
+              className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Giao dịch của tôi
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -92,6 +122,14 @@ export default function Header() {
               Quản lý người dùng
             </Link>
           )}
+
+          <Link
+            href="/profile"
+            className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Thông tin cá nhân
+          </Link>
 
           <Link
             href="/changepass"

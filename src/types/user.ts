@@ -9,6 +9,8 @@ export interface IUser {
   role: "admin" | "user";
   phone: string;
   usertype: string;
+  bankAccount: string;
+  bankName: string;
   createdAt: string; // Hoặc Date nếu bạn parse nó
   updatedAt: string; // Hoặc Date
 }

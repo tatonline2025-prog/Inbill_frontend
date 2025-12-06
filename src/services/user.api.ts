@@ -26,3 +26,19 @@ export const deleteUserByAdmin = async (userId: string, token: string) => {
   });
   return res;
 };
+
+export const apiUpdateUser = async (editinguserId: string, formData: Partial<IUser>) => {
+  const token = await localStorage.getItem("token");
+
+  const res = await axios.put(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/changeinfo`,
+    {
+      editinguserId,
+      formData,
+    },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return res;
+};
