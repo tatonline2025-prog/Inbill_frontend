@@ -16,6 +16,7 @@ export default function AdminReportPage() {
       try {
         // Có thể thêm tham số startDate, endDate nếu cần lọc
         const res = await getDailyReport();
+
         setReportData(res.report || []);
       } catch (error) {
         toast.error("Không thể tải báo cáo.");

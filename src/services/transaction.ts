@@ -12,15 +12,14 @@ export const createTransaction = async (data: Partial<ITransaction>) => {
 
 export const createTransactionType = async (
   name: string,
-  discountPercent: number,
-  description: string,
-  selectedBankId: string
+
+  description: string
 ) => {
   const token = localStorage.getItem("token");
 
   const res = await axios.post(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/transaction/config/types`,
-    { name, discountPercent, description, selectedBankId },
+    { name, description },
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -31,15 +30,14 @@ export const createTransactionType = async (
 export const updateTransactionType = async (
   transactionTypeId: string,
   name: string,
-  discountPercent: number,
-  selectedBankId: string,
+
   description: string
 ) => {
   const token = localStorage.getItem("token");
 
   const res = await axios.put(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/transaction/config/types`,
-    { transactionTypeId, name, discountPercent, description, selectedBankId },
+    { transactionTypeId, name, description },
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -90,7 +88,6 @@ export const deleteTransaction = async (id: string) => {
   const token = localStorage.getItem("token");
 
   const res = await axios.delete(
-    // URL cần có ID giao dịch trong đường dẫn
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/transaction/${id}`,
 
     {
@@ -124,10 +121,10 @@ export const getAllTransactions = async (params: ITransactionFilterParams) => {
   return res.data;
 };
 
-export const approveTransaction = async (id: string) => {
+export const approveTransaction = async (id: string, paymentBankId: string) => {
   const res = await axios.put(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/transaction/admin/${id}/approve`,
-    {},
+    { paymentBankId },
     { headers: getHeaders() }
   );
   return res.data;
@@ -216,7 +213,14 @@ export const fetchCollaborators = async () => {
   return res.data;
 };
 
-export const exportTransactionsToExcelAPI = async (filter: { type: string; date: string; collaborator: string }) => {
+export const exportTransactionsToExcelAPI = async (filter: {
+  type: string;
+  date: string;
+  collaborator: string;
+  collaboratorName: string;
+}) => {
+  console.log(filter);
+
   try {
     const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/transaction/admin/export`, {
       headers: getHeaders(),

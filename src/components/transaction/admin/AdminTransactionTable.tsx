@@ -13,6 +13,7 @@ import {
   IconButton,
   Tooltip,
   Box,
+  Typography,
 } from "@mui/material";
 import { CheckCircle, Cancel, Edit, Delete } from "@mui/icons-material";
 import { ITransaction, ITransactionPaymentBank, ITransactionType } from "@/types/transaction";
@@ -26,34 +27,11 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-// ... (Copy lại các hàm helper formatCurrency, formatDate, getStatusColor từ TransactionTable cũ)
 const formatCurrency = (val: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val);
-const formatDate = (date: string) => new Date(date).toLocaleDateString("vi-VN");
+const formatDate = (date: string | Date) => new Date(date).toLocaleDateString("vi-VN");
 
 export default function AdminTransactionTable({ data, onApprove, onCancel, onEdit, onDelete }: Props) {
-  const getCreatorName = (creatorId: ITransaction["creatorId"]): string => {
-    if (typeof creatorId === "object" && creatorId !== null && "fullName" in creatorId) {
-      return (creatorId as IUser).fullName;
-    }
-
-    return creatorId?.toString() || "N/A";
-  };
-
-  const getBankDisplay = (bankId: ITransaction["paymentBankId"]): string => {
-    if (!bankId) return "-";
-
-    // Nếu Backend có populate Bank (Object), ta sẽ lấy tên và số TK
-    if (typeof bankId === "object" && "bankName" in bankId) {
-      return `${(bankId as ITransactionPaymentBank).bankName} - (${
-        (bankId as ITransactionPaymentBank).accountNumber
-      }) - ${(bankId as ITransactionPaymentBank).accountHolder}`;
-    }
-
-    // Nếu chưa populate (chỉ là ID chuỗi)
-    return `ID: ${bankId}`;
-  };
-
   return (
     <TableContainer component={Paper} elevation={2}>
       <Table>
@@ -61,10 +39,11 @@ export default function AdminTransactionTable({ data, onApprove, onCancel, onEdi
           <TableRow>
             <TableCell sx={{ color: "white" }}>STT</TableCell>
             <TableCell sx={{ color: "white" }}>Ngày Tạo</TableCell>
-            <TableCell sx={{ color: "white", fontWeight: "bold" }}>CTV</TableCell>
-            <TableCell sx={{ color: "white" }}>Loại GD</TableCell>
-            <TableCell sx={{ color: "white" }}>Số tiền sau chiết khấu</TableCell>
-            <TableCell sx={{ color: "white" }}>Ngân hàng nhận tiền</TableCell>
+            <TableCell sx={{ color: "white", fontWeight: "bold" }}>CTV & TK Nhận</TableCell>
+            <TableCell sx={{ color: "white" }}>Loại GD & Chiết khấu</TableCell>
+            <TableCell sx={{ color: "white" }}>Số tiền gốc</TableCell>
+            <TableCell sx={{ color: "white" }}>Thực nhận</TableCell>
+            <TableCell sx={{ color: "white" }}>Nguồn thanh toán</TableCell>
             <TableCell sx={{ color: "white" }}>Trạng Thái</TableCell>
             <TableCell sx={{ color: "white" }} align="center">
               Hành Động
@@ -73,27 +52,75 @@ export default function AdminTransactionTable({ data, onApprove, onCancel, onEdi
         </TableHead>
         <TableBody>
           {data.map((row, index) => {
-            // Kiểm tra trạng thái duyệt để ẩn/hiện nút Sửa/Xóa/Duyệt
             const isPending = row.status === "PENDING";
-            const canEditOrDelete = isPending;
+
+            // 1. Xử lý dữ liệu CTV (Inline logic)
+            // Kiểm tra xem creatorId có phải là object user đầy đủ không
+            const creator = row.creatorId as IUser | string;
+            const isCreatorPopulated = typeof creator === "object" && creator !== null;
+
+            // 2. Xử lý dữ liệu Ngân hàng thanh toán (Inline logic)
+            const paymentBank = row.paymentSourceId as ITransactionPaymentBank | string | null;
+            const isPaymentBankPopulated = typeof paymentBank === "object" && paymentBank !== null;
+
+            // 3. Lấy tên loại giao dịch
+            const typeName = (row.typeId as ITransactionType)?.name || "N/A";
 
             return (
-              // Bỏ khoảng trắng dư thừa trong các thẻ, hoặc giữ cú pháp gọn gàng
               <TableRow key={row._id} hover>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{formatDate(row.createdAt)}</TableCell>
 
-                {/* SỬA LỖI: Sử dụng helper kiểm tra populate */}
-                <TableCell>{getCreatorName(row.creatorId)}</TableCell>
+                {/* --- CỘT CTV & TK NHẬN --- */}
+                <TableCell>
+                  {isCreatorPopulated ? (
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {(creator as IUser).fullName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.2 }}>
+                        {(creator as IUser).bankName} - {(creator as IUser).bankAccount}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2">{row.creatorId?.toString() || "N/A"}</Typography>
+                  )}
+                </TableCell>
 
-                <TableCell>{(row.typeId as ITransactionType)?.name || "N/A"}</TableCell>
+                {/* --- CỘT LOẠI GD & CHIẾT KHẤU --- */}
+                <TableCell>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {typeName}
+                  </Typography>
+                  <Typography variant="caption" color="error.dark">
+                    Chiết khấu: {row.discountPercent || 0}%
+                  </Typography>
+                </TableCell>
+
+                <TableCell>{formatCurrency(row.amount)}</TableCell>
 
                 <TableCell sx={{ fontWeight: "bold", color: "primary.main" }}>
                   {formatCurrency(row.finalAmount)}
                 </TableCell>
 
-                <TableCell>{getBankDisplay(row.paymentBankId)}</TableCell>
+                {/* --- CỘT NGUỒN THANH TOÁN --- */}
+                <TableCell>
+                  {row.status === "CANCELLED" ? (
+                    <Chip label="GD đã huỷ" color="error" size="small" variant="outlined" />
+                  ) : !row.paymentSourceId ? (
+                    <Chip label="Chờ công ty xác nhận" color="warning" size="small" variant="outlined" />
+                  ) : isPaymentBankPopulated ? (
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ lineHeight: 1.2 }}>
+                        {(paymentBank as ITransactionPaymentBank).bankName}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2">ID: {row.paymentSourceId.toString()}</Typography>
+                  )}
+                </TableCell>
 
+                {/* --- TRẠNG THÁI --- */}
                 <TableCell>
                   <Chip
                     label={row.status === "APPROVED" ? "Đã duyệt" : row.status === "PENDING" ? "Chờ duyệt" : "Đã hủy"}
@@ -102,10 +129,10 @@ export default function AdminTransactionTable({ data, onApprove, onCancel, onEdi
                   />
                 </TableCell>
 
+                {/* --- HÀNH ĐỘNG --- */}
                 <TableCell align="center">
-                  {isPending && (
+                  {isPending ? (
                     <Box sx={{ display: "inline-flex", gap: 0.5 }}>
-                      {/* Duyệt & Hủy */}
                       <Tooltip title="Duyệt">
                         <IconButton color="success" size="small" onClick={() => onApprove(row._id)}>
                           <CheckCircle fontSize="small" />
@@ -116,16 +143,20 @@ export default function AdminTransactionTable({ data, onApprove, onCancel, onEdi
                           <Cancel fontSize="small" />
                         </IconButton>
                       </Tooltip>
-
-                      {/* Xóa (Chỉ khi Pending) */}
                       <Tooltip title="Xóa">
                         <IconButton size="small" onClick={() => onDelete(row._id)}>
                           <Delete fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      <Tooltip title="Sửa">
+                        <IconButton size="small" color="primary" onClick={() => onEdit(row)}>
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
+                  ) : (
+                    "-"
                   )}
-                  {!isPending && "-"}
                 </TableCell>
               </TableRow>
             );

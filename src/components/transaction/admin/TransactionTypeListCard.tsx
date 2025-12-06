@@ -160,7 +160,15 @@ export default function TransactionTypeListCard({
                       </Tooltip>
 
                       <Tooltip title="Xóa (Tùy chọn)">
-                        <IconButton edge="end" size="small" color="error" onClick={() => onDeleteType(type._id)}>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            onDeleteType(type._id);
+                            onReload();
+                          }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -187,21 +195,6 @@ export default function TransactionTypeListCard({
                         <Typography variant="subtitle2" color="text.primary">
                           {type.name}
                         </Typography>
-
-                        {typeof type.discountPercent === "number" && (
-                          <Typography
-                            variant="caption"
-                            color="success.main"
-                            sx={{
-                              bgcolor: alpha(theme.palette.success.main, 0.1),
-                              px: 0.5,
-                              borderRadius: 0.5,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            {type.discountPercent}%
-                          </Typography>
-                        )}
                       </Box>
                     }
                     secondary={

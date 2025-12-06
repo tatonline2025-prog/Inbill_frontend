@@ -9,7 +9,7 @@ import {
   Button,
   TextField,
   CircularProgress,
-  Grid,
+  Box, // Dùng Box thay Grid vì chỉ còn 1 phần tử
 } from "@mui/material";
 import toast from "react-hot-toast";
 import { createBank } from "@/services/transaction";
@@ -21,33 +21,30 @@ interface Props {
 }
 
 export default function BankFormModal({ open, onClose, onSuccess }: Props) {
-  const [formData, setFormData] = useState({
-    bankName: "",
-    accountNumber: "",
-    accountHolder: "",
-    branch: "",
-  });
+  // Chỉ lưu trữ bankName
+  const [bankName, setBankName] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setBankName(e.target.value);
   };
 
   const handleSubmit = async () => {
-    const { bankName, accountNumber, accountHolder } = formData;
-    if (!bankName || !accountNumber || !accountHolder) {
-      toast.error("Vui lòng điền đủ các trường bắt buộc.");
+    if (!bankName.trim()) {
+      toast.error("Vui lòng nhập tên ngân hàng.");
       return;
     }
 
     setLoading(true);
     try {
-      await createBank(formData); // Gọi POST API
-      toast.success("Thêm thông tin ngân hàng thành công! 🏦");
+      // Gọi API chỉ với bankName
+      await createBank({ bankName });
+      toast.success("Thêm hình thức thanh toán thành công!");
       onSuccess();
       handleClose();
     } catch (error) {
-      toast.error("Lỗi khi thêm ngân hàng.");
+      console.error(error);
+      toast.error("Lỗi khi thêm mới.");
     } finally {
       setLoading(false);
     }
@@ -56,76 +53,35 @@ export default function BankFormModal({ open, onClose, onSuccess }: Props) {
   const handleClose = () => {
     onClose();
     // Reset form khi đóng
-    setFormData({ bankName: "", accountNumber: "", accountHolder: "", branch: "" });
+    setBankName("");
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      {" "}
-      {/* Đổi max width sang 'sm' cho phù hợp với form */}
-      <DialogTitle sx={{ fontWeight: "bold" }}>Thêm Tài Khoản Ngân Hàng Công Ty</DialogTitle>
+      <DialogTitle sx={{ fontWeight: "bold" }}>Thêm Hình Thức Thanh Toán</DialogTitle>
+
       <DialogContent dividers>
-        <Grid container spacing={3}>
-          {" "}
-          {/* spacing={3} tạo khoảng cách đẹp hơn */}
-          {/* Tên Ngân Hàng (Chiếm 1 hàng ngang) */}
-          <Grid>
-            <TextField
-              autoFocus
-              label="Tên Ngân Hàng"
-              name="bankName"
-              fullWidth
-              required
-              value={formData.bankName}
-              onChange={handleChange}
-            />
-          </Grid>
-          {/* Số Tài Khoản (Nửa hàng) */}
-          <Grid>
-            <TextField
-              label="Số Tài Khoản"
-              name="accountNumber"
-              type="number" // Đảm bảo chỉ nhập số
-              fullWidth
-              required
-              value={formData.accountNumber}
-              onChange={handleChange}
-            />
-          </Grid>
-          {/* Tên Chủ Tài Khoản (Nửa hàng) */}
-          <Grid>
-            <TextField
-              label="Tên Chủ Tài Khoản"
-              name="accountHolder"
-              fullWidth
-              required
-              value={formData.accountHolder}
-              onChange={handleChange}
-            />
-          </Grid>
-          {/* Chi nhánh (Chiếm 1 hàng ngang) */}
-          <Grid>
-            <TextField
-              label="Chi nhánh (Tùy chọn)"
-              name="branch"
-              fullWidth
-              value={formData.branch}
-              onChange={handleChange}
-            />
-          </Grid>
-        </Grid>
+        <Box sx={{ py: 1 }}>
+          <TextField
+            autoFocus
+            label="Tên Ngân Hàng / Hình thức (VD: Vietcombank, Tiền mặt...)"
+            name="bankName"
+            fullWidth
+            required
+            variant="outlined"
+            value={bankName}
+            onChange={handleChange}
+            placeholder="Nhập tên ngân hàng để admin chọn khi duyệt"
+          />
+        </Box>
       </DialogContent>
+
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={handleClose} disabled={loading}>
+        <Button onClick={handleClose} disabled={loading} color="inherit">
           Hủy
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-          disabled={loading || !formData.bankName || !formData.accountNumber || !formData.accountHolder}
-        >
-          {loading ? <CircularProgress size={20} color="inherit" /> : "Thêm Ngân hàng"}
+        <Button onClick={handleSubmit} variant="contained" color="primary" disabled={loading || !bankName.trim()}>
+          {loading ? <CircularProgress size={20} color="inherit" /> : "Lưu lại"}
         </Button>
       </DialogActions>
     </Dialog>

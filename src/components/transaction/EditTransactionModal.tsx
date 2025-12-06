@@ -31,27 +31,34 @@ interface Props {
 export default function EditTransactionModal({ open, onClose, transaction, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [types, setTypes] = useState<ITransactionType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
 
-  // State form tách biệt để dễ quản lý
+  // State form tách biệt
   const [amount, setAmount] = useState<number | string>(0);
   const [selectedTypeId, setSelectedTypeId] = useState<string>("");
-  const [currentDiscount, setCurrentDiscount] = useState<number>(0);
+  // Dữ liệu mới: Chiết khấu của giao dịch (được CTV tự điền/sửa)
+  const [discountPercent, setDiscountPercent] = useState<number | string>(0);
 
   // 1. Load danh sách loại GD
   useEffect(() => {
     if (open) {
+      setLoadingTypes(true);
       getTransactionTypes()
         .then((res) => {
-          if (res?.data) setTypes(res.data.types); // Hoặc res.data tuỳ cấu trúc API
+          if (res?.data) setTypes(res.data.types);
         })
-        .catch((err) => console.error(err));
+        .catch((err) => console.error(err))
+        .finally(() => setLoadingTypes(false));
     }
   }, [open]);
 
-  // 2. Điền dữ liệu cũ vào form
+  // 2. Điền dữ liệu cũ vào form và state khi transaction/modal thay đổi
   useEffect(() => {
     if (transaction && open) {
       setAmount(transaction.amount);
+
+      // Lấy Chiết khấu hiện tại của Giao dịch
+      setDiscountPercent(transaction.discountPercent || 0);
 
       // Xử lý typeId: nó có thể là string ID hoặc là object đã populate
       const tId =
@@ -60,45 +67,46 @@ export default function EditTransactionModal({ open, onClose, transaction, onSuc
           : (transaction.typeId as ITransactionType)?._id || "";
 
       setSelectedTypeId(tId);
-
-      // Lấy discount từ object đã populate hoặc set tạm thời (sẽ được cập nhật khi types load xong)
-      const tDiscount =
-        typeof transaction.typeId === "object" ? (transaction.typeId as ITransactionType).discountPercent : 0;
-
-      setCurrentDiscount(tDiscount);
     }
   }, [transaction, open]);
 
-  // Xử lý khi thay đổi Loại Giao Dịch -> Tự động cập nhật % Chiết khấu
+  // Xử lý khi thay đổi Loại Giao Dịch
   const handleTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newId = e.target.value;
-    setSelectedTypeId(newId);
+    setSelectedTypeId(e.target.value);
 
-    const foundType = types.find((t) => t._id === newId);
-
-    if (foundType) {
-      setCurrentDiscount(foundType.discountPercent);
-    }
+    // Lưu ý: Không cần tự động cập nhật discountPercent theo typeId nữa,
+    // vì discountPercent là do CTV tự điền/sửa trực tiếp trên giao dịch.
   };
 
   // Tính toán real-time
   const numericAmount = Number(amount) || 0;
-  const discountAmount = numericAmount * (currentDiscount / 100);
+  const numericDiscount = Number(discountPercent) || 0; // Lấy discount từ state mới
 
+  const discountAmount = numericAmount * (numericDiscount / 100);
   const finalAmount = numericAmount - discountAmount;
 
   const handleSubmit = async () => {
     if (!transaction) return;
 
+    if (numericAmount <= 0) {
+      toast.error("Số tiền phải lớn hơn 0.");
+      return;
+    }
+    if (numericDiscount < 0 || numericDiscount > 100) {
+      toast.error("Chiết khấu phải từ 0% đến 100%.");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Gửi dữ liệu cập nhật
+      // Gửi dữ liệu cập nhật, BAO GỒM discountPercent
       await updateTransaction(transaction._id, {
         amount: numericAmount,
         typeId: selectedTypeId,
+        discountPercent: numericDiscount, // <-- Đã truyền discountPercent mới
       });
 
-      toast.success("Cập nhật giao dịch thành công!");
+      toast.success("Cập nhật giao dịch thành công! 🎉");
       onSuccess();
       onClose();
     } catch (error) {
@@ -109,12 +117,48 @@ export default function EditTransactionModal({ open, onClose, transaction, onSuc
     }
   };
 
+  const isSubmitDisabled = loading || !amount || !selectedTypeId || numericAmount <= 0;
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: "bold", pb: 1 }}>Chỉnh sửa Giao dịch</DialogTitle>
+      <DialogTitle sx={{ fontWeight: "bold", pb: 1 }}>Chỉnh sửa Báo Cáo Giao Dịch</DialogTitle>
+
+      {/* Hiển thị thông báo trạng thái PENDING */}
+      {transaction?.status !== "PENDING" && (
+        <Box sx={{ bgcolor: "error.main", color: "white", p: 1, textAlign: "center" }}>
+          <Typography variant="body2">
+            Giao dịch đã được **{transaction?.status === "APPROVED" ? "DUYỆT VÀ THANH TOÁN" : "TỪ CHỐI"}.** Bạn không
+            thể chỉnh sửa.
+          </Typography>
+        </Box>
+      )}
 
       <DialogContent dividers>
         <Grid container spacing={3} sx={{ mt: 0 }}>
+          {/* Loại Giao dịch */}
+          <Grid>
+            <TextField
+              select
+              label="Loại Giao dịch"
+              fullWidth
+              required
+              value={selectedTypeId}
+              onChange={handleTypeChange}
+              disabled={loadingTypes || transaction?.status !== "PENDING"} // Disable nếu đã duyệt
+            >
+              {loadingTypes ? (
+                <MenuItem disabled>Đang tải...</MenuItem>
+              ) : (
+                types.map((t) => (
+                  <MenuItem key={t._id} value={t._id}>
+                    {t.name}
+                  </MenuItem>
+                ))
+              )}
+            </TextField>
+          </Grid>
+
+          {/* Số tiền giao dịch */}
           <Grid>
             <TextField
               label="Số tiền giao dịch"
@@ -125,63 +169,47 @@ export default function EditTransactionModal({ open, onClose, transaction, onSuc
               onChange={(e) => setAmount(e.target.value)}
               InputProps={{
                 endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
+                inputProps: { min: 0 },
               }}
+              disabled={transaction?.status !== "PENDING"} // Disable nếu đã duyệt
             />
           </Grid>
 
+          {/* Chiết khấu áp dụng */}
           <Grid>
             <TextField
-              select
-              label="Loại Giao dịch"
-              fullWidth
-              required
-              value={selectedTypeId}
-              onChange={handleTypeChange}
-            >
-              {types.map((t) => (
-                <MenuItem key={t._id} value={t._id}>
-                  {t.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-
-          <Grid>
-            <TextField
-              label="Chiết khấu áp dụng"
+              label="% Chiết khấu"
               type="number"
               fullWidth
-              value={currentDiscount}
-              disabled // KHÔNG CHO SỬA
+              required
+              value={discountPercent}
+              onChange={(e) => setDiscountPercent(e.target.value)}
               InputProps={{
                 endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                inputProps: { min: 0, max: 100 },
               }}
-              sx={{
-                backgroundColor: "#f5f5f5",
-                borderRadius: 1,
-              }}
+              disabled={transaction?.status !== "PENDING"} // Disable nếu đã duyệt
             />
           </Grid>
 
+          {/* Khối hiển thị kết quả */}
           <Grid>
             <Box
               sx={{
                 p: 1,
-                bgcolor: "primary.50",
+                bgcolor: "primary.main", // Màu nền nổi bật
                 borderRadius: 2,
-                border: "1px dashed",
-                borderColor: "primary.main",
+                color: "white",
                 display: "flex",
                 flexDirection: "column",
-                gap: 1,
               }}
             >
-              <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" justifyContent="space-between" alignItems="center" gap={1}>
                 <Typography variant="subtitle1" fontWeight="bold">
                   Sau chiết khấu:
                 </Typography>
-                <Typography variant="h6" color="primary.main" fontWeight="bold">
-                  {finalAmount.toLocaleString()} VNĐ
+                <Typography variant="h6" fontWeight="bold">
+                  {finalAmount.toLocaleString("vi-VN")} VNĐ
                 </Typography>
               </Box>
             </Box>
@@ -193,8 +221,12 @@ export default function EditTransactionModal({ open, onClose, transaction, onSuc
         <Button onClick={onClose} color="inherit" disabled={loading}>
           Hủy bỏ
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading || !amount || !selectedTypeId}>
-          {loading ? <CircularProgress size={24} /> : "Lưu thay đổi"}
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={isSubmitDisabled || transaction?.status !== "PENDING"} // Vô hiệu hóa nếu không phải PENDING
+        >
+          {loading ? <CircularProgress size={24} color="inherit" /> : "Lưu thay đổi"}
         </Button>
       </DialogActions>
     </Dialog>

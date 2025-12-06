@@ -85,10 +85,10 @@ export default function BankListCard({ banks, loading, onAddBank, onReload, onEd
           <Box>
             {/* Sử dụng variant h6 cho tiêu đề chính thay vì chỉnh font weight thủ công */}
             <Typography variant="h6" component="div">
-              Tài Khoản Ngân Hàng
+              Hình thức thanh toán
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Quản lý tài khoản thanh toán
+              Quản lý hình thức thanh toán
             </Typography>
           </Box>
         </Box>
@@ -144,7 +144,6 @@ export default function BankListCard({ banks, loading, onAddBank, onReload, onEd
               banks.map((bank) => (
                 <ListItem
                   key={bank._id}
-                  alignItems="flex-start" // Căn chỉnh top để đẹp hơn khi nội dung dài
                   sx={{
                     mb: 1.5,
                     bgcolor: "background.paper",
@@ -169,8 +168,8 @@ export default function BankListCard({ banks, loading, onAddBank, onReload, onEd
                         </IconButton>
                       </Tooltip>
 
-                      <Tooltip title="Sao chép số tài khoản">
-                        <IconButton edge="end" size="small" onClick={() => handleCopy(bank.accountNumber)}>
+                      <Tooltip title="Sao chép hình thức thanh toán">
+                        <IconButton edge="end" size="small" onClick={() => handleCopy(bank.bankName)}>
                           <CopyIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -194,16 +193,6 @@ export default function BankListCard({ banks, loading, onAddBank, onReload, onEd
                       <Typography variant="subtitle1" color="text.primary">
                         {bank.bankName}
                       </Typography>
-                    }
-                    secondary={
-                      <Box component="span" sx={{ display: "flex", flexDirection: "column" }}>
-                        <Typography component="span" variant="body2" color="text.primary">
-                          {bank.accountNumber}
-                        </Typography>
-                        <Typography component="span" variant="caption" color="text.secondary">
-                          {bank.accountHolder || "N/A"}
-                        </Typography>
-                      </Box>
                     }
                   />
                 </ListItem>

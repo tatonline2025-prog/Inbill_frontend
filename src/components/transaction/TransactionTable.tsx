@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { ITransaction, ITransactionPaymentBank, ITransactionType } from "@/types/transaction";
+import { IUser } from "@/types/user";
 
 interface Props {
   data: ITransaction[];
@@ -88,7 +89,8 @@ const TransactionTable: React.FC<Props> = ({ data, isAdmin = false, onEdit, onDe
             <TableCell sx={{ fontWeight: "bold", color: "white" }}>Số Tiền</TableCell>
             <TableCell sx={{ fontWeight: "bold", color: "white" }}>Chiết Khấu</TableCell>
             <TableCell sx={{ fontWeight: "bold", color: "white" }}>Sau chiết khấu</TableCell>
-            <TableCell sx={{ fontWeight: "bold", color: "white" }}>Ngân hàng nhận tiền</TableCell>
+            <TableCell sx={{ fontWeight: "bold", color: "white" }}>Hình thức thanh toán</TableCell>
+            <TableCell sx={{ fontWeight: "bold", color: "white" }}>Ngân hàng của bạn</TableCell>
             <TableCell sx={{ fontWeight: "bold", color: "white" }} align="center">
               Trạng Thái
             </TableCell>
@@ -116,15 +118,25 @@ const TransactionTable: React.FC<Props> = ({ data, isAdmin = false, onEdit, onDe
                   {(row.typeId as ITransactionType)?.name || "N/A"}
                 </TableCell>
                 <TableCell>{formatCurrency(row.amount)}</TableCell>
-                <TableCell>{(row.typeId as ITransactionType)?.discountPercent}%</TableCell>
+                <TableCell>{row.discountPercent}%</TableCell>
                 <TableCell sx={{ fontWeight: "bold", color: "primary.main" }}>
                   {formatCurrency(row.finalAmount)}
                 </TableCell>
+
                 <TableCell sx={{ fontWeight: "bold", color: "primary.main" }}>
-                  {(row.paymentBankId as ITransactionPaymentBank)?.bankName} -{" "}
-                  {(row.paymentBankId as ITransactionPaymentBank)?.accountNumber} -{" "}
-                  {(row.paymentBankId as ITransactionPaymentBank)?.accountHolder}
+                  {/* Kiểm tra: Nếu paymentSourceId tồn tại và có bankName thì hiển thị tên bank */}
+                  {row.paymentSourceId && (row.paymentSourceId as ITransactionPaymentBank).bankName ? (
+                    <>{(row.paymentSourceId as ITransactionPaymentBank)?.bankName} </>
+                  ) : (
+                    // Ngược lại, hiển thị thông báo chờ xác nhận
+                    "Chờ phía công ty xác nhận"
+                  )}
                 </TableCell>
+
+                <TableCell sx={{ fontWeight: "bold", color: "primary.main" }}>
+                  {(row.creatorId as IUser)?.bankName} - {(row.creatorId as IUser)?.bankAccount}
+                </TableCell>
+
                 <TableCell align="center">
                   <Chip
                     label={getStatusLabel(row.status)}

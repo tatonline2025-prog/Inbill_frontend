@@ -13,6 +13,7 @@ interface Props {
 
 const initialFormData: Partial<ITransaction> = {
   amount: 0,
+  discountPercent: 0,
   typeId: "",
 };
 
@@ -40,7 +41,10 @@ const CreateTransactionForm: React.FC<Props> = ({ onSuccess }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    const parsedValue = name === "amount" || name === "discountPercent" ? Number(value) : value;
+
+    setFormData({ ...formData, [name]: parsedValue });
   };
 
   const amount = Number(formData.amount);
@@ -49,8 +53,11 @@ const CreateTransactionForm: React.FC<Props> = ({ onSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    const { amount, discountPercent, typeId } = formData;
+
     try {
-      const res = await createTransaction({ amount, typeId: formData.typeId });
+      const res = await createTransaction({ amount, discountPercent, typeId });
       if (res?.status === 201) {
         toast.success("Tạo giao dịch thành công!");
         setFormData(initialFormData);
@@ -62,6 +69,9 @@ const CreateTransactionForm: React.FC<Props> = ({ onSuccess }) => {
       setLoading(false);
     }
   };
+
+  const discountPercent = Number(formData.discountPercent) || 0;
+  const finalAmount = amount - (amount * discountPercent) / 100;
 
   return (
     <Card elevation={0} sx={{ borderRadius: 2, border: "1px solid #e0e0e0", overflow: "visible" }}>
@@ -111,6 +121,33 @@ const CreateTransactionForm: React.FC<Props> = ({ onSuccess }) => {
             InputProps={{ inputProps: { min: 0 } }}
             helperText="Nhập số tiền thực tế của giao dịch"
           />
+          <TextField
+            required
+            fullWidth
+            size="small"
+            label="% Chiết khấu"
+            name="discountPercent"
+            type="number"
+            value={formData.discountPercent || ""}
+            onChange={handleChange}
+            slotProps={{
+              input: {
+                inputProps: {
+                  min: 0,
+                  step: 0.01, // cho phép nhập số thập phân
+                },
+              },
+            }}
+            helperText="Nhập chiết khấu mong muốn (0-100%)"
+          />
+
+          {amount > 0 && (
+            <Box sx={{ p: 1, bgcolor: "primary.main", borderRadius: 1, color: "white", textAlign: "center" }}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                Số tiền sau chiết khấu: {finalAmount.toLocaleString("vi-VN")} VNĐ
+              </Typography>
+            </Box>
+          )}
 
           {/* Button Submit */}
           <Button
