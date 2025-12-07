@@ -29,7 +29,15 @@ interface Props {
 
 const formatCurrency = (val: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val);
-const formatDate = (date: string | Date) => new Date(date).toLocaleDateString("vi-VN");
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 export default function AdminTransactionTable({ data, onApprove, onCancel, onEdit, onDelete }: Props) {
   return (
@@ -108,7 +116,7 @@ export default function AdminTransactionTable({ data, onApprove, onCancel, onEdi
                   {row.status === "CANCELLED" ? (
                     <Chip label="GD đã huỷ" color="error" size="small" variant="outlined" />
                   ) : !row.paymentSourceId ? (
-                    <Chip label="Chờ công ty xác nhận" color="warning" size="small" variant="outlined" />
+                    <Chip label="Chờ xác nhận" color="warning" size="small" variant="outlined" />
                   ) : isPaymentBankPopulated ? (
                     <Box>
                       <Typography variant="subtitle2" sx={{ lineHeight: 1.2 }}>
@@ -148,11 +156,11 @@ export default function AdminTransactionTable({ data, onApprove, onCancel, onEdi
                           <Delete fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Sửa">
+                      {/* <Tooltip title="Sửa">
                         <IconButton size="small" color="primary" onClick={() => onEdit(row)}>
                           <Edit fontSize="small" />
                         </IconButton>
-                      </Tooltip>
+                      </Tooltip> */}
                     </Box>
                   ) : (
                     "-"

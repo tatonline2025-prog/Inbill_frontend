@@ -13,6 +13,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import ExportTransactionModal from "@/components/transaction/admin/ExportTransactionModal";
 import { IUser } from "@/types/user";
 import { useAuth } from "@/hooks/useAuth";
+import TransactionSummary from "@/components/transaction/admin/TransactionSummary";
 
 export default function UserDashboardPage() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
@@ -31,6 +32,8 @@ export default function UserDashboardPage() {
     setLoading(true);
     try {
       const res = await getUserTransactions();
+
+      console.log(res);
 
       if (res.data?.transactions) {
         setTransactions(res.data?.transactions);
@@ -122,6 +125,8 @@ export default function UserDashboardPage() {
             <CreateTransactionForm onSuccess={handleTransactionUpdated} />
           </Box>
         </Grid>
+
+        <TransactionSummary transactions={transactions} />
 
         {/* Cột Phải: Bảng Danh Sách */}
         <Grid>

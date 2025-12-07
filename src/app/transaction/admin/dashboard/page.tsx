@@ -27,6 +27,7 @@ import EditBankFormModal from "@/components/transaction/admin/EditBankFormModal"
 import EditTransactionTypeFormModal from "@/components/transaction/admin/EditTransactionTypeFormModal";
 import ExportTransactionModal from "@/components/transaction/admin/ExportTransactionModal";
 import { useAuth } from "@/hooks/useAuth";
+import TransactionSummary from "@/components/transaction/admin/TransactionSummary";
 
 // --- Hàm hiển thị nội dung Tab (Helper) ---
 interface TabPanelProps {
@@ -91,6 +92,7 @@ export default function AdminTransactionsPage() {
         params.endDate = filters.date;
       }
       const res = await getAllTransactions(params);
+
       setTransactions(res.transactions || []);
     } catch (error) {
       console.error(error);
@@ -282,6 +284,8 @@ export default function AdminTransactionsPage() {
             </Grid>
           </Grid>
         </Card>
+
+        <TransactionSummary transactions={transactions} />
 
         {/* --- BẢNG DỮ LIỆU GIAO DỊCH --- */}
         {loading ? (
