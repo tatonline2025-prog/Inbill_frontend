@@ -254,7 +254,7 @@ export default function Header() {
       {/* Menu mobile (có animation trượt xuống) */}
       <div
         className={`md:hidden bg-blue-700 transition-all duration-300 overflow-hidden ${
-          isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          isMenuOpen ? "max-h-screen opacity-100 overflow-y-auto" : "max-h-0 opacity-0"
         }`}
       >
         <div className="flex flex-col px-4 py-3 space-y-2">
