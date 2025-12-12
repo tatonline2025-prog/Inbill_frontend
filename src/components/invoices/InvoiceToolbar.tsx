@@ -113,7 +113,7 @@ export default function InvoiceToolbar({
                 minWidth: { xs: "120px", sm: "160px" },
               }}
             >
-              Xuất ra Excel đã thu
+              Xuất ra Excel chọn lọc
             </Button>
           )}
 

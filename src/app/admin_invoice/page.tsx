@@ -21,9 +21,10 @@ import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
 import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
+import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
+import { useState } from "react";
 
 export default function InvoicesPage() {
-  // 💡 Sử dụng Custom Hook để lấy toàn bộ state và handlers
   const {
     invoices,
     userData,
@@ -56,8 +57,11 @@ export default function InvoicesPage() {
     openExportByUser,
     selectedExportUser,
     openExportCollected,
-    selectedCollectedDate,
-    selectedCollectedUser,
+    collectedFromDate,
+    collectedToDate,
+    selectedCollectedUsers,
+    collectedStatus,
+    closingStatus,
 
     billingPeriods,
     provinces,
@@ -74,9 +78,12 @@ export default function InvoicesPage() {
     setOpenUploadPaidInvoice,
     setSelectedExportUser,
     setOpenExportByUser,
-    setSelectedCollectedDate,
-    setSelectedCollectedUser,
     setOpenExportCollected,
+    setCollectedFromDate,
+    setCollectedToDate,
+    setSelectedCollectedUsers,
+    setCollectedStatus,
+    setClosingStatus,
 
     reloadInvoices,
     handleInvoicesPerPageChange,
@@ -100,6 +107,18 @@ export default function InvoicesPage() {
   } = useInvoiceManagement();
 
   if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
+
+  const fetchAllInvoicesForCopy = async () => {
+    // Gọi API lấy TẤT CẢ hóa đơn theo filter hiện tại (bỏ qua page/limit)
+    const response = await fetchInvoicesForCopyAPI(
+      filterPrint,
+      filterCollection,
+      filterAssignedUser,
+      isPaidFilter,
+      selectedProvince
+    );
+    return response; // Trả về mảng InvoiceInfo[]
+  };
 
   return (
     <ProtectedRoute fallback={<p>Redirecting...</p>}>
@@ -169,6 +188,7 @@ export default function InvoicesPage() {
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
+            onFetchAllData={fetchAllInvoicesForCopy}
           />
 
           {/* --- Phân trang --- */}
@@ -249,18 +269,28 @@ export default function InvoicesPage() {
       {/* === EXPORT MODALS (Tách ra) === */}
       <ExportModals
         userData={userData}
+        // --- Phần Export By User (Giữ nguyên) ---
         openExportByUser={openExportByUser}
         selectedExportUser={selectedExportUser}
         setOpenExportByUser={setOpenExportByUser}
         setSelectedExportUser={setSelectedExportUser}
         handleExportByUserConfirm={handleExportByUserConfirm}
+        // --- Phần Export Collected (CẬP NHẬT MỚI) ---
         openExportCollected={openExportCollected}
-        selectedCollectedDate={selectedCollectedDate}
-        selectedCollectedUser={selectedCollectedUser}
         setOpenExportCollected={setOpenExportCollected}
-        setSelectedCollectedDate={setSelectedCollectedDate}
-        setSelectedCollectedUser={setSelectedCollectedUser}
+        // Dùng hàm xử lý mới vừa tạo ở trên
         handleExportCollectedConfirm={handleExportCollectedConfirm}
+        // Truyền các state mới vào
+        collectedFromDate={collectedFromDate}
+        setCollectedFromDate={setCollectedFromDate}
+        collectedToDate={collectedToDate}
+        setCollectedToDate={setCollectedToDate}
+        selectedCollectedUsers={selectedCollectedUsers}
+        setSelectedCollectedUsers={setSelectedCollectedUsers}
+        collectedStatus={collectedStatus}
+        setCollectedStatus={setCollectedStatus}
+        closingStatus={closingStatus}
+        setClosingStatus={setClosingStatus}
       />
     </ProtectedRoute>
   );

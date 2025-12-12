@@ -10,10 +10,14 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
+  FormLabel,
   InputLabel,
   Menu,
   MenuItem,
   Pagination,
+  Radio,
+  RadioGroup,
   Select,
   TextField,
   Typography,
@@ -31,6 +35,8 @@ import { useUserInvoiceManagement } from "@/hooks/useUserInvoiceManagement";
 import { IUser } from "@/types/user";
 import LoadingComponent from "@/components/common/LoadingComponent";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
+import { useState } from "react";
 
 export default function InvoicesPage() {
   const { isAuthenticated, user } = useAuth(); // Hook 1
@@ -96,9 +102,18 @@ export default function InvoicesPage() {
     handleExportCollectedConfirm,
     handleAddSuccess,
     handleEditSuccess,
+
+    collectedFromDate,
+    setCollectedFromDate,
+    collectedToDate,
+    setCollectedToDate,
+    collectedStatus,
+    setCollectedStatus,
+    closingStatus,
+    setClosingStatus,
   } = useUserInvoiceManagement({ user: currentUser }); // Truyền user
 
-  // 💡 SỬ DỤNG HOOK ĐỂ LẤY TẤT CẢ LOGIC
+  const [dateFilterType, setDateFilterType] = useState("range");
 
   if (!isAuthenticated || !user) {
     return <p style={{ padding: "2rem" }}>Vui lòng đăng nhập...</p>;
@@ -108,6 +123,12 @@ export default function InvoicesPage() {
   if (error) {
     return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
   }
+
+  const fetchAllInvoicesForCopy = async () => {
+    // Gọi API lấy TẤT CẢ hóa đơn theo filter hiện tại (bỏ qua page/limit)
+    const response = await fetchInvoicesForCopyAPI(filterPrint, filterCollection, user._id);
+    return response; // Trả về mảng InvoiceInfo[]
+  };
 
   return (
     <ProtectedRoute allowedRoles={["admin", "internal"]} redirectTo="/optimalsumfinder">
@@ -273,6 +294,7 @@ export default function InvoicesPage() {
           sortDirection={sortDirection}
           onSort={handleSort}
           showIsPaidColumn={false}
+          onFetchAllData={fetchAllInvoicesForCopy}
         />
         {!loading && sortedInvoices.length > 0 && (
           <Box sx={{ mt: 2, display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -324,19 +346,104 @@ export default function InvoicesPage() {
       />
 
       {/* --- Export Collected Dialog --- */}
-      <Dialog open={openExportCollected} onClose={() => setOpenExportCollected(false)}>
-        <DialogTitle>Xuất Excel Hóa Đơn Đã Thu của {user.fullName}</DialogTitle>
-        <DialogContent sx={{ minWidth: 400, paddingTop: "16px !important" }}>
-          <TextField
-            label="Chọn ngày thu"
-            type="date"
-            fullWidth
-            margin="dense"
-            value={selectedCollectedDate}
-            onChange={(e) => setSelectedCollectedDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
+      <Dialog
+        open={openExportCollected}
+        onClose={() => setOpenExportCollected(false)}
+        maxWidth="sm" // Tăng độ rộng modal
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            paddingBottom: 0,
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          Xuất Excel Hóa Đơn Chọn Lọc
+        </DialogTitle>
+        <DialogContent sx={{ paddingTop: "16px !important" }}>
+          {/* 1. Chọn kiểu thời gian (Thêm mới) */}
+          <FormControl component="fieldset" sx={{ mt: 1, mb: 1.5 }}>
+            <RadioGroup
+              row
+              name="dateFilterType"
+              value={dateFilterType}
+              onChange={(e) => {
+                setDateFilterType(e.target.value);
+
+                setCollectedFromDate(collectedFromDate);
+                setCollectedToDate(collectedFromDate);
+              }}
+            >
+              <FormControlLabel value="single" control={<Radio size="small" />} label="Một ngày cụ thể" />
+              <FormControlLabel value="range" control={<Radio size="small" />} label="Khoảng thời gian" />
+            </RadioGroup>
+          </FormControl>
+
+          {dateFilterType === "single" ? (
+            <TextField
+              label="Chọn ngày"
+              type="date"
+              fullWidth
+              value={collectedFromDate}
+              onChange={(e) => {
+                setCollectedFromDate(e.target.value);
+                setCollectedToDate(e.target.value);
+              }}
+              InputLabelProps={{ shrink: true }}
+              helperText="Chọn ngày cần xuất báo cáo"
+            />
+          ) : (
+            // --- Option: Khoảng thời gian (Code cũ của bạn) ---
+            <div style={{ display: "flex", gap: "16px", marginBottom: "8px" }}>
+              <TextField
+                label="Từ ngày"
+                type="date"
+                fullWidth
+                margin="dense"
+                value={collectedFromDate}
+                onChange={(e) => setCollectedFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Đến ngày"
+                type="date"
+                fullWidth
+                margin="dense"
+                value={collectedToDate}
+                onChange={(e) => setCollectedToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </div>
+          )}
+
+          {/* 3. Chọn trạng thái (Giữ nguyên code của bạn) */}
+          <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
+            {/* Trạng thái thu */}
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Trạng thái thu</InputLabel>
+              <Select
+                value={collectedStatus}
+                label="Trạng thái thu"
+                onChange={(e) => setCollectedStatus(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="paid">Đã thu</MenuItem>
+                <MenuItem value="unpaid">Chưa thu</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Trạng thái đóng cước */}
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Đóng cước</InputLabel>
+              <Select value={closingStatus} label="Đóng cước" onChange={(e) => setClosingStatus(e.target.value)}>
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="true">Đã đóng</MenuItem>
+                <MenuItem value="false">Chưa đóng</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={() => setOpenExportCollected(false)}>Hủy</Button>
           <Button variant="contained" color="success" onClick={handleExportCollectedConfirm}>

@@ -62,6 +62,12 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("none"); // --- 1. Data Fetching ---
 
+  const [collectedFromDate, setCollectedFromDate] = useState(today); // Từ ngày
+  const [collectedToDate, setCollectedToDate] = useState(today); // Đến ngày
+  // const [selectedCollectedUsers, setSelectedCollectedUsers] = useState([]);
+  const [collectedStatus, setCollectedStatus] = useState("paid"); // Trạng thái thu (mặc định là đã thu)
+  const [closingStatus, setClosingStatus] = useState("false");
+
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -287,14 +293,19 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       toast.error("Không tìm thấy thông tin người dùng.");
       return;
     }
-    if (!selectedCollectedDate) {
-      alert("Vui lòng chọn ngày thu!");
+
+    if (!collectedFromDate || !collectedToDate) {
+      toast.error("Vui lòng chọn khoảng thời gian (Từ ngày - Đến ngày)!");
       return;
     }
 
     const params = new URLSearchParams({
+      fromDate: collectedFromDate,
+      toDate: collectedToDate,
+      status: collectedStatus,
+      isClosed: closingStatus,
       date: selectedCollectedDate,
-      assignedUserId: user._id, // Tự động lấy user ID
+      userIds: user._id, // Tự động lấy user ID
     });
 
     const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
@@ -416,5 +427,14 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     handleExportCollectedConfirm,
     handleAddSuccess,
     handleEditSuccess,
+
+    collectedFromDate,
+    setCollectedFromDate,
+    collectedToDate,
+    setCollectedToDate,
+    collectedStatus,
+    setCollectedStatus,
+    closingStatus,
+    setClosingStatus,
   };
 };

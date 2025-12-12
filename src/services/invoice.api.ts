@@ -203,3 +203,25 @@ export const fetchLatestPeriod_API = async () => {
   );
   return res.data;
 };
+
+export const fetchInvoicesForCopyAPI = async (
+  filterPrint: string,
+  filterCollection: string,
+  filterAssignedUser: string,
+  isPaidFilter?: boolean,
+  selectedProvince?: string
+) => {
+  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/forcopy`, {
+    params: {
+      filterPrint,
+      filterCollection,
+      filterAssignedUser,
+      isPaidFilter,
+      selectedProvince,
+    },
+  });
+
+  // console.log(res);
+
+  return res.data;
+};

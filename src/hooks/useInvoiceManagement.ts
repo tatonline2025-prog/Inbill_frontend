@@ -66,15 +66,19 @@ export const useInvoiceManagement = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceInfo | null>(null);
 
+  // --- Export By User ---
   const [openExportByUser, setOpenExportByUser] = useState(false);
   const [selectedExportUser, setSelectedExportUser] = useState<string>("");
 
+  // --- Export Collected ---
   const [openExportCollected, setOpenExportCollected] = useState(false);
 
   const today = new Date().toLocaleDateString("en-CA");
-  const [selectedCollectedDate, setSelectedCollectedDate] = useState(today);
-
-  const [selectedCollectedUser, setSelectedCollectedUser] = useState("all");
+  const [collectedFromDate, setCollectedFromDate] = useState<string>(today);
+  const [collectedToDate, setCollectedToDate] = useState<string>(today);
+  const [selectedCollectedUsers, setSelectedCollectedUsers] = useState<string[]>([]); // Array ID
+  const [collectedStatus, setCollectedStatus] = useState<string>("paid");
+  const [closingStatus, setClosingStatus] = useState<string>("false");
 
   // --- Hằng số ---
   const billingPeriods = useMemo(() => generateBillingPeriods(), []);
@@ -343,6 +347,7 @@ export const useInvoiceManagement = () => {
         alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
         return;
       }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
@@ -363,31 +368,42 @@ export const useInvoiceManagement = () => {
   };
 
   const handleExportCollectedConfirm = async () => {
-    // (Giữ nguyên logic ExportCollectedConfirm)
-    if (!selectedCollectedDate) {
-      alert("Vui lòng chọn ngày thu!");
+    // 1. Validate
+    if (!collectedFromDate || !collectedToDate) {
+      toast.error("Vui lòng chọn khoảng thời gian (Từ ngày - Đến ngày)!");
       return;
     }
 
+    // 2. Tạo Query Params
     const params = new URLSearchParams({
-      date: selectedCollectedDate,
+      fromDate: collectedFromDate,
+      toDate: collectedToDate,
+      status: collectedStatus, // 'collected' | 'not_collected' | 'all'
+      isClosed: closingStatus, // 'true' | 'false' | 'all'
     });
-    if (selectedCollectedUser !== "all") {
-      params.append("assignedUserId", selectedCollectedUser);
+
+    // Xử lý mảng userIds (nối chuỗi bằng dấu phẩy)
+    if (selectedCollectedUsers.length > 0) {
+      params.append("userIds", selectedCollectedUsers.join(","));
     }
+
     const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
+
+    // 3. Gọi API
     try {
       const response = await fetch(apiUrl);
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
-        alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
+        toast.error(errorData.message || "Có lỗi xảy ra khi xuất file.");
         return;
       }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
       const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
       const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-da-thu.xlsx";
+
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
@@ -395,11 +411,15 @@ export const useInvoiceManagement = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
+      // Reset và đóng modal
       setOpenExportCollected(false);
-      setSelectedCollectedUser("all");
+      // Có thể reset form
+      setSelectedCollectedUsers([]);
+      setCollectedStatus("paid");
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
-      alert("Không thể kết nối tới máy chủ để xuất file.");
+      toast.error("Không thể kết nối tới máy chủ để xuất file.");
     }
   };
 
@@ -435,8 +455,11 @@ export const useInvoiceManagement = () => {
     openExportByUser,
     selectedExportUser,
     openExportCollected,
-    selectedCollectedDate,
-    selectedCollectedUser,
+    collectedFromDate,
+    collectedToDate,
+    selectedCollectedUsers,
+    collectedStatus,
+    closingStatus,
 
     // Hằng số
     billingPeriods,
@@ -456,9 +479,12 @@ export const useInvoiceManagement = () => {
     setOpenUploadPaidInvoice,
     setSelectedExportUser,
     setOpenExportByUser,
-    setSelectedCollectedDate,
-    setSelectedCollectedUser,
     setOpenExportCollected,
+    setCollectedFromDate,
+    setCollectedToDate,
+    setSelectedCollectedUsers,
+    setCollectedStatus,
+    setClosingStatus,
 
     // Handlers
     reloadInvoices,

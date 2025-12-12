@@ -1,7 +1,18 @@
 // components/invoices/InvoiceTable.tsx
 
 import { InvoiceInfo } from "@/types/invoice";
-import { Box, Switch, Typography, IconButton, Button, Menu, MenuItem, Checkbox, ListItemText } from "@mui/material";
+import {
+  Box,
+  Switch,
+  Typography,
+  IconButton,
+  Button,
+  Menu,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  CircularProgress,
+} from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
 import { useEffect, useMemo, useState } from "react";
@@ -9,6 +20,7 @@ import { fetchLatestPeriod_API } from "@/services/invoice.api";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import toast from "react-hot-toast";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 
 interface InvoiceTableProps {
   loading: boolean;
@@ -25,6 +37,7 @@ interface InvoiceTableProps {
   sortDirection: "asc" | "desc" | "none";
   onSort: (field: string) => void;
   showIsPaidColumn?: boolean;
+  onFetchAllData?: () => Promise<InvoiceInfo[]>;
 }
 
 export default function InvoiceTable({
@@ -42,11 +55,14 @@ export default function InvoiceTable({
   sortDirection,
   onSort,
   showIsPaidColumn = true,
+  onFetchAllData,
 }: InvoiceTableProps) {
   const defaultColumns = TABLE_HEADERS.map((h) => h.key);
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const [isCopyingAll, setIsCopyingAll] = useState(false);
 
   // Load cấu hình từ localStorage khi mới vào
   useEffect(() => {
@@ -94,6 +110,39 @@ export default function InvoiceTable({
       .writeText(columnData)
       .then(() => toast.success(`Đã copy cột ${data.label}!`))
       .catch((err) => console.error("Lỗi copy:", err));
+  };
+
+  const handleCopyAllData = async (key: string, label: string) => {
+    if (!onFetchAllData) {
+      toast.error("Chưa cấu hình tính năng này");
+      return;
+    }
+
+    setIsCopyingAll(true);
+    const toastId = toast.loading(`Đang tải toàn bộ dữ liệu cột ${label}...`);
+
+    try {
+      const allData = await onFetchAllData();
+
+      if (!allData || allData.length === 0) {
+        toast.dismiss(toastId);
+        toast.error("Không có dữ liệu nào.");
+        return;
+      }
+
+      const columnData = allData.map((invoice) => (invoice[key as keyof InvoiceInfo] ?? "").toString()).join("\n");
+
+      await navigator.clipboard.writeText(columnData);
+
+      toast.dismiss(toastId);
+      toast.success(`Đã copy ${allData.length} dòng!`);
+    } catch (error) {
+      console.error(error);
+      toast.dismiss(toastId);
+      toast.error("Lỗi khi lấy dữ liệu.");
+    } finally {
+      setIsCopyingAll(false);
+    }
   };
 
   return (
@@ -215,6 +264,21 @@ export default function InvoiceTable({
                         <ContentCopyIcon style={{ fontSize: "12px", color: "#555" }} />
                       </IconButton>
                     )}
+
+                    {header.key === "invoiceNumber" && (
+                      <IconButton
+                        size="small"
+                        sx={{ padding: "2px" }}
+                        onClick={() => handleCopyAllData(header.key, header.label)}
+                        disabled={isCopyingAll}
+                      >
+                        {isCopyingAll ? (
+                          <CircularProgress size={14} color="primary" />
+                        ) : (
+                          <CloudDownloadIcon style={{ fontSize: "16px", color: "#1976d2" }} />
+                        )}
+                      </IconButton>
+                    )}
                   </Box>
                 </th>
               );
@@ -234,7 +298,7 @@ export default function InvoiceTable({
                 />
               </td>
 
-              {/* STT: Coi như một cột riêng, có thể thêm vào TABLE_HEADERS nếu muốn ẩn, ở đây mình để mặc định hiện */}
+              {/* STT: Coi như một cột riêng mặc định hiện */}
               <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "center" }}>
                 {index + 1 + (currentPage - 1) * invoicesPerPage}
               </td>

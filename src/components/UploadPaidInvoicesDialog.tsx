@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import Spinner from "./SpinnerLoading";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { handleToggleIsPaidList_API } from "@/services/invoice.api";
+import { isAxiosError } from "axios";
 // Import API mới của bạn ở đây (ví dụ: updatePaidInvoices)
 // import { updatePaidInvoices } from "@/services/invoice.api";
 
@@ -51,8 +52,6 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
       // 3. Gọi API (Thay thế hàm này bằng API thực tế của bạn)
       const res = await handleToggleIsPaidList_API(payload);
 
-      // console.log(res);
-
       // Giả lập thành công để test UI
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -64,7 +63,11 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi cập nhật!");
+      if (isAxiosError(err)) {
+        toast.error(err.response?.data.message || "Có lỗi xảy ra khi cập nhật!");
+      } else {
+        toast.error("Có lỗi không xác định xảy ra!");
+      }
     } finally {
       setLoading(false);
     }

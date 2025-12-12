@@ -46,7 +46,12 @@ const OptimalSumFinder = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<Result | null>(null);
 
+  const [isLocked, setIsLocked] = useState(false);
+
   useEffect(() => {
+    let initialMkh = "";
+    let initialMoney = "";
+
     try {
       const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
       if (savedSettings) {
@@ -59,11 +64,20 @@ const OptimalSumFinder = () => {
         if (parsed.isFilterOn !== undefined) setIsFilterOn(Boolean(parsed.isFilterOn));
 
         // Lưu cả dữ liệu text nhập
-        if (parsed.textMkh) setTextMkh(parsed.textMkh);
-        if (parsed.textMoney) setTextMoney(parsed.textMoney);
+        if (parsed.textMkh) initialMkh = parsed.textMkh;
+        if (parsed.textMoney) initialMoney = parsed.textMoney;
+
+        setTextMkh(initialMkh);
+        setTextMoney(initialMoney);
       }
     } catch (err) {
       console.error("Lỗi khi load settings:", err);
+    }
+
+    if (initialMkh.length > 0 || initialMoney.length > 0) {
+      setIsLocked(true);
+    } else {
+      setIsLocked(false);
     }
   }, []);
 
@@ -74,8 +88,9 @@ const OptimalSumFinder = () => {
         minTarget,
         count,
         isFilterOn,
-        textMkh, // Uncomment nếu muốn lưu luôn nội dung đang nhập
-        textMoney, // Uncomment nếu muốn lưu luôn nội dung đang nhập
+        textMkh,
+        textMoney,
+        isLocked,
       };
 
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsToSave));
@@ -221,7 +236,7 @@ const OptimalSumFinder = () => {
     return (
       <div
         style={{
-          padding: "15px",
+          padding: "10px",
           border: `2px solid ${result.success ? "#4caf50" : "#ff9800"}`,
           borderRadius: "8px",
           backgroundColor: "#fff",
@@ -237,120 +252,120 @@ const OptimalSumFinder = () => {
 
         {resultsList.length === 0 && <p>Không có dữ liệu chi tiết để hiển thị.</p>}
 
-        {resultsList.map((combo, index) => (
-          <div
-            key={index}
-            style={{
-              marginBottom: "15px",
-              padding: "15px",
-              backgroundColor: "#f8f9fa",
-              border: "1px solid #dee2e6",
-              borderRadius: "6px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-              fontSize: "clamp(11px, 3.5vw, 15px)",
-            }}
-          >
+        <div
+          style={{
+            maxHeight: "500px", // hoặc 500px tùy UI của bạn
+            overflowY: "auto",
+            paddingRight: "5px", // tránh bị che bởi thanh scroll
+          }}
+        >
+          {resultsList.map((combo, index) => (
             <div
+              key={index}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "10px",
-                borderBottom: "1px solid #eee",
-                paddingBottom: "8px",
+                padding: "15px",
+                backgroundColor: "#f8f9fa",
+                border: "1px solid #dee2e6",
+                borderRadius: "6px",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                fontSize: "clamp(11px, 3.5vw, 15px)",
               }}
             >
-              <h4 style={{ margin: 0, color: "#333" }}># {index + 1}</h4>
-              <span
-                style={{
-                  fontSize: "0.9em",
-                  color: "#666",
-                  background: "#e9ecef",
-                  padding: "2px 8px",
-                  borderRadius: "10px",
-                }}
-              >
-                {combo.count} số hạng
-              </span>
-              <button
-                onClick={() => handleCopyCombo(combo.invoicenumbers)}
-                title="Sao chép các MKH của tổ hợp này"
+              <div
                 style={{
                   display: "flex",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  gap: "5px",
-                  background: "#fff",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
-                  padding: "4px 8px",
-                  cursor: "pointer",
-                  color: "#495057",
-                  fontSize: "12px",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#e2e6ea";
-                  e.currentTarget.style.borderColor = "#adb5bd";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#fff";
-                  e.currentTarget.style.borderColor = "#ced4da";
+                  borderBottom: "1px solid #eee",
+                  paddingBottom: "8px",
                 }}
               >
-                {/* SVG Icon Copy */}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <h4 style={{ margin: 0, color: "#333", fontSize: "0.8em" }}># {index + 1}</h4>
+                <span
+                  style={{
+                    fontSize: "0.7em",
+                    color: "#666",
+                    background: "#e9ecef",
+                    padding: "2px 8px",
+                    borderRadius: "10px",
+                  }}
                 >
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span>Copy MKH</span>
-              </button>
-            </div>
+                  {combo.count} số hạng
+                </span>
+                <button
+                  onClick={() => handleCopyCombo(combo.invoicenumbers)}
+                  title="Sao chép các MKH của tổ hợp này"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    background: "#fff",
+                    border: "1px solid #ced4da",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    cursor: "pointer",
+                    color: "#495057",
+                    fontSize: "10px",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#e2e6ea";
+                    e.currentTarget.style.borderColor = "#adb5bd";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#fff";
+                    e.currentTarget.style.borderColor = "#ced4da";
+                  }}
+                >
+                  {/* SVG Icon Copy */}
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span>Copy MKH</span>
+                </button>
+              </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap", // Cho phép xuống dòng nếu quá dài
-                alignItems: "center", // Căn giữa theo chiều dọc của dòng
-                gap: "10px", // Khoảng cách giữa các phần tử
-                fontFamily: "Arial, Helvetica, sans-serif",
-              }}
-            >
-              {combo.subset.map((item, idx) => (
-                <React.Fragment key={idx}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span style={{ fontSize: "1.1em", fontWeight: "bold", color: "#333" }}>
-                      {renderMoneyItem(item)}
-                    </span>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap", // Cho phép xuống dòng nếu quá dài
+                  alignItems: "center", // Căn giữa theo chiều dọc của dòng
+                  gap: "5px", // Khoảng cách giữa các phần tử
+                }}
+              >
+                {combo.subset.map((item, idx) => (
+                  <React.Fragment key={idx}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <span style={{ fontSize: "0.9em", fontWeight: "bold", color: "#333" }}>
+                        {renderMoneyItem(item)}
+                      </span>
 
-                    <span style={{ fontSize: "0.75em", color: "#888", marginTop: "2px" }}>
-                      ({combo.invoicenumbers ? combo.invoicenumbers[idx] : "?"})
-                    </span>
-                  </div>
+                      <span style={{ fontSize: "0.75em", color: "#888", marginTop: "2px" }}>
+                        ({combo.indices ? combo.indices[idx] + 1 : "?"})
+                      </span>
+                    </div>
+                  </React.Fragment>
+                ))}
 
-                  {idx < combo.subset.length - 1 && (
-                    <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.2em" }}>+</span>
-                  )}
-                </React.Fragment>
-              ))}
+                <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.0em" }}>=</span>
 
-              <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.2em" }}>=</span>
-
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.3em" }}>{combo.sum}</span>
-                <span style={{ fontSize: "0.75em", color: "#d32f2f", marginTop: "2px" }}>(Tổng tiền)</span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.0em" }}>{combo.sum}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
@@ -373,29 +388,25 @@ const OptimalSumFinder = () => {
   };
 
   // Hỗ trợ copy paste từ Excel khi copy cả 2 cột MKH và số tiền
-  const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  // Cập nhật hàm xử lý Paste để bao quát cả Paste thông thường
+  const handlePasteInput = (e: React.ClipboardEvent<HTMLTextAreaElement>, type: "mkh" | "money") => {
     const clipboardData = e.clipboardData.getData("text");
+    e.preventDefault(); // Chặn hành vi mặc định
 
-    // Kiểm tra xem có dấu tab (\t) không. Excel luôn dùng tab để ngăn cách cột.
+    // --- TRƯỜNG HỢP 1: SMART PASTE (Có dấu Tab - Copy từ Excel) ---
+    // Trường hợp này điền cả 2 cột nên ta KHÓA LUÔN
     if (clipboardData.includes("\t")) {
-      e.preventDefault(); // Chặn hành vi paste mặc định để tự xử lý
-
-      const lines = clipboardData.split(/\r\n|\n|\r/); // Tách từng dòng
+      const lines = clipboardData.split(/\r\n|\n|\r/);
       const newMkh: string[] = [];
       const newMoney: string[] = [];
 
       lines.forEach((line) => {
-        if (!line.trim()) return; // Bỏ qua dòng trống
-
-        const columns = line.split("\t"); // Tách cột bằng dấu tab
-
-        const validCols = columns
-          .map((c) => c.trim()) // Xóa khoảng trắng thừa đầu đuôi
-          .filter((c) => c !== "");
+        if (!line.trim()) return;
+        const columns = line.split("\t");
+        const validCols = columns.map((c) => c.trim()).filter((c) => c !== "");
 
         if (validCols.length > 0) {
           newMkh.push(validCols[0]);
-
           if (validCols.length >= 2) {
             newMoney.push(validCols[1]);
           } else {
@@ -404,14 +415,46 @@ const OptimalSumFinder = () => {
         }
       });
 
-      // Cập nhật State: Nối thêm vào dữ liệu cũ (hoặc ghi đè tùy bạn)
-      // Ở đây mình làm logic: Nối thêm xuống dưới
       setTextMkh((prev) => (prev ? prev + "\n" : "") + newMkh.join("\n"));
       setTextMoney((prev) => (prev ? prev + "\n" : "") + newMoney.join("\n"));
 
-      toast.success(`Đã dán ${newMkh.length} dòng dữ liệu!`);
+      toast.success(`Đã dán thông minh ${newMkh.length} dòng!`);
+      setIsLocked(true); // <--- Khóa ngay vì đã có dữ liệu cả 2 bên
+      return;
     }
-    // Nếu không có tab (copy 1 cột bình thường), để mặc định cho trình duyệt xử lý
+
+    // --- TRƯỜNG HỢP 2: PASTE THƯỜNG (Từng cột) ---
+    const cleanText = clipboardData.trim();
+
+    if (type === "mkh") {
+      // Cập nhật cột MKH
+      setTextMkh((prev) => (prev ? prev + "\n" : "") + cleanText);
+
+      // LOGIC MỚI: Chỉ khóa nếu cột Money (cột kia) ĐÃ CÓ dữ liệu
+      if (textMoney && textMoney.trim().length > 0) {
+        setIsLocked(true);
+        toast.success("Đã nhập đủ 2 cột. Dữ liệu đã được khóa!");
+      } else {
+        toast.success("Đã dán MKH. Hãy dán tiếp cột Số tiền!");
+      }
+    } else {
+      // Cập nhật cột Money
+      setTextMoney((prev) => (prev ? prev + "\n" : "") + cleanText);
+
+      // LOGIC MỚI: Chỉ khóa nếu cột MKH (cột kia) ĐÃ CÓ dữ liệu
+      if (textMkh && textMkh.trim().length > 0) {
+        setIsLocked(true);
+        toast.success("Đã nhập đủ 2 cột. Dữ liệu đã được khóa!");
+      } else {
+        toast.success("Đã dán Số tiền. Hãy dán tiếp cột MKH!");
+      }
+    }
+  };
+
+  const handleResetInput = () => {
+    setTextMkh("");
+    setTextMoney("");
+    setIsLocked(false);
   };
 
   return (
@@ -440,62 +483,105 @@ const OptimalSumFinder = () => {
           </h1>
         </div>
 
-        <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {/* --- CỘT TRÁI: NHẬP LIỆU --- */}
-          <div style={{ flex: "1 1 150px" }}>
+          <div style={{ flex: "0.8 1 80px" }}>
             <div
               style={{
                 background: "#fff",
-                padding: "15px",
+                paddingTop: "15px",
                 borderRadius: "8px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                position: "relative",
               }}
             >
-              <h3 style={{ marginTop: 0, fontSize: "16px", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
-                Nhập Dữ Liệu (Copy/Paste)
-              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottom: "1px solid #eee",
+                  paddingBottom: "10px",
+                  marginBottom: "10px",
+                  paddingRight: "15px",
+                }}
+              >
+                <h3 style={{ margin: 0, fontSize: "16px" }}>Nhập Dữ Liệu (Copy/Paste)</h3>
 
-              <div style={{ display: "flex", marginBottom: "10px" }}>
+                {/* Nút Nhập lại chỉ hiện khi đã bị khóa */}
+
+                <button
+                  onClick={handleResetInput}
+                  style={{
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    backgroundColor: "#ff0000ff",
+                    cursor: "pointer",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                  }}
+                >
+                  Xóa & Nhập lại
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  marginBottom: "10px",
+                  gap: "10px",
+                }}
+              >
                 {/* CỘT MKH */}
-                <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
                   <label style={{ fontSize: "12px", fontWeight: "bold", color: "#555" }}>Cột MKH</label>
                   <textarea
                     value={textMkh}
                     onChange={(e) => setTextMkh(e.target.value)}
-                    onPaste={handleSmartPaste}
+                    onPaste={(e) => handlePasteInput(e, "mkh")}
+                    disabled={isLocked}
                     placeholder={`Nhập MKH:\nPB07090020069\nPB05030000046\nPB05030079464\n...`}
                     style={{
-                      width: "80%",
+                      width: "100%", // CHỈNH: full cột
                       height: "500px",
                       padding: "8px",
                       border: "1px solid #ccc",
                       borderRadius: "4px",
                       fontSize: "13px",
                       whiteSpace: "pre",
+                      backgroundColor: isLocked ? "#f5f5f5" : "#fff",
+                      cursor: isLocked ? "not-allowed" : "text",
+                      color: isLocked ? "#888" : "#000",
                     }}
                   />
                 </div>
 
                 {/* CỘT SỐ TIỀN */}
-                <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
                   <label style={{ fontSize: "12px", fontWeight: "bold", color: "#555" }}>Cột Số Tiền</label>
                   <textarea
                     value={textMoney}
                     onChange={(e) => setTextMoney(e.target.value)}
-                    onPaste={handleSmartPaste}
+                    onPaste={(e) => handlePasteInput(e, "money")}
+                    disabled={isLocked}
                     placeholder={`Nhập số tiền:\n1019358\n1019358\n1019358\n...`}
                     style={{
-                      width: "80%",
+                      width: "100%",
                       height: "500px",
                       padding: "8px",
                       border: "1px solid #ccc",
                       borderRadius: "4px",
                       fontSize: "13px",
                       whiteSpace: "pre",
+                      backgroundColor: isLocked ? "#f5f5f5" : "#fff",
+                      cursor: isLocked ? "not-allowed" : "text",
+                      color: isLocked ? "#888" : "#000",
                     }}
                   />
                 </div>
               </div>
+
               <p style={{ fontSize: "12px", color: "#666", fontStyle: "italic", margin: "0" }}>
                 * Paste dữ liệu vào 2 cột trên. Các dòng sẽ tự động đối chiếu ngang hàng.
               </p>
@@ -503,7 +589,7 @@ const OptimalSumFinder = () => {
           </div>
 
           {/* --- CỘT GIỮA: DANH SÁCH ĐÃ XỬ LÝ (PREVIEW) --- */}
-          <div style={{ flex: "1 1 300px" }}>
+          <div style={{ flex: "1 1 100px" }}>
             <div
               style={{
                 background: "#fff",
@@ -517,11 +603,11 @@ const OptimalSumFinder = () => {
               </h3>
 
               {/* Hàng 1: Các ô Input nằm ngang */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end" }}>
                 {/* Min */}
                 <div style={{ flex: "1 1 150px" }}>
                   <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "5px" }}>
-                    Min (VND)
+                    Min
                   </label>
                   <input
                     type="number"
@@ -530,10 +616,10 @@ const OptimalSumFinder = () => {
                     onChange={(e) => setMinTarget(Number(e.target.value))}
                     style={{
                       width: "100%",
-                      padding: "8px",
-                      border: "1px solid #ddd",
+                      padding: "6px",
+                      fontSize: "12px",
                       borderRadius: "4px",
-                      boxSizing: "border-box",
+                      border: "1px solid #ccc",
                     }}
                   />
                 </div>
@@ -541,22 +627,29 @@ const OptimalSumFinder = () => {
                 {/* Max */}
                 <div style={{ flex: "1 1 200px" }}>
                   <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "5px" }}>
-                    Max (VND)
+                    Max (x1000)
                   </label>
                   <div style={{ display: "flex" }}>
                     <input
                       type="number"
-                      value={maxTarget}
-                      onChange={(e) => setMaxTarget(Number(e.target.value))}
-                      style={{
-                        flex: 1,
-                        padding: "8px",
-                        border: "1px solid #ddd",
-                        borderRadius: "4px 0 0 4px",
-                        borderRight: "none",
+                      step="any" // Cho phép nhập số thập phân thoải mái
+                      value={maxTarget ? maxTarget / 1000 : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMaxTarget(val ? Number(val) * 1000 : 0);
                       }}
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        fontSize: "12px",
+                        borderRadius: "4px",
+                        border: "1px solid #ccc",
+                      }}
+                      placeholder="VD: 1000 = 1 triệu"
                     />
+
                     <select
+                      // Select vẫn giữ nguyên logic vì các option bên dưới value là số lớn
                       onChange={(e) => setMaxTarget(Number(e.target.value))}
                       value={maxTarget}
                       style={{
@@ -585,7 +678,13 @@ const OptimalSumFinder = () => {
                   <select
                     value={count}
                     onChange={(e) => setCount(Number(e.target.value))}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ddd", borderRadius: "4px" }}
+                    style={{
+                      width: "100%",
+                      padding: "6px",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                    }}
                   >
                     {[...Array(8)].map((_, i) => (
                       <option key={i} value={i + 2}>
@@ -601,14 +700,13 @@ const OptimalSumFinder = () => {
                     onClick={handleSubmit}
                     style={{
                       flex: 2,
-                      padding: "9px",
+                      padding: "7px",
+                      fontSize: "13px",
                       background: "#007bff",
                       color: "white",
                       border: "none",
                       borderRadius: "4px",
                       cursor: "pointer",
-                      fontWeight: "bold",
-                      boxShadow: "0 2px 4px rgba(0,123,255,0.3)",
                     }}
                   >
                     {loading ? "..." : "🔍 TÌM"}
@@ -619,8 +717,9 @@ const OptimalSumFinder = () => {
                     }}
                     style={{
                       flex: 1,
-                      padding: "9px",
-                      background: "#56a463ff",
+                      padding: "7px",
+                      fontSize: "13px",
+                      background: "#56a463",
                       color: "white",
                       border: "none",
                       borderRadius: "4px",
@@ -649,11 +748,9 @@ const OptimalSumFinder = () => {
                   justifyContent: "space-between",
                   alignItems: "center",
                   borderBottom: "1px solid #eee",
-                  paddingBottom: "10px",
-                  marginBottom: "10px",
                 }}
               >
-                <h3 style={{ margin: 0, fontSize: "16px" }}>Danh sách tính toán</h3>
+                <h3 style={{ margin: 0, fontSize: "16px" }}>Danh sách số tiền</h3>
 
                 {/* CHECKBOX LỌC TRÙNG */}
                 <label
@@ -677,7 +774,7 @@ const OptimalSumFinder = () => {
 
               <div
                 style={{
-                  flex: 1, // Tự mở rộng chiều cao
+                  flex: 1,
                   maxHeight: "400px",
                   overflowY: "auto",
                   border: "1px solid #b9b9b9ff",
@@ -708,7 +805,7 @@ const OptimalSumFinder = () => {
                           border: "1px solid #c8e6c9",
                           borderRadius: "16px", // Bo tròn kiểu viên thuốc
                           padding: "4px 10px",
-                          fontSize: "clamp(9px, 2vw, 12px)",
+                          fontSize: "clamp(8px, 2vw, 11px)",
                           fontWeight: "bold",
                           color: "#2e7d32",
                           cursor: "default",
@@ -725,8 +822,8 @@ const OptimalSumFinder = () => {
                           style={{
                             marginLeft: "8px",
                             border: "none",
-                            background: "#ffcdd2", // Nền đỏ nhạt cho nút xóa
-                            color: "#c62828",
+                            background: "#1a22f0",
+                            color: "white",
                             borderRadius: "50%",
                             width: "18px",
                             height: "18px",
@@ -759,7 +856,6 @@ const OptimalSumFinder = () => {
           <div style={{ flex: "1 1 300px" }}>
             <div
               style={{
-                marginTop: "10px",
                 marginBottom: "10px",
                 fontSize: "14px",
                 color: "#856404",
@@ -768,7 +864,6 @@ const OptimalSumFinder = () => {
                 borderRadius: "4px",
               }}
             >
-              <p>⚠ Min để trống = Max - 10k. Xóa số tiền sẽ mất luôn MKH tương ứng.</p>
               <p>⚠ Số lượng đơn tối ưu 10-100.</p>
               <p>⚠ Số hoá đơn cần lấy từ 2-10.</p>
             </div>
