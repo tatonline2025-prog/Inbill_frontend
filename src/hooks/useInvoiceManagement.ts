@@ -119,6 +119,8 @@ export const useInvoiceManagement = () => {
         isPaidFilter
       );
 
+      // console.log(res);
+
       setTotalPages(res.data.pagination.totalPages);
       setAssignedCustomerCodes(res.data.summary.totalInvoices);
       setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
@@ -143,7 +145,7 @@ export const useInvoiceManagement = () => {
     const fetchData = async () => {
       try {
         const res = await fetchallUser();
-        const filterUser = res.data.user.filter((user) => user.role === "user");
+        const filterUser = res.data.user.filter((user) => user.role === "user" && user.usertype === "internal");
         setUserData(filterUser);
       } catch (err) {
         console.error(err);

@@ -19,7 +19,7 @@ import {
   TextField,
 } from "@mui/material";
 import { IUser } from "@/types/user";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const FILTER_STATUS = {
   ALL: "all",
@@ -65,6 +65,43 @@ interface ExportModalsProps {
   setClosingStatus: (status: string) => void;
 }
 
+const provinces = [
+  "TP Hà Nội",
+  "TP Huế",
+  "Quảng Ninh",
+  "Cao Bằng",
+  "Lạng Sơn",
+  "Lai Châu",
+  "Điện Biên",
+  "Sơn La",
+  "Thanh Hóa",
+  "Nghệ An",
+  "Hà Tĩnh",
+  "Tuyên Quang",
+  "Lào Cai",
+  "Thái Nguyên",
+  "Phú Thọ",
+  "Bắc Ninh",
+  "Hưng Yên",
+  "TP Hải Phòng",
+  "Ninh Bình",
+  "Quảng Trị",
+  "TP Đà Nẵng",
+  "Quảng Ngãi",
+  "Gia Lai",
+  "Khánh Hòa",
+  "Lâm Đồng",
+  "Đắk Lắk",
+  "TP Hồ Chí Minh",
+  "Đồng Nai",
+  "Tây Ninh",
+  "TP Cần Thơ",
+  "Vĩnh Long",
+  "Đồng Tháp",
+  "Cà Mau",
+  "An Giang",
+];
+
 export default function ExportModals({
   userData,
 
@@ -93,6 +130,27 @@ export default function ExportModals({
   setClosingStatus,
 }: ExportModalsProps) {
   const [dateFilterType, setDateFilterType] = useState("range");
+  const [filterProvince, setFilterProvince] = useState<string>("ALL");
+
+  const filteredUsers = useMemo(() => {
+    if (filterProvince === "ALL") return userData;
+    return userData.filter((u) => u.province === filterProvince);
+  }, [userData, filterProvince]);
+
+  const provinces = useMemo(() => {
+    const list = userData.map((u) => u.province).filter(Boolean);
+    return Array.from(new Set(list));
+  }, [userData]);
+
+  const isAllSelected = filteredUsers.length > 0 && selectedCollectedUsers.length === filteredUsers.length;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedCollectedUsers([]);
+    } else {
+      setSelectedCollectedUsers(filteredUsers.map((u) => u._id));
+    }
+  };
 
   return (
     <>
@@ -139,7 +197,7 @@ export default function ExportModals({
           Xuất Excel Hóa Đơn Chọn Lọc
         </DialogTitle>
         <DialogContent sx={{ paddingTop: "16px !important" }}>
-          <FormControl component="fieldset">
+          {/* <FormControl component="fieldset">
             <RadioGroup
               row
               name="dateFilterType"
@@ -155,9 +213,9 @@ export default function ExportModals({
               <FormControlLabel value="single" control={<Radio size="small" />} label="Một ngày cụ thể" />
               <FormControlLabel value="range" control={<Radio size="small" />} label="Khoảng thời gian" />
             </RadioGroup>
-          </FormControl>
+          </FormControl> */}
 
-          {dateFilterType === "single" ? (
+          {/* {dateFilterType === "single" ? (
             <TextField
               label="Chọn ngày"
               type="date"
@@ -171,31 +229,115 @@ export default function ExportModals({
               InputLabelProps={{ shrink: true }}
               helperText="Chọn ngày cần xuất báo cáo"
             />
-          ) : (
-            <div style={{ display: "flex", gap: "16px", marginBottom: "8px" }}>
-              <TextField
-                label="Từ ngày"
-                type="date"
-                fullWidth
-                margin="dense"
-                value={collectedFromDate}
-                onChange={(e) => setCollectedFromDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Đến ngày"
-                type="date"
-                fullWidth
-                margin="dense"
-                value={collectedToDate}
-                onChange={(e) => setCollectedToDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </div>
-          )}
+          ) : ( */}
+          <div style={{ display: "flex", gap: "16px", marginBottom: "8px" }}>
+            <TextField
+              label="Từ ngày"
+              type="date"
+              fullWidth
+              margin="dense"
+              value={collectedFromDate}
+              onChange={(e) => setCollectedFromDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Đến ngày"
+              type="date"
+              fullWidth
+              margin="dense"
+              value={collectedToDate}
+              onChange={(e) => setCollectedToDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </div>
+          {/* )} */}
+
+          <div style={{ marginTop: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
+            <FormControl fullWidth margin="dense" size="small" sx={{ marginBottom: "12px" }}>
+              <InputLabel>Lọc theo Tỉnh/Thành phố</InputLabel>
+              <Select
+                value={filterProvince}
+                label="Lọc theo Tỉnh/Thành phố"
+                onChange={(e) => {
+                  setFilterProvince(e.target.value);
+                  setSelectedCollectedUsers([]);
+                }}
+              >
+                <MenuItem value="ALL">
+                  <p>-- Tất cả khu vực --</p>
+                </MenuItem>
+                {provinces.map((prov) => (
+                  <MenuItem key={prov} value={prov}>
+                    {prov}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* 2. Chọn nhiều người phụ trách */}
+            <FormControl fullWidth margin="dense">
+              <InputLabel shrink={openExportCollected || selectedCollectedUsers.length > 0}>
+                Người phụ trách ({filterProvince === "ALL" ? "Toàn quốc" : filterProvince})
+              </InputLabel>
+              <Select
+                multiple
+                displayEmpty
+                value={selectedCollectedUsers}
+                label="Người phụ trách (Toàn quốc)"
+                onChange={(e) => {
+                  // Chặn sự kiện click của nút "Chọn tất cả" lọt vào đây nếu cần,
+                  // nhưng logic handleSelectAll xử lý riêng ở onClick của MenuItem rồi
+                  const val = e.target.value;
+                  // Chỉ set giá trị nếu nó là array chuỗi ID (tránh lỗi conflict với nút Select All)
+                  if (Array.isArray(val) && !val.includes("SELECT_ALL_OPTION")) {
+                    setSelectedCollectedUsers(val);
+                  }
+                }}
+                renderValue={(selected) => {
+                  if (selected.length === 0) return <span style={{ color: "#999" }}>Chưa chọn người nào</span>;
+                  if (selected.length === filteredUsers.length && filteredUsers.length > 0)
+                    return <strong>Đã chọn tất cả ({selected.length})</strong>;
+
+                  const names = selected.map((id) => userData.find((u) => u._id === id)?.fullName);
+                  return names.length > 3
+                    ? `${names.slice(0, 3).join(", ")}... (+${names.length - 3})`
+                    : names.join(", ");
+                }}
+              >
+                <MenuItem
+                  value="SELECT_ALL_OPTION"
+                  onClick={handleSelectAll}
+                  sx={{ fontWeight: "bold", borderBottom: "1px solid #eee" }}
+                >
+                  <Checkbox
+                    checked={isAllSelected}
+                    indeterminate={
+                      selectedCollectedUsers.length > 0 && selectedCollectedUsers.length < filteredUsers.length
+                    }
+                  />
+                  <ListItemText primary={isAllSelected ? "Bỏ chọn tất cả" : "Chọn tất cả danh sách dưới"} />
+                </MenuItem>
+
+                {/* DANH SÁCH USER ĐÃ ĐƯỢC LỌC */}
+                {filteredUsers.length === 0 ? (
+                  <MenuItem disabled>
+                    <em style={{ fontSize: 13 }}>Không có nhân sự tại khu vực này</em>
+                  </MenuItem>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <MenuItem key={user._id} value={user._id}>
+                      <Checkbox checked={selectedCollectedUsers.indexOf(user._id) > -1} />
+                      <ListItemText primary={user.fullName} secondary={user.province} />{" "}
+                      {/* Hiển thị thêm tỉnh cho rõ */}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
+          </div>
 
           {/* 2. Chọn nhiều người phụ trách */}
-          <FormControl fullWidth margin="dense">
+          {/* <FormControl fullWidth margin="dense">
             <InputLabel shrink={openExportCollected || selectedCollectedUsers.length > 0}>Người phụ trách</InputLabel>
             <Select
               multiple
@@ -221,7 +363,7 @@ export default function ExportModals({
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </FormControl> */}
 
           {/* 3. Chọn trạng thái (2 ô nằm ngang) */}
           <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>

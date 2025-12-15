@@ -48,6 +48,9 @@ const OptimalSumFinder = () => {
 
   const [isLocked, setIsLocked] = useState(false);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteMkhInput, setDeleteMkhInput] = useState("");
+
   useEffect(() => {
     let initialMkh = "";
     let initialMoney = "";
@@ -175,8 +178,6 @@ const OptimalSumFinder = () => {
     mkhLines.splice(originalIndex, 1);
     moneyLines.splice(originalIndex, 1);
 
-    // Cập nhật lại state -> Giao diện tự render lại
-    // Nếu số bị xóa đang che số ẩn, số ẩn sẽ tự động được processedData tính toán lại và hiện lên
     setTextMkh(mkhLines.join("\n"));
     setTextMoney(moneyLines.join("\n"));
   };
@@ -242,13 +243,11 @@ const OptimalSumFinder = () => {
           backgroundColor: "#fff",
         }}
       >
-        <h3 style={{ color: result.success ? "#2e7d32" : "#e65100", marginTop: 0 }}>
+        {/* <h3 style={{ color: result.success ? "#2e7d32" : "#e65100", marginTop: 0 }}>
           {result.success ? "✅ ĐÃ TÌM THẤY KẾT QUẢ" : "⚠️ KHÔNG TÌM THẤY TỔ HỢP PHÙ HỢP"}
-        </h3>
+        </h3> */}
 
-        <p style={{ fontStyle: "italic", marginBottom: "20px" }}>
-          <strong>Thông báo:</strong> {result.message}
-        </p>
+        <p style={{ marginBottom: "20px", fontWeight: "bold" }}>{result.message}</p>
 
         {resultsList.length === 0 && <p>Không có dữ liệu chi tiết để hiển thị.</p>}
 
@@ -274,26 +273,27 @@ const OptimalSumFinder = () => {
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
+                  // justifyContent: "space-between",
+                  flexWrap: "wrap",
                   alignItems: "center",
                   borderBottom: "1px solid #eee",
                   paddingBottom: "8px",
+                  gap: 7,
                 }}
               >
-                <h4 style={{ margin: 0, color: "#333", fontSize: "0.8em" }}># {index + 1}</h4>
+                <h4 style={{ margin: 0, color: "#333", fontSize: "0.8em" }}>{index + 1}.</h4>
                 <span
                   style={{
-                    fontSize: "0.7em",
-                    color: "#666",
-                    background: "#e9ecef",
+                    fontSize: "0.8em",
                     padding: "2px 8px",
                     borderRadius: "10px",
                   }}
                 >
-                  {combo.count} số hạng
+                  ({combo.count})
                 </span>
+
                 <button
-                  onClick={() => handleCopyCombo(combo.invoicenumbers)}
+                  onClick={() => handleCopyCombo(combo.invoicenumbers, combo.subset)}
                   title="Sao chép các MKH của tổ hợp này"
                   style={{
                     display: "flex",
@@ -333,16 +333,13 @@ const OptimalSumFinder = () => {
                   </svg>
                   <span>Copy MKH</span>
                 </button>
-              </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap", // Cho phép xuống dòng nếu quá dài
-                  alignItems: "center", // Căn giữa theo chiều dọc của dòng
-                  gap: "5px", // Khoảng cách giữa các phần tử
-                }}
-              >
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.0em" }}>{combo.sum}</span>
+                </div>
+
+                <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.0em" }}>=</span>
+
                 {combo.subset.map((item, idx) => (
                   <React.Fragment key={idx}>
                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -356,12 +353,6 @@ const OptimalSumFinder = () => {
                     </div>
                   </React.Fragment>
                 ))}
-
-                <span style={{ color: "#bbb", fontWeight: "bold", fontSize: "1.0em" }}>=</span>
-
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <span style={{ color: "#d32f2f", fontWeight: "bold", fontSize: "1.0em" }}>{combo.sum}</span>
-                </div>
               </div>
             </div>
           ))}
@@ -370,31 +361,35 @@ const OptimalSumFinder = () => {
     );
   };
 
-  const handleCopyCombo = (mkhs: string[]) => {
-    const selectedMkhs = mkhs.map((mkh) => mkh.trim()).filter((m) => m !== ""); // Loại bỏ các chuỗi rỗng nếu có
+  const handleCopyCombo = (mkhs: string[], amounts: number[]) => {
+    const selectedMkhs = mkhs.map((mkh) => mkh.trim()).filter((m) => m !== "");
 
-    // Ghép lại thành chuỗi để copy (ngăn cách bằng xuống dòng)
-    const textToCopy = selectedMkhs.join("\n");
+    const part1 = selectedMkhs.join("\n");
 
-    // Thực hiện copy
+    const part2 = selectedMkhs
+      .map((mkh, index) => {
+        const amount = amounts[index] !== undefined ? amounts[index] : "";
+        return `${mkh}\t${amount}`;
+      })
+      .join("\n");
+
+    const finalText = `${part1}\n${part2}`;
+
     navigator.clipboard
-      .writeText(textToCopy)
+      .writeText(finalText)
       .then(() => {
-        toast.success(`Đã sao chép ${selectedMkhs.length} MKH vào bộ nhớ tạm!`);
+        toast.success(`Đã copy ${selectedMkhs.length} MKH (kèm chi tiết) vào bộ nhớ tạm!`);
       })
       .catch((err) => {
         console.error("Không thể copy:", err);
+        toast.error("Lỗi khi copy!");
       });
   };
 
-  // Hỗ trợ copy paste từ Excel khi copy cả 2 cột MKH và số tiền
-  // Cập nhật hàm xử lý Paste để bao quát cả Paste thông thường
   const handlePasteInput = (e: React.ClipboardEvent<HTMLTextAreaElement>, type: "mkh" | "money") => {
     const clipboardData = e.clipboardData.getData("text");
     e.preventDefault(); // Chặn hành vi mặc định
 
-    // --- TRƯỜNG HỢP 1: SMART PASTE (Có dấu Tab - Copy từ Excel) ---
-    // Trường hợp này điền cả 2 cột nên ta KHÓA LUÔN
     if (clipboardData.includes("\t")) {
       const lines = clipboardData.split(/\r\n|\n|\r/);
       const newMkh: string[] = [];
@@ -423,31 +418,62 @@ const OptimalSumFinder = () => {
       return;
     }
 
-    // --- TRƯỜNG HỢP 2: PASTE THƯỜNG (Từng cột) ---
     const cleanText = clipboardData.trim();
 
-    if (type === "mkh") {
-      // Cập nhật cột MKH
-      setTextMkh((prev) => (prev ? prev + "\n" : "") + cleanText);
+    setTextMoney((prev) => (prev ? prev + "\n" : "") + cleanText);
 
-      // LOGIC MỚI: Chỉ khóa nếu cột Money (cột kia) ĐÃ CÓ dữ liệu
-      if (textMoney && textMoney.trim().length > 0) {
-        setIsLocked(true);
-        toast.success("Đã nhập đủ 2 cột. Dữ liệu đã được khóa!");
-      } else {
-        toast.success("Đã dán MKH. Hãy dán tiếp cột Số tiền!");
-      }
+    if (textMkh && textMkh.trim().length > 0) {
+      setIsLocked(true);
+      toast.success("Dữ liệu đã được khóa!");
     } else {
-      // Cập nhật cột Money
-      setTextMoney((prev) => (prev ? prev + "\n" : "") + cleanText);
+      toast.success("Đã dán Số tiền. Hãy dán tiếp cột MKH!");
+    }
+  };
 
-      // LOGIC MỚI: Chỉ khóa nếu cột MKH (cột kia) ĐÃ CÓ dữ liệu
-      if (textMkh && textMkh.trim().length > 0) {
-        setIsLocked(true);
-        toast.success("Đã nhập đủ 2 cột. Dữ liệu đã được khóa!");
+  // --- Xóa hàng loạt theo MKH (thực chất là tạo mảng mới không bao gồm các MKH trong DS xoá) ---
+  const handleConfirmBulkDelete = () => {
+    if (!deleteMkhInput.trim()) {
+      toast.error("Vui lòng nhập danh sách MKH cần xóa");
+      return;
+    }
+
+    const mkhToDeleteSet = new Set(
+      deleteMkhInput
+        .split(/\n/)
+        .map((s) => s.trim())
+        .filter((s) => s !== "")
+    );
+
+    const currentMkhLines = textMkh.split(/\n/);
+    const currentMoneyLines = textMoney.split(/\n/);
+    const maxLength = Math.max(currentMkhLines.length, currentMoneyLines.length);
+
+    const newMkhLines: string[] = [];
+    const newMoneyLines: string[] = [];
+    let deletedCount = 0;
+
+    for (let i = 0; i < maxLength; i++) {
+      const mkh = currentMkhLines[i] || "";
+      const money = currentMoneyLines[i] || "";
+
+      // Nếu MKH của dòng này nằm trong danh sách cần xóa -> Bỏ qua (không push vào mảng mới)
+      if (mkhToDeleteSet.has(mkh.trim())) {
+        deletedCount++;
       } else {
-        toast.success("Đã dán Số tiền. Hãy dán tiếp cột MKH!");
+        newMkhLines.push(mkh);
+        newMoneyLines.push(money);
       }
+    }
+
+    if (deletedCount === 0) {
+      toast("Không tìm thấy MKH nào khớp để xóa.", { icon: "ℹ️" });
+    } else {
+      setTextMkh(newMkhLines.join("\n"));
+      setTextMoney(newMoneyLines.join("\n"));
+      toast.success(`Đã xóa thành công ${deletedCount} dòng!`);
+
+      setIsDeleteModalOpen(false);
+      setDeleteMkhInput("");
     }
   };
 
@@ -484,7 +510,6 @@ const OptimalSumFinder = () => {
         </div>
 
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {/* --- CỘT TRÁI: NHẬP LIỆU --- */}
           <div style={{ flex: "0.8 1 80px" }}>
             <div
               style={{
@@ -508,8 +533,6 @@ const OptimalSumFinder = () => {
               >
                 <h3 style={{ margin: 0, fontSize: "16px" }}>Nhập Dữ Liệu (Copy/Paste)</h3>
 
-                {/* Nút Nhập lại chỉ hiện khi đã bị khóa */}
-
                 <button
                   onClick={handleResetInput}
                   style={{
@@ -522,7 +545,7 @@ const OptimalSumFinder = () => {
                     borderRadius: "4px",
                   }}
                 >
-                  Xóa & Nhập lại
+                  Xóa dữ liệu
                 </button>
               </div>
 
@@ -540,7 +563,6 @@ const OptimalSumFinder = () => {
                     value={textMkh}
                     onChange={(e) => setTextMkh(e.target.value)}
                     onPaste={(e) => handlePasteInput(e, "mkh")}
-                    disabled={isLocked}
                     placeholder={`Nhập MKH:\nPB07090020069\nPB05030000046\nPB05030079464\n...`}
                     style={{
                       width: "100%", // CHỈNH: full cột
@@ -550,9 +572,6 @@ const OptimalSumFinder = () => {
                       borderRadius: "4px",
                       fontSize: "13px",
                       whiteSpace: "pre",
-                      backgroundColor: isLocked ? "#f5f5f5" : "#fff",
-                      cursor: isLocked ? "not-allowed" : "text",
-                      color: isLocked ? "#888" : "#000",
                     }}
                   />
                 </div>
@@ -602,7 +621,6 @@ const OptimalSumFinder = () => {
                 Cấu hình & Tìm kiếm
               </h3>
 
-              {/* Hàng 1: Các ô Input nằm ngang */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end" }}>
                 {/* Min */}
                 <div style={{ flex: "1 1 150px" }}>
@@ -649,7 +667,6 @@ const OptimalSumFinder = () => {
                     />
 
                     <select
-                      // Select vẫn giữ nguyên logic vì các option bên dưới value là số lớn
                       onChange={(e) => setMaxTarget(Number(e.target.value))}
                       value={maxTarget}
                       style={{
@@ -752,6 +769,23 @@ const OptimalSumFinder = () => {
               >
                 <h3 style={{ margin: 0, fontSize: "16px" }}>Danh sách số tiền</h3>
 
+                <button
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  style={{
+                    fontSize: "11px",
+                    padding: "3px 8px",
+                    background: "#ffebEE",
+                    color: "#c62828",
+                    border: "1px solid #ffcdd2",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                  title="Dán danh sách MKH để xóa các dòng tương ứng"
+                >
+                  Xóa MKH
+                </button>
+
                 {/* CHECKBOX LỌC TRÙNG */}
                 <label
                   style={{
@@ -797,13 +831,13 @@ const OptimalSumFinder = () => {
                     {processedData.map((row) => (
                       <div
                         key={row.id}
-                        title={`MKH: ${row.mkh || "Trống"}`} // Hover vào sẽ thấy MKH
+                        title={`MKH: ${row.mkh || "Trống"}`}
                         style={{
                           display: "flex",
                           alignItems: "center",
                           background: "#ffffffff",
                           border: "1px solid #c8e6c9",
-                          borderRadius: "16px", // Bo tròn kiểu viên thuốc
+                          borderRadius: "16px",
                           padding: "4px 10px",
                           fontSize: "clamp(8px, 2vw, 11px)",
                           fontWeight: "bold",
@@ -816,7 +850,7 @@ const OptimalSumFinder = () => {
 
                         <button
                           onClick={(e) => {
-                            e.stopPropagation(); // Tránh sự kiện click lan ra ngoài
+                            e.stopPropagation();
                             handleDeleteRow(row.originalIndex);
                           }}
                           style={{
@@ -871,10 +905,88 @@ const OptimalSumFinder = () => {
             {renderResult()}
           </div>
         </div>
-
-        {/* --- KẾT QUẢ (Placeholder) --- */}
-        {/* Phần hiển thị kết quả sẽ nằm ở đây sau khi bấm Tìm */}
       </div>
+
+      {isDeleteModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              padding: "20px",
+              borderRadius: "8px",
+              width: "400px",
+              maxWidth: "90%",
+            }}
+          >
+            <h3 style={{ marginTop: 0, color: "#c62828" }}>Xóa hàng loạt</h3>
+            <p style={{ fontSize: "13px", color: "#555" }}>
+              Nhập danh sách Mã Khách Hàng (MKH) cần xóa vào bên dưới. Hệ thống sẽ tìm và xóa cả MKH lẫn Số tiền tương
+              ứng.
+            </p>
+
+            <textarea
+              value={deleteMkhInput}
+              onChange={(e) => setDeleteMkhInput(e.target.value)}
+              placeholder={`Dán danh sách MKH vào đây...\nPB07090020069\nPB05030000046`}
+              style={{
+                width: "100%",
+                height: "200px",
+                padding: "10px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                marginBottom: "15px",
+                fontSize: "13px",
+              }}
+            />
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setDeleteMkhInput("");
+                }}
+                style={{
+                  padding: "8px 15px",
+                  background: "#e0e0e0",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  color: "#333",
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmBulkDelete}
+                style={{
+                  padding: "8px 15px",
+                  background: "#d32f2f",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  color: "white",
+                  fontWeight: "bold",
+                }}
+              >
+                Xác nhận Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 };

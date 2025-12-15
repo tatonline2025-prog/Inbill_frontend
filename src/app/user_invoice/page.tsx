@@ -362,7 +362,7 @@ export default function InvoicesPage() {
         </DialogTitle>
         <DialogContent sx={{ paddingTop: "16px !important" }}>
           {/* 1. Chọn kiểu thời gian (Thêm mới) */}
-          <FormControl component="fieldset" sx={{ mt: 1, mb: 1.5 }}>
+          {/* <FormControl component="fieldset" sx={{ mt: 1, mb: 1.5 }}>
             <RadioGroup
               row
               name="dateFilterType"
@@ -377,9 +377,9 @@ export default function InvoicesPage() {
               <FormControlLabel value="single" control={<Radio size="small" />} label="Một ngày cụ thể" />
               <FormControlLabel value="range" control={<Radio size="small" />} label="Khoảng thời gian" />
             </RadioGroup>
-          </FormControl>
+          </FormControl> */}
 
-          {dateFilterType === "single" ? (
+          {/* {dateFilterType === "single" ? (
             <TextField
               label="Chọn ngày"
               type="date"
@@ -392,29 +392,29 @@ export default function InvoicesPage() {
               InputLabelProps={{ shrink: true }}
               helperText="Chọn ngày cần xuất báo cáo"
             />
-          ) : (
-            // --- Option: Khoảng thời gian (Code cũ của bạn) ---
-            <div style={{ display: "flex", gap: "16px", marginBottom: "8px" }}>
-              <TextField
-                label="Từ ngày"
-                type="date"
-                fullWidth
-                margin="dense"
-                value={collectedFromDate}
-                onChange={(e) => setCollectedFromDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Đến ngày"
-                type="date"
-                fullWidth
-                margin="dense"
-                value={collectedToDate}
-                onChange={(e) => setCollectedToDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </div>
-          )}
+          ) : ( */}
+
+          <div style={{ display: "flex", gap: "16px", marginBottom: "8px" }}>
+            <TextField
+              label="Từ ngày"
+              type="date"
+              fullWidth
+              margin="dense"
+              value={collectedFromDate}
+              onChange={(e) => setCollectedFromDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Đến ngày"
+              type="date"
+              fullWidth
+              margin="dense"
+              value={collectedToDate}
+              onChange={(e) => setCollectedToDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </div>
+          {/* )} */}
 
           {/* 3. Chọn trạng thái (Giữ nguyên code của bạn) */}
           <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>

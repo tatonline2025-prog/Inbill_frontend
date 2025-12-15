@@ -98,19 +98,6 @@ export default function EditInvoiceDialog({
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
         <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
-            label="Tên khách hàng"
-            value={formData.customerName}
-            onChange={(e) => handleChange("customerName", e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Địa chỉ"
-            value={formData.customerAddress}
-            onChange={(e) => handleChange("customerAddress", e.target.value)}
-            fullWidth
-          />
-
-          <TextField
             label="Kỳ này"
             type="number"
             value={formData.currentAmount}
@@ -133,9 +120,15 @@ export default function EditInvoiceDialog({
           />
 
           <TextField
-            label="Ghi chú"
-            value={formData.note}
-            onChange={(e) => handleChange("note", e.target.value)}
+            label="Tên khách hàng"
+            value={formData.customerName}
+            onChange={(e) => handleChange("customerName", e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Địa chỉ"
+            value={formData.customerAddress}
+            onChange={(e) => handleChange("customerAddress", e.target.value)}
             fullWidth
           />
 
@@ -151,6 +144,13 @@ export default function EditInvoiceDialog({
             label="Trạm"
             value={formData.recordBookCode}
             onChange={(e) => handleChange("recordBookCode", e.target.value)}
+            fullWidth
+          />
+
+          <TextField
+            label="Ghi chú"
+            value={formData.note}
+            onChange={(e) => handleChange("note", e.target.value)}
             fullWidth
           />
 

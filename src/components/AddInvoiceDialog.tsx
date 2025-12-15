@@ -61,11 +61,11 @@ export default function AddInvoiceDialog({
 
   const EXCEL_COLUMN_MAPPING = [
     "invoiceNumber",
-    "customerName",
-    "customerAddress",
     "currentAmount",
     "previousAmount",
     "totalAmount",
+    "customerName",
+    "customerAddress",
     "recordBookCode",
   ];
 
@@ -194,30 +194,9 @@ export default function AddInvoiceDialog({
               />
             </Box>
 
-            <Box sx={{ width: "200px", flexShrink: 0 }}>
-              <TextField
-                label="Tên khách hàng"
-                value={newInvoice.customerName}
-                onChange={(e) => handleChange("customerName", e.target.value)}
-                fullWidth
-                required
-                size="small"
-              />
-            </Box>
-
-            <Box sx={{ width: "200px", flexShrink: 0 }}>
-              <TextField
-                label="Địa chỉ chi tiết"
-                value={newInvoice.customerAddress}
-                onChange={(e) => handleChange("customerAddress", e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Box>
-
             <Box sx={{ width: "120px", flexShrink: 0 }}>
               <TextField
-                label="Nợ kỳ này"
+                label="Kỳ này"
                 type="number"
                 value={newInvoice.currentAmount}
                 onChange={(e) => handleChange("currentAmount", e.target.value)}
@@ -229,7 +208,7 @@ export default function AddInvoiceDialog({
 
             <Box sx={{ width: "120px", flexShrink: 0 }}>
               <TextField
-                label="Nợ kỳ trước"
+                label="Kỳ trước"
                 type="number"
                 value={newInvoice.previousAmount}
                 onChange={(e) => handleChange("previousAmount", e.target.value)}
@@ -247,6 +226,27 @@ export default function AddInvoiceDialog({
                 onChange={(e) => handleChange("totalAmount", e.target.value)}
                 fullWidth
                 required
+                size="small"
+              />
+            </Box>
+
+            <Box sx={{ width: "200px", flexShrink: 0 }}>
+              <TextField
+                label="Tên khách hàng"
+                value={newInvoice.customerName}
+                onChange={(e) => handleChange("customerName", e.target.value)}
+                fullWidth
+                required
+                size="small"
+              />
+            </Box>
+
+            <Box sx={{ width: "200px", flexShrink: 0 }}>
+              <TextField
+                label="Địa chỉ chi tiết"
+                value={newInvoice.customerAddress}
+                onChange={(e) => handleChange("customerAddress", e.target.value)}
+                fullWidth
                 size="small"
               />
             </Box>

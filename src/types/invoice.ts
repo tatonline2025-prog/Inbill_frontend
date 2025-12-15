@@ -68,6 +68,8 @@ export interface IInvoiceSummaryByUser {
   notCollectedCount?: number | null;
   collectedTotal?: number | null;
   notCollectedTotal?: number | null;
+  paidCount?: number | null;
+  paidTotal?: number | null;
 }
 
 export interface FetchInvoiceResponse {
