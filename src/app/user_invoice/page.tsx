@@ -267,7 +267,7 @@ export default function InvoicesPage() {
             >
               <MenuItem value="all">Tất cả</MenuItem>
               <MenuItem value="collected">Đã thu</MenuItem>
-              <MenuItem value="notCollected">Chưa thu</MenuItem>
+              <MenuItem value="not_collected">Chưa thu</MenuItem>
             </Select>
           </FormControl>
         </Box>

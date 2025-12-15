@@ -89,7 +89,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         currentPage,
         invoicesPerPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
-        filterCollection !== "all" ? (filterCollection === "notCollected" ? "not_collected" : "collected") : undefined,
+        filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
         user?._id, // **GỬI USER ID CỦA NGƯỜI DÙNG HIỆN TẠI**
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,

@@ -108,7 +108,7 @@ export const useInvoiceManagement = () => {
         page,
         perPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
-        filterCollection !== "all" ? (filterCollection === "notCollected" ? "not_collected" : "collected") : undefined,
+        filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
         filterAssignedUser !== "all" ? filterAssignedUser : undefined,
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
