@@ -42,6 +42,7 @@ const OptimalSumFinder = () => {
   const [isFilterOn, setIsFilterOn] = useState<boolean>(false); // Mặc định bật lọc
   const [minTarget, setMinTarget] = useState<number>(0); // Để string để check rỗng
   const [maxTarget, setMaxTarget] = useState<number>(3000000);
+  const [minOffset, setMinOffset] = useState(0);
   const [count, setCount] = useState<number>(3);
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -262,7 +263,8 @@ const OptimalSumFinder = () => {
             <div
               key={index}
               style={{
-                padding: "15px",
+                paddingLeft: "15px",
+                paddingTop: "10px",
                 backgroundColor: "#f8f9fa",
                 border: "1px solid #dee2e6",
                 borderRadius: "6px",
@@ -277,7 +279,6 @@ const OptimalSumFinder = () => {
                   flexWrap: "wrap",
                   alignItems: "center",
                   borderBottom: "1px solid #eee",
-                  paddingBottom: "8px",
                   gap: 7,
                 }}
               >
@@ -622,68 +623,106 @@ const OptimalSumFinder = () => {
               </h3>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end" }}>
-                {/* Min */}
-                <div style={{ flex: "1 1 150px" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "5px" }}>
-                    Min
-                  </label>
-                  <input
-                    type="number"
-                    placeholder={`0`}
-                    value={minTarget}
-                    onChange={(e) => setMinTarget(Number(e.target.value))}
-                    style={{
-                      width: "100%",
-                      padding: "6px",
-                      fontSize: "12px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
+                <div style={{ display: "flex" }}>
+                  {/* Min */}
+                  <div style={{ flex: "0.5 1 130px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "5px" }}>
+                      Min (x1000)
+                    </label>
+                    <div style={{ display: "flex" }}>
+                      <input
+                        type="number"
+                        step="any"
+                        value={minTarget ? minTarget / 1000 : 0}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMinTarget(val ? Number(val) * 1000 : 0);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px",
+                          fontSize: "12px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
+                      />
 
-                {/* Max */}
-                <div style={{ flex: "1 1 200px" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "5px" }}>
-                    Max (x1000)
-                  </label>
-                  <div style={{ display: "flex" }}>
-                    <input
-                      type="number"
-                      step="any" // Cho phép nhập số thập phân thoải mái
-                      value={maxTarget ? maxTarget / 1000 : ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setMaxTarget(val ? Number(val) * 1000 : 0);
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "6px",
-                        fontSize: "12px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                      }}
-                      placeholder="VD: 1000 = 1 triệu"
-                    />
+                      <select
+                        onChange={(e) => {
+                          const offset = Number(e.target.value);
+                          setMinOffset(offset);
+                          if (offset === 0) {
+                            setMinTarget(0);
+                          } else {
+                            setMinTarget(Math.max(0, maxTarget + offset));
+                          }
+                        }}
+                        value={minOffset}
+                        style={{
+                          width: "100%",
+                          border: "1px solid #ddd",
+                          borderRadius: "0 4px 4px 0",
+                          background: "#f8f9fa",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <option value={0}>0</option>
+                        {maxTarget > 100000 && <option value={-100000}>-100K</option>}
+                        {maxTarget > 10000 && <option value={-10000}>-10K</option>}
+                        {maxTarget > 1000 && <option value={-1000}>-1K</option>}
+                      </select>
+                    </div>
+                  </div>
 
-                    <select
-                      onChange={(e) => setMaxTarget(Number(e.target.value))}
-                      value={maxTarget}
-                      style={{
-                        width: "70px",
-                        border: "1px solid #ddd",
-                        borderRadius: "0 4px 4px 0",
-                        background: "#f8f9fa",
-                        fontSize: "12px",
-                      }}
-                    >
-                      <option value={3000000}>3 Tr</option>
-                      {[...Array(20)].map((_, i) => (
-                        <option key={i} value={(i + 1) * 1000000}>
-                          {i + 1}Tr
-                        </option>
-                      ))}
-                    </select>
+                  {/* Max */}
+                  <div style={{ flex: "1 1 100px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "5px" }}>
+                      Max (x1000)
+                    </label>
+                    <div style={{ display: "flex" }}>
+                      <input
+                        type="number"
+                        step="any" // Cho phép nhập số thập phân thoải mái
+                        value={maxTarget ? maxTarget / 1000 : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const newMaxTarget = val ? Number(val) * 1000 : 0;
+                          setMaxTarget(newMaxTarget);
+                          if (minOffset === 0) {
+                            setMinTarget(0);
+                          } else {
+                            setMinTarget(Math.max(0, newMaxTarget + minOffset));
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px",
+                          fontSize: "12px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
+                        placeholder="VD: 1000 = 1 triệu"
+                      />
+
+                      <select
+                        onChange={(e) => setMaxTarget(Number(e.target.value))}
+                        value={maxTarget}
+                        style={{
+                          width: "70px",
+                          border: "1px solid #ddd",
+                          borderRadius: "0 4px 4px 0",
+                          background: "#f8f9fa",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <option value={3000000}>3 Tr</option>
+                        {[...Array(20)].map((_, i) => (
+                          <option key={i} value={(i + 1) * 1000000}>
+                            {i + 1}Tr
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
