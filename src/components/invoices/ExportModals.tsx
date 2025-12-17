@@ -130,7 +130,7 @@ export default function ExportModals({
   setClosingStatus,
 }: ExportModalsProps) {
   const [dateFilterType, setDateFilterType] = useState("range");
-  const [filterProvince, setFilterProvince] = useState<string>("ALL");
+  const [filterProvince, setFilterProvince] = useState<string>("Đồng Tháp");
 
   const filteredUsers = useMemo(() => {
     if (filterProvince === "ALL") return userData;
