@@ -421,7 +421,13 @@ const OptimalSumFinder = () => {
 
     const cleanText = clipboardData.trim();
 
-    setTextMoney((prev) => (prev ? prev + "\n" : "") + cleanText);
+    if (type === "mkh") {
+      setTextMkh((prev) => (prev ? prev + "\n" : "") + cleanText);
+      toast.success("Đã thêm vào cột MKH");
+    } else {
+      setTextMoney((prev) => (prev ? prev + "\n" : "") + cleanText);
+      toast.success("Đã thêm vào cột Số tiền");
+    }
 
     if (textMkh && textMkh.trim().length > 0) {
       setIsLocked(true);
@@ -705,7 +711,17 @@ const OptimalSumFinder = () => {
                       />
 
                       <select
-                        onChange={(e) => setMaxTarget(Number(e.target.value))}
+                        // onChange={(e) => setMaxTarget(Number(e.target.value))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const newMaxTarget = val ? Number(val) : 0;
+                          setMaxTarget(newMaxTarget);
+                          if (minOffset === 0) {
+                            setMinTarget(0);
+                          } else {
+                            setMinTarget(Math.max(0, newMaxTarget + minOffset));
+                          }
+                        }}
                         value={maxTarget}
                         style={{
                           width: "70px",
