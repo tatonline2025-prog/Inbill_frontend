@@ -67,7 +67,7 @@ export default function InvoiceSummary({
           Tổng giá trị hoá đơn
         </Typography>
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#dc2626" }}>
-          {totalAmountInfo.toLocaleString("vi-VN")} đ
+          {totalAmountInfo?.toLocaleString("vi-VN")} đ
         </Typography>
       </Box>
     </Box>
