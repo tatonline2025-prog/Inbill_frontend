@@ -225,3 +225,22 @@ export const fetchInvoicesForCopyAPI = async (
 
   return res.data;
 };
+
+export const updateInvoice = async (
+  formData: Partial<Omit<InvoiceInfo, "assignedTo">> & { assignedTo?: string },
+  invoiceNumber: string
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  const res = await axios.put(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/update/${invoiceNumber}`,
+    {
+      formData,
+    },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return res.data;
+};

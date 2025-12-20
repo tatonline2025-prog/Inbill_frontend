@@ -18,6 +18,7 @@ import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { updateInvoice } from "@/services/invoice.api";
 
 interface EditInvoiceDialogProps {
   open: boolean;
@@ -72,20 +73,13 @@ export default function EditInvoiceDialog({
     if (!invoice) return;
 
     try {
-      const res = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/update/${invoice.invoiceNumber}`,
-        {
-          formData,
-        }
-      );
+      // res ở đây bây giờ chính là res.data từ server
+      const res = await updateInvoice(formData, invoice.invoiceNumber);
 
-      if (res.status === 200) {
-        toast.success("Cập nhật hoá đơn thành công!");
-        onSuccess();
-        onClose();
-      } else {
-        toast.error("Cập nhật thất bại, vui lòng thử lại.");
-      }
+      // Backend của bạn trả về 200 kèm message, axios sẽ không ném lỗi nếu status 2xx
+      toast.success(res.message || "Cập nhật hoá đơn thành công!");
+      onSuccess();
+      onClose();
     } catch (err) {
       console.error(err);
       toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn.");
