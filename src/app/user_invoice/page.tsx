@@ -131,7 +131,7 @@ export default function InvoicesPage() {
   };
 
   return (
-    <ProtectedRoute allowedRoles={["admin", "internal"]} redirectTo="/optimalsumfinder">
+    <ProtectedRoute allowedRoles={["admin", "internal"]} redirectTo="/">
       <Box sx={{ p: 4 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Danh Sách Hóa Đơn
