@@ -10,78 +10,6 @@ export default function Header() {
   const [ctvOpen, setCtvOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const CTVDropdown = () => (
-    <div className="relative group">
-      {/* Nút cha CTV */}
-      <button
-        onClick={() => setCtvOpen(!ctvOpen)}
-        className="nav-item flex items-center justify-between w-full md:w-auto gap-1 cursor-pointer"
-      >
-        <span>CTV</span>
-        {/* Icon mũi tên */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 transition-transform duration-200 ${
-            ctvOpen ? "rotate-180" : ""
-          } md:group-hover:rotate-180`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      <div
-        className={`
-    transition-all duration-300 overflow-hidden
-    ${ctvOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0 md:opacity-100 md:max-h-none"}
-    md:absolute md:hidden md:group-hover:block md:top-full md:left-0 md:mt-0 md:pt-2 md:w-56 z-50
-  `}
-      >
-        <div className="md:bg-white md:rounded-md md:shadow-2xl md:border md:border-gray-200 md:py-1 md:overflow-hidden">
-          {user?.role === "admin" && (
-            <>
-              <Link
-                href="/transaction/admin/dashboard"
-                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Quản lý giao dịch
-              </Link>
-
-              <Link
-                href="/transaction/admin/report"
-                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-b-0"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Thống kê giao dịch
-              </Link>
-            </>
-          )}
-
-          {user?.usertype === "collaborator" && (
-            <Link
-              href="/transaction/user/dashboard"
-              className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Giao dịch của tôi
-            </Link>
-          )}
-
-          <Link
-            href="/optimalsumfinder"
-            className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Tool tính toán
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-
   const UserDropdown = () => (
     <div className="relative group">
       <button
@@ -162,20 +90,10 @@ export default function Header() {
               <Link href="/admin_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
                 Quản lý hoá đơn
               </Link>
-
-              <CTVDropdown />
             </>
           )}
 
-          {user?.usertype === "collaborator" && (
-            <>
-              <UserDropdown />
-
-              <CTVDropdown />
-            </>
-          )}
-
-          {user?.role !== "admin" && user?.usertype !== "collaborator" && (
+          {user?.role !== "admin" && (
             <>
               <Link href="/userhome" className="nav-item" onClick={() => setIsMenuOpen(false)}>
                 Trang chủ
@@ -186,8 +104,6 @@ export default function Header() {
               <Link href="/user_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
                 Quản lý hoá đơn
               </Link>
-
-              <CTVDropdown />
             </>
           )}
 

@@ -57,7 +57,7 @@ export default function UsersPage() {
   }, []);
 
   const mergedUsers = userData
-    .filter((u) => u.usertype === "internal" || u.usertype === "collaborator")
+    .filter((u) => u.usertype === "internal")
     .map((u) => {
       const summary = summaryData.find((s) => s.assignedTo?._id === u._id);
       return {
@@ -113,7 +113,6 @@ export default function UsersPage() {
 
   const totalAdmins = userData.filter((u) => u.role === "admin").length;
   const totalInternalUsers = filteredUsers.filter((u) => u.usertype === "internal").length;
-  const totalCollaboratorUsers = filteredUsers.filter((u) => u.usertype === "collaborator").length;
 
   // console.log(filteredUsers);
 
@@ -370,72 +369,6 @@ export default function UsersPage() {
                 </table>
               </div>
             </div>
-
-            <div>
-              <h2 className="text-lg font-semibold text-purple-600 mb-3">Cộng tác viên (Collaborator)</h2>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex-1 min-w-[250px] bg-purple-50 border border-purple-200 rounded-lg p-4 text-purple-700 font-semibold shadow-sm">
-                  Tổng số Cộng tác viên: <span className="text-purple-900">{totalCollaboratorUsers}</span>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto border border-purple-200 rounded-lg">
-                <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
-                  <thead>
-                    <tr className="bg-gray-100 border-b">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tên
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tỉnh
-                      </th>
-
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ngày tạo
-                      </th>
-
-                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
-                        Hành động
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredUsers
-                      .filter((user) => user.usertype === "collaborator")
-                      .map((user) => {
-                        return (
-                          <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                            </td>
-
-                            <td className="px-6 py-4 text-center space-x-2">
-                              <button
-                                onClick={() => handleEditClick(user)}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
-                              >
-                                Sửa
-                              </button>
-                              <button
-                                onClick={() => handleDeleteUser(user._id)}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
-                              >
-                                Xoá
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
         )}
 
@@ -482,7 +415,6 @@ export default function UsersPage() {
                       }`}
                     >
                       <option value="internal">Nhân viên nội bộ</option>
-                      <option value="collaborator">Cộng tác viên</option>
                     </select>
                   </div>
 

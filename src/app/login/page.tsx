@@ -39,8 +39,6 @@ export default function LoginPage() {
 
         if (role === "admin") {
           window.location.href = "/home";
-        } else if (userType === "collaborator") {
-          window.location.href = "/optimalsumfinder";
         } else {
           window.location.href = "/userhome";
         }

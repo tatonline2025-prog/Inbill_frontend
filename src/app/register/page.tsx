@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const [userType, setUserType] = useState<"internal" | "collaborator" | "">("");
+  const [userType, setUserType] = useState<"internal" | "">("internal");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -191,12 +191,12 @@ export default function RegisterPage() {
                 id="userType"
                 className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 required
+                disabled
                 value={userType}
-                onChange={(e) => setUserType(e.target.value as "internal" | "collaborator" | "")}
+                onChange={(e) => setUserType(e.target.value as "internal" | "")}
               >
                 <option value="">-- Chọn loại người dùng --</option>
                 <option value="internal">Nhân viên Nội bộ</option>
-                <option value="collaborator">Cộng tác viên</option>
               </select>
             </div>
 
