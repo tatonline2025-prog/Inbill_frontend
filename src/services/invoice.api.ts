@@ -15,17 +15,6 @@ export const fetchallInvoice = async (
   sortDirection?: "asc" | "desc",
   isPaid?: boolean
 ) => {
-  // console.log(
-  //   currentPage,
-  //   invoicesPerPage,
-  //   printStatus,
-  //   collectionStatus,
-  //   assignedUserId,
-  //   province,
-  //   userprovince,
-  //   customerCode,
-  //   stationCode
-  // );
   const token = localStorage.getItem("token");
 
   const res = await axios.get<FetchInvoiceResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`, {
@@ -48,6 +37,27 @@ export const fetchallInvoice = async (
       Authorization: `Bearer ${token}`,
     },
   });
+
+  return res;
+};
+
+export const fetchInvoiceBylist = async (codes?: string[]) => {
+  const token = localStorage.getItem("token");
+
+  console.log(codes);
+
+  const res = await axios.post(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchbylist`,
+    {
+      codes,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   return res;
 };

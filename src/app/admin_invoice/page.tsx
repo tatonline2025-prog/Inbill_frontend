@@ -21,7 +21,7 @@ import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
 import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
-import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
+import { fetchInvoiceBylist, fetchInvoicesForCopyAPI } from "@/services/invoice.api";
 import { useState } from "react";
 
 export default function InvoicesPage() {
@@ -91,6 +91,7 @@ export default function InvoicesPage() {
     createFilterChangeHandler,
     handleSearchTypeChange,
     handleSearchChange,
+    handleBulkSearch,
     handleSort,
     handleMenuOpen,
     handleMenuClose,
@@ -117,7 +118,7 @@ export default function InvoicesPage() {
       isPaidFilter,
       selectedProvince
     );
-    return response; // Trả về mảng InvoiceInfo[]
+    return response;
   };
 
   return (
@@ -145,6 +146,7 @@ export default function InvoicesPage() {
           searchValue={searchValue} // Dùng searchValue
           onSearchChange={handleSearchChange}
           onOpenExportByUser={() => setOpenExportByUser(true)}
+          onBulkSearch={handleBulkSearch}
         />
 
         {/* === FILTER BAR === */}

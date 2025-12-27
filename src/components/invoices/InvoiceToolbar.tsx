@@ -1,9 +1,25 @@
 // components/invoices/InvoiceToolbar.tsx
 
-import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+import ListIcon from "@mui/icons-material/List";
 import { SelectChangeEvent } from "@mui/material/Select";
+import { useState } from "react";
 
 type SearchType = "customerCode" | "stationCode";
 
@@ -25,6 +41,7 @@ interface InvoiceToolbarProps {
   onOpenExportByUser?: () => void;
   searchType: SearchType; // Loại tìm kiếm hiện tại
   onSearchTypeChange: (type: SearchType) => void;
+  onBulkSearch?: (codes: string[]) => void;
 }
 
 export default function InvoiceToolbar({
@@ -45,7 +62,11 @@ export default function InvoiceToolbar({
   onOpenExportByUser,
   searchType,
   onSearchTypeChange,
+  onBulkSearch,
 }: InvoiceToolbarProps) {
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [bulkValue, setBulkValue] = useState("");
+
   // Kiểu 'sx' chung cho các nút để tránh lặp code
   const commonButtonSx = {
     borderRadius: 2,
@@ -63,6 +84,23 @@ export default function InvoiceToolbar({
     }
   };
 
+  const handleProcessBulkSearch = () => {
+    if (onBulkSearch) {
+      // Tách chuỗi theo xuống dòng, dấu phẩy hoặc khoảng trắng
+      const codes = bulkValue
+        .split(/[\n, ]+/)
+        .map((code) => code.trim())
+        .filter((code) => code !== "");
+
+      // Loại bỏ trùng lặp
+      const uniqueCodes = Array.from(new Set(codes));
+
+      onBulkSearch(uniqueCodes);
+      setIsBulkDialogOpen(false);
+      setBulkValue(""); // Reset sau khi tìm
+    }
+  };
+
   return (
     <>
       {/* --- Thanh điều khiển trên cùng --- */}
@@ -77,11 +115,6 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {/* Logic: Chỉ hiển thị nút nếu prop 'onExport' được truyền vào 
-            Toán tử '&&' sẽ làm việc này một cách hoàn hảo
-          */}
-
-          {/* Nút Xuất Excel toàn bộ */}
           {onExport && (
             <Button
               variant="contained"
@@ -227,35 +260,66 @@ export default function InvoiceToolbar({
       </Box>
 
       {/* --- Ô tìm kiếm --- */}
+      <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 3 }}>
+        {onSearchChange && (
+          <>
+            <FormControl size="small" sx={{ minWidth: { xs: 120, sm: 150 } }}>
+              <InputLabel id="search-type-label">Tìm theo</InputLabel>
+              <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeChange}>
+                <MenuItem value="customerCode">Mã khách hàng</MenuItem>
+                <MenuItem value="stationCode">Mã trạm</MenuItem>
+              </Select>
+            </FormControl>
 
-      {onSearchChange && (
-        <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-          {/* 1. Select cho loại tìm kiếm */}
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: { xs: 120, sm: 150 },
-            }}
+            <TextField
+              label={searchLabel}
+              size="small"
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.target.value)}
+              sx={{ minWidth: { xs: 150, sm: 250 } }}
+            />
+          </>
+        )}
+
+        {/* NÚT TÌM KIẾM HÀNG LOẠT */}
+        {onBulkSearch && (
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<ListIcon />}
+            onClick={() => setIsBulkDialogOpen(true)}
+            sx={{ ...commonButtonSx, height: "40px" }}
           >
-            <InputLabel id="search-type-label">Tìm theo</InputLabel>
-            <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeChange}>
-              <MenuItem value="customerCode">Mã khách hàng</MenuItem>
-              <MenuItem value="stationCode">Mã trạm</MenuItem>
-            </Select>
-          </FormControl>
+            Tìm hàng loạt
+          </Button>
+        )}
+      </Box>
 
-          {/* 2. TextField cho giá trị tìm kiếm */}
+      {/* --- DIALOG NHẬP MÃ HÀNG LOẠT --- */}
+      <Dialog open={isBulkDialogOpen} onClose={() => setIsBulkDialogOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 1 }}>
+          <SearchIcon color="primary" /> Tìm kiếm hàng loạt mã
+        </DialogTitle>
+        <DialogContent dividers>
           <TextField
-            label={searchLabel}
-            size="small"
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            sx={{
-              minWidth: { xs: 150, sm: 200 },
-            }}
+            fullWidth
+            multiline
+            rows={20}
+            placeholder={`Ví dụ:\nPB07090005082\nPB07090024645\nPB05030075757\n...`}
+            variant="outlined"
+            value={bulkValue}
+            onChange={(e) => setBulkValue(e.target.value)}
           />
-        </Box>
-      )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setIsBulkDialogOpen(false)} color="inherit">
+            Hủy bỏ
+          </Button>
+          <Button onClick={handleProcessBulkSearch} variant="contained" color="primary" disabled={!bulkValue.trim()}>
+            Tìm kiếm ngay
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

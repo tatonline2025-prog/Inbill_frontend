@@ -1,7 +1,13 @@
 // hooks/useInvoiceManagement.ts
 
 import { useEffect, useMemo, useState } from "react";
-import { deleteInvoice_API, fetchallInvoice, handleToggle_API, handleToggleIsPaid_API } from "@/services/invoice.api";
+import {
+  deleteInvoice_API,
+  fetchallInvoice,
+  fetchInvoiceBylist,
+  handleToggle_API,
+  handleToggleIsPaid_API,
+} from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
@@ -202,6 +208,45 @@ export const useInvoiceManagement = () => {
     setSearchValue(value);
     // KHÔNG setCurrentPage(1) ở đây để input không bị giật,
     // việc gọi API và reset page sẽ do useEffect(debouncedSearchValue) đảm nhiệm
+  };
+
+  const handleBulkSearch = async (codes: string[]) => {
+    // console.log("Danh sách mã cần tìm:", codes);
+    const res = await fetchInvoiceBylist(codes);
+
+    const foundInvoices = res.data.data;
+
+    const mergedInvoices = codes.flatMap((code) => {
+      // Tìm xem mã này có trong kết quả trả về không
+      // Lưu ý: searchType quyết định so sánh theo invoiceNumber hay recordBookCode
+      const matches = foundInvoices.filter((inv: InvoiceInfo) =>
+        searchType === "stationCode" ? inv.recordBookCode === code : inv.invoiceNumber === code
+      );
+
+      if (matches.length > 0) {
+        // Có dữ liệu -> Trả về danh sách hoá đơn tìm thấy
+        return matches;
+      } else {
+        // Không có dữ liệu -> Tạo một hoá đơn "giả" để hiển thị lỗi
+        return [
+          {
+            _id: `missing-${code}`,
+            invoiceNumber: code,
+            customerName: "Không có dữ liệu",
+            totalAmount: 0,
+            isMissing: true,
+            recordBookCode: searchType === "stationCode" ? code : undefined,
+          },
+        ];
+      }
+    });
+
+    setTotalPages(1);
+    setInvoices(mergedInvoices);
+
+    setAssignedCustomerCodes(res.data.summary.totalInvoices);
+    setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
+    setTotalAmountInfo(res.data.summary.totalAmount);
   };
 
   // Sắp xếp
@@ -495,6 +540,7 @@ export const useInvoiceManagement = () => {
     createFilterChangeHandler,
     handleSearchTypeChange,
     handleSearchChange,
+    handleBulkSearch,
     handleSort,
     handleMenuOpen,
     handleMenuClose,

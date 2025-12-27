@@ -42,6 +42,7 @@ export interface InvoiceInfo {
 
   note?: string | null;
   isPaid?: boolean;
+  isMissing?: boolean;
 
   // ⏱ Timestamps
   createdAt?: string;
