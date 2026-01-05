@@ -12,7 +12,8 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [province, setProvince] = useState(""); // ✅ thêm state mới
+  const [order, setOrder] = useState("");
+  const [province, setProvince] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -94,136 +95,173 @@ export default function RegisterPage() {
 
   return (
     <ProtectedRoute fallback={<p>Redirecting...</p>}>
-      <div className="min-h-screen flex items-start justify-center pt-10">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Đăng Ký Tài Khoản</h1>
+      <div className="min-h-screen flex items-start justify-center pt-10 bg-gray-50">
+        {/* Tăng max-w lên xl để các hàng 2-3 cột không bị quá hẹp */}
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-xl">
+          <h1 className="text-3xl font-bold mb-8 text-center text-blue-600">Đăng Ký Tài Khoản</h1>
 
-          {message && <div className={`p-3 border rounded-lg mb-4 ${getMessageClass()}`}>{message.text}</div>}
+          {message && <div className={`p-3 border rounded-lg mb-6 ${getMessageClass()}`}>{message.text}</div>}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4 flex gap-2">
-              <div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Hàng 1: Họ, Tên, STT */}
+            <div className="flex gap-4">
+              <div className="flex-1">
                 <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">
                   Họ
                 </label>
                 <input
                   type="text"
                   id="lastName"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Họ của bạn"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Họ"
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                 />
               </div>
-              <div>
+              <div className="flex-1">
                 <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">
                   Tên
                 </label>
                 <input
                   type="text"
                   id="firstName"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Tên của bạn"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Tên"
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                 />
               </div>
+              <div className="w-20">
+                {" "}
+                {/* Ô STT để độ rộng cố định */}
+                <label htmlFor="order" className="block text-gray-700 text-sm font-bold mb-2">
+                  STT
+                </label>
+                <input
+                  type="text"
+                  id="order"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                  placeholder="Số"
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
-                Tên đăng nhập
-              </label>
-              <input
-                type="text"
-                id="name"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Nhập tên đăng nhập của bạn"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+            {/* Hàng 2: Tên đăng nhập & Mật khẩu */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
+                  Tên đăng nhập
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Username"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+                  Mật khẩu
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="******"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Nhập email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            {/* Hàng 3: Email & Số điện thoại */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="example@gmail.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
+                  Số điện thoại
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="09xxx..."
+                  // Lưu ý: Bạn nên tạo thêm state [phone, setPhone] thay vì dùng chung state email
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
 
-            {/* ✅ Thêm trường Tỉnh/Thành */}
-            <div className="mb-4">
-              <label htmlFor="province" className="block text-gray-700 text-sm font-bold mb-2">
-                Tỉnh / Thành phố
-              </label>
-              <select
-                id="province"
-                className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                required
-                value={province}
-                onChange={(e) => setProvince(e.target.value)}
+            {/* Hàng 4: Loại người dùng & Tỉnh thành */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="userType" className="block text-gray-700 text-sm font-bold mb-2">
+                  Loại Người dùng
+                </label>
+                <select
+                  id="userType"
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                  disabled
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value as "internal" | "")}
+                >
+                  <option value="internal">Nhân viên Nội bộ</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label htmlFor="province" className="block text-gray-700 text-sm font-bold mb-2">
+                  Tỉnh / Thành phố
+                </label>
+                <select
+                  id="province"
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                >
+                  <option value="">-- Chọn tỉnh --</option>
+                  {provinces.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`bg-blue-600 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
+                  isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
+                }`}
               >
-                <option value="">-- Chọn tỉnh / thành phố --</option>
-                {provinces.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                {isLoading ? "Đang xử lý..." : "Đăng Ký Tài Khoản"}
+              </button>
             </div>
-
-            <div className="mb-4">
-              <label htmlFor="userType" className="block text-gray-700 text-sm font-bold mb-2">
-                Loại Người dùng
-              </label>
-              <select
-                id="userType"
-                className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                required
-                disabled
-                value={userType}
-                onChange={(e) => setUserType(e.target.value as "internal" | "")}
-              >
-                <option value="">-- Chọn loại người dùng --</option>
-                <option value="internal">Nhân viên Nội bộ</option>
-              </select>
-            </div>
-
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-                Mật khẩu
-              </label>
-              <input
-                type="password"
-                id="password"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Nhập mật khẩu"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
-                isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
-              }`}
-            >
-              {isLoading ? "Đang xử lý..." : "Đăng Ký"}
-            </button>
           </form>
         </div>
       </div>

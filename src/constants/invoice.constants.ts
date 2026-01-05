@@ -1,6 +1,7 @@
 // constants/invoice.constants.ts
 
 import { InvoiceInfo } from "@/types/invoice";
+import { LensBlur } from "@mui/icons-material";
 
 export const PROVINCES = [
   "TP Hà Nội",
@@ -40,10 +41,15 @@ export const PROVINCES = [
 ];
 
 export const generateBillingPeriods = () => {
-  const currentYear = new Date().getFullYear();
-  return Array.from({ length: 12 }, (_, i) => {
-    const month = String(i + 1).padStart(2, "0");
-    return `${month}/${currentYear}`;
+  const now = new Date();
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const offset = i - 3;
+    const date = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${month}/${year}`;
   });
 };
 

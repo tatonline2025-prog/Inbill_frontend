@@ -28,6 +28,16 @@ interface EditInvoiceDialogProps {
   assignedUsers: IUser[];
 }
 
+const billingPeriods = (() => {
+  const now = new Date();
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(now.getFullYear(), now.getMonth() + (i - 3), 1);
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${month}/${year}`;
+  });
+})();
+
 export default function EditInvoiceDialog({
   open,
   onClose,
@@ -127,12 +137,18 @@ export default function EditInvoiceDialog({
           />
 
           <TextField
+            select
             label="Kỳ hoá đơn"
             value={formData.billing_period}
             onChange={(e) => handleChange("billing_period", e.target.value)}
-            placeholder="VD: 10/2025"
             fullWidth
-          />
+          >
+            {billingPeriods.map((period) => (
+              <MenuItem key={period} value={period}>
+                {period}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             label="Trạm"
