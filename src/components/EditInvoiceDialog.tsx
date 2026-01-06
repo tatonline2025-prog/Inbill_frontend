@@ -19,6 +19,7 @@ import { IUser } from "@/types/user";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { updateInvoice } from "@/services/invoice.api";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 
 interface EditInvoiceDialogProps {
   open: boolean;
@@ -27,16 +28,6 @@ interface EditInvoiceDialogProps {
   onSuccess: () => void;
   assignedUsers: IUser[];
 }
-
-const billingPeriods = (() => {
-  const now = new Date();
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(now.getFullYear(), now.getMonth() + (i - 3), 1);
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${month}/${year}`;
-  });
-})();
 
 export default function EditInvoiceDialog({
   open,
@@ -143,7 +134,7 @@ export default function EditInvoiceDialog({
             onChange={(e) => handleChange("billing_period", e.target.value)}
             fullWidth
           >
-            {billingPeriods.map((period) => (
+            {generateBillingPeriods().map((period) => (
               <MenuItem key={period} value={period}>
                 {period}
               </MenuItem>

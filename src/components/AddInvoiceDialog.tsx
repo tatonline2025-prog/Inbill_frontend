@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,25 +12,114 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Stack,
   Box,
+  IconButton,
+  Typography,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import { createInvoice_API, fetchLatestPeriod_API } from "@/services/invoice.api";
-import axios from "axios";
 import toast from "react-hot-toast";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 
-interface InvoiceData {
+const MAX_INVOICES = 5;
+
+// Định nghĩa kiểu dữ liệu cho từng dòng hóa đơn
+interface InvoiceItem {
+  id: string;
   invoiceNumber: string;
   customerName: string;
-  customerPhone: string;
   customerAddress: string;
-  billing_period: string;
   currentAmount: string;
   previousAmount: string;
   recordBookCode: string;
   totalAmount: string;
-  assignedTo: string;
 }
+
+const InvoiceRow = memo(
+  ({
+    inv,
+    index,
+    onItemChange,
+    onRemove,
+  }: {
+    inv: InvoiceItem;
+    index: number;
+    onItemChange: (id: string, field: keyof InvoiceItem, value: string) => void;
+    onRemove: (id: string) => void;
+  }) => {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          alignItems: "center",
+          bgcolor: index % 2 === 0 ? "#fcfcfc" : "#fff",
+          p: 0.5,
+          borderRadius: 1,
+        }}
+      >
+        <TextField
+          size="small"
+          sx={{ width: 150 }}
+          label="Mã KH"
+          value={inv.invoiceNumber}
+          onChange={(e) => onItemChange(inv.id, "invoiceNumber", e.target.value)}
+        />
+        <TextField
+          size="small"
+          type="number"
+          sx={{ width: 120 }}
+          label="Kỳ này"
+          value={inv.currentAmount}
+          onChange={(e) => onItemChange(inv.id, "currentAmount", e.target.value)}
+        />
+        <TextField
+          size="small"
+          type="number"
+          sx={{ width: 120 }}
+          label="Kỳ trước"
+          value={inv.previousAmount}
+          onChange={(e) => onItemChange(inv.id, "previousAmount", e.target.value)}
+        />
+        <TextField
+          size="small"
+          type="number"
+          sx={{ width: 120 }}
+          label="Tổng tiền"
+          value={inv.totalAmount}
+          onChange={(e) => onItemChange(inv.id, "totalAmount", e.target.value)}
+        />
+        <TextField
+          size="small"
+          sx={{ width: 200 }}
+          label="Tên khách"
+          value={inv.customerName}
+          onChange={(e) => onItemChange(inv.id, "customerName", e.target.value)}
+        />
+        <TextField
+          size="small"
+          sx={{ width: 250 }}
+          label="Địa chỉ"
+          value={inv.customerAddress}
+          onChange={(e) => onItemChange(inv.id, "customerAddress", e.target.value)}
+        />
+        <TextField
+          size="small"
+          sx={{ width: 130 }}
+          label="Trạm"
+          value={inv.recordBookCode}
+          onChange={(e) => onItemChange(inv.id, "recordBookCode", e.target.value)}
+        />
+        <IconButton color="error" onClick={() => onRemove(inv.id)} size="small">
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    );
+  }
+);
+
+InvoiceRow.displayName = "InvoiceRow";
 
 export default function AddInvoiceDialog({
   open,
@@ -43,23 +132,29 @@ export default function AddInvoiceDialog({
   onSuccess: () => void;
   assignedUsers?: { _id: string; fullName: string }[];
 }) {
-  const [billingPeriod, setBillingPeriod] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const DEFAULT_INVOICE = {
-    invoiceNumber: "",
-    customerName: "",
-    customerPhone: "",
-    customerAddress: "",
+  const [commonInfo, setCommonInfo] = useState({
     billing_period: "",
-    currentAmount: "",
-    previousAmount: "0",
-    totalAmount: "",
-    recordBookCode: "",
     assignedTo: "",
-  };
+  });
 
-  const EXCEL_COLUMN_MAPPING = [
+  const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  const [invoices, setInvoices] = useState<InvoiceItem[]>([
+    {
+      id: "",
+      invoiceNumber: "",
+      customerName: "",
+      customerAddress: "",
+      currentAmount: "",
+      previousAmount: "0",
+      totalAmount: "",
+      recordBookCode: "",
+    },
+  ]);
+
+  const EXCEL_COLUMN_MAPPING: (keyof InvoiceItem)[] = [
     "invoiceNumber",
     "currentAmount",
     "previousAmount",
@@ -69,242 +164,184 @@ export default function AddInvoiceDialog({
     "recordBookCode",
   ];
 
-  const [newInvoice, setNewInvoice] = useState<InvoiceData>(DEFAULT_INVOICE);
-
   useEffect(() => {
-    const fetchLatestPeriod = async () => {
+    const fetchLatest = async () => {
       try {
         const res = await fetchLatestPeriod_API();
-        if (res.billing_period) {
-          setBillingPeriod(res.billing_period);
-        }
+        if (res.billing_period) setCommonInfo((prev) => ({ ...prev, billing_period: res.billing_period }));
       } catch (error) {
         console.error(error);
       }
     };
-    fetchLatestPeriod();
+    if (open) fetchLatest();
+  }, [open]);
+
+  const handleCommonChange = (field: string, value: string) => {
+    setCommonInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleItemChange = useCallback((id: string, field: keyof InvoiceItem, value: string) => {
+    setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, [field]: value } : inv)));
   }, []);
 
-  useEffect(() => {
-    if (open) {
-      setNewInvoice((prev) => ({
-        ...prev,
-        billing_period: billingPeriod || "",
-      }));
+  const addNewRow = () => {
+    if (invoices.length >= MAX_INVOICES) {
+      toast.error(`Chỉ được phép nhập tối đa ${MAX_INVOICES} hóa đơn!`);
+      return;
     }
-  }, [open, billingPeriod]);
+    setInvoices((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        invoiceNumber: "",
+        customerName: "",
+        customerAddress: "",
+        currentAmount: "",
+        previousAmount: "0",
+        totalAmount: "",
+        recordBookCode: "",
+      },
+    ]);
+  };
 
-  const handleChange = (field: string, value: string) => {
-    setNewInvoice((prev) => ({ ...prev, [field]: value }));
+  const removeRow = useCallback((id: string) => {
+    setInvoices((prev) => (prev.length > 1 ? prev.filter((inv) => inv.id !== id) : prev));
+  }, []);
+
+  const handleSmartPaste = (e: React.ClipboardEvent) => {
+    const clipboardData = e.clipboardData.getData("text");
+    if (!clipboardData.includes("\t")) return;
+
+    e.preventDefault();
+    const lines = clipboardData
+      .split(/\r\n|\n|\r/)
+      .filter((line) => line.trim() !== "")
+      .slice(0, MAX_INVOICES);
+
+    const newRows: InvoiceItem[] = lines.map((line) => {
+      const columns = line
+        .split("\t")
+        .map((col) => col.trim())
+        .filter((col) => col !== "");
+      const rowData: InvoiceItem = {
+        id: generateId(),
+        invoiceNumber: "",
+        customerName: "",
+        customerAddress: "",
+        currentAmount: "",
+        previousAmount: "0",
+        totalAmount: "",
+        recordBookCode: "",
+      };
+
+      EXCEL_COLUMN_MAPPING.forEach((field, idx) => {
+        if (columns[idx]) rowData[field] = columns[idx];
+      });
+      return rowData;
+    });
+
+    setInvoices(newRows);
+    toast.success(`Đã nhập ${newRows.length} dòng!`);
   };
 
   const handleSubmit = async () => {
-    if (
-      !newInvoice.invoiceNumber ||
-      !newInvoice.customerName ||
-      !newInvoice.billing_period ||
-      !newInvoice.previousAmount ||
-      !newInvoice.currentAmount
-    ) {
-      alert("Vui lòng nhập đầy đủ thông tin bắt buộc!");
-      return;
-    }
-
+    if (!commonInfo.billing_period) return toast.error("Vui lòng chọn Kỳ hóa đơn!");
     try {
       setLoading(true);
-      await createInvoice_API(newInvoice);
-
-      setNewInvoice({
-        ...DEFAULT_INVOICE,
-        billing_period: billingPeriod || "",
-      });
-
+      const finalData = invoices.map(({ id, ...rest }) => ({ ...rest, ...commonInfo }));
+      for (const data of finalData) {
+        await createInvoice_API(data);
+      }
+      toast.success("Thành công!");
       onSuccess();
       onClose();
+      setInvoices([
+        {
+          id: generateId(),
+          invoiceNumber: "",
+          customerName: "",
+          customerAddress: "",
+          currentAmount: "",
+          previousAmount: "0",
+          totalAmount: "",
+          recordBookCode: "",
+        },
+      ]);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("Lỗi khi tạo hoá đơn:", error.response?.data.message);
-        alert(error.response?.data.message);
-      } else {
-        console.error("Lỗi không xác định:", error);
-        alert("Lỗi không xác định");
-      }
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSmartPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const clipboardData = e.clipboardData.getData("text");
-
-    // Kiểm tra xem có dấu tab (\t) không (Dấu hiệu của copy từ Excel)
-    if (clipboardData.includes("\t")) {
-      e.preventDefault();
-
-      const lines = clipboardData.split(/\r\n|\n|\r/).filter((line) => line.trim() !== "");
-
-      if (lines.length === 0) return;
-
-      const firstLine = lines[0];
-      const columns = firstLine.split("\t");
-
-      const validCols = columns
-        .map((c) => c.trim()) // Xóa khoảng trắng thừa đầu đuôi
-        .filter((c) => c !== "");
-
-      const updatedInvoice: InvoiceData = { ...newInvoice };
-      let hasChange = false;
-
-      validCols.forEach((colValue, index) => {
-        if (index < EXCEL_COLUMN_MAPPING.length) {
-          const fieldName = EXCEL_COLUMN_MAPPING[index] as keyof InvoiceData;
-
-          const cleanValue = colValue.trim();
-
-          updatedInvoice[fieldName] = cleanValue;
-          hasChange = true;
-        }
-      });
-
-      if (hasChange) {
-        setNewInvoice(updatedInvoice);
-
-        toast.success(`Đã dán dữ liệu!`);
-      }
-    }
-  };
-
   return (
-    // 1. Tăng chiều rộng Dialog lên 'lg' để chứa được nhiều cột
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
-      <DialogTitle sx={{ borderBottom: "1px solid #eee", mb: 2 }}>Thêm mới hóa đơn</DialogTitle>
+      <DialogTitle
+        sx={{ borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      >
+        <Typography variant="h6" fontWeight="bold">
+          Thêm 1-5 hoá đơn
+        </Typography>
 
-      <DialogContent sx={{ overflowY: "visible" }}>
-        <Box sx={{ overflowX: "auto", pb: 1, pt: 2 }}>
-          <Stack direction="row" spacing={1.5} sx={{ minWidth: "1200px" }} onPaste={handleSmartPaste}>
-            <Box sx={{ width: "120px", flexShrink: 0 }}>
-              <TextField
-                label="Mã KH"
-                value={newInvoice.invoiceNumber}
-                onChange={(e) => handleChange("invoiceNumber", e.target.value)}
-                fullWidth
-                required
-                size="small"
-                placeholder="PB..."
-              />
-            </Box>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            select
+            label="Tháng nợ"
+            value={commonInfo.billing_period}
+            onChange={(e) => handleCommonChange("billing_period", e.target.value)}
+            size="small"
+            sx={{ width: 150 }}
+          >
+            {generateBillingPeriods().map((p) => (
+              <MenuItem key={p} value={p}>
+                {p}
+              </MenuItem>
+            ))}
+          </TextField>
 
-            <Box sx={{ width: "120px", flexShrink: 0 }}>
-              <TextField
-                label="Kỳ này"
-                type="number"
-                value={newInvoice.currentAmount}
-                onChange={(e) => handleChange("currentAmount", e.target.value)}
-                fullWidth
-                required
-                size="small"
-              />
-            </Box>
+          <FormControl size="small" sx={{ width: 200 }}>
+            <InputLabel>Nhân viên phụ trách</InputLabel>
+            <Select
+              label="Nhân viên phụ trách"
+              value={commonInfo.assignedTo}
+              onChange={(e) => handleCommonChange("assignedTo", e.target.value)}
+            >
+              <MenuItem value="">
+                <em>-- Trống --</em>
+              </MenuItem>
+              {assignedUsers.map((u) => (
+                <MenuItem key={u._id} value={u._id}>
+                  {u.fullName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      </DialogTitle>
 
-            <Box sx={{ width: "120px", flexShrink: 0 }}>
-              <TextField
-                label="Kỳ trước"
-                type="number"
-                value={newInvoice.previousAmount}
-                onChange={(e) => handleChange("previousAmount", e.target.value)}
-                fullWidth
-                required
-                size="small"
-              />
-            </Box>
+      <DialogContent onPaste={handleSmartPaste}>
+        <Box sx={{ mt: 2, overflowX: "auto" }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: "1300px", mt: 1 }}>
+            {invoices.map((inv, index) => (
+              <InvoiceRow key={inv.id} inv={inv} index={index} onItemChange={handleItemChange} onRemove={removeRow} />
+            ))}
+          </Box>
 
-            <Box sx={{ width: "120px", flexShrink: 0 }}>
-              <TextField
-                label="Tổng tiền"
-                type="number"
-                value={newInvoice.totalAmount}
-                onChange={(e) => handleChange("totalAmount", e.target.value)}
-                fullWidth
-                required
-                size="small"
-              />
-            </Box>
-
-            <Box sx={{ width: "200px", flexShrink: 0 }}>
-              <TextField
-                label="Tên khách hàng"
-                value={newInvoice.customerName}
-                onChange={(e) => handleChange("customerName", e.target.value)}
-                fullWidth
-                required
-                size="small"
-              />
-            </Box>
-
-            <Box sx={{ width: "200px", flexShrink: 0 }}>
-              <TextField
-                label="Địa chỉ chi tiết"
-                value={newInvoice.customerAddress}
-                onChange={(e) => handleChange("customerAddress", e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Box>
-
-            <Box sx={{ width: "120px", flexShrink: 0 }}>
-              <TextField
-                label="Trạm"
-                value={newInvoice.recordBookCode}
-                onChange={(e) => handleChange("recordBookCode", e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Box>
-
-            <Box sx={{ width: "110px", flexShrink: 0 }}>
-              <TextField
-                label="Tháng nợ"
-                value={newInvoice.billing_period}
-                onChange={(e) => handleChange("billing_period", e.target.value)}
-                fullWidth
-                required
-                size="small"
-                placeholder="10/2025"
-              />
-            </Box>
-
-            <Box sx={{ width: "180px", flexShrink: 0 }}>
-              {assignedUsers?.length > 0 && (
-                <FormControl fullWidth size="small">
-                  <InputLabel id="assigned-user-label">Nhân viên</InputLabel>
-                  <Select
-                    labelId="assigned-user-label"
-                    label="Nhân viên"
-                    value={newInvoice.assignedTo}
-                    onChange={(e) => handleChange("assignedTo", e.target.value as string)}
-                  >
-                    <MenuItem value="">
-                      <em>-- Trống --</em>
-                    </MenuItem>
-                    {assignedUsers.map((u) => (
-                      <MenuItem key={u._id} value={u._id}>
-                        {u.fullName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            </Box>
-          </Stack>
+          <Button startIcon={<AddIcon />} onClick={addNewRow} sx={{ mt: 2 }}>
+            Thêm dòng mới
+          </Button>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 3, borderTop: "1px solid #eee" }}>
+        <Typography variant="body2" sx={{ flexGrow: 1, color: "gray" }}>
+          Mẹo: Bạn có thể copy nhiều dòng từ Excel và dán vào ô Mã KH.
+        </Typography>
         <Button onClick={onClose} disabled={loading} color="inherit">
           Hủy bỏ
         </Button>
-        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Đang lưu..." : "Lưu hóa đơn"}
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+          {loading ? "Đang lưu..." : `Lưu ${invoices.length} hóa đơn`}
         </Button>
       </DialogActions>
     </Dialog>

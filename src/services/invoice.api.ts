@@ -150,7 +150,6 @@ export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[
 
 export const createInvoice_API = async (newInvoice: {
   customerName: string;
-  customerPhone: string;
   customerAddress: string;
   billing_period: string;
   currentAmount: string;
