@@ -8,6 +8,7 @@ export interface IUser {
   pass: string;
   role: "admin" | "user";
   phone: string;
+  stt: string;
   usertype: string;
   bankAccount: string;
   bankName: string;

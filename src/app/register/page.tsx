@@ -7,10 +7,9 @@ import axios, { AxiosError } from "axios";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function RegisterPage() {
-  const [lastName, setLastName] = useState("");
-  const [firstName, setFirstName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [order, setOrder] = useState("");
   const [province, setProvince] = useState("");
@@ -25,10 +24,8 @@ export default function RegisterPage() {
     setMessage(null);
     setIsLoading(true);
 
-    const fullName = `${lastName} ${firstName}`.trim();
-
     try {
-      await register(name, email, password, fullName, province, userType); // ✅ gửi thêm province
+      await register(name, password, fullName, province, userType, phone, order);
 
       setMessage({ type: "success", text: "Đăng ký thành công! Đang chuyển hướng..." });
 
@@ -55,7 +52,6 @@ export default function RegisterPage() {
       : "bg-red-100 border-red-400 text-red-700";
   };
 
-  // ✅ Danh sách tỉnh/thành cơ bản
   const provinces = [
     "TP Hà Nội",
     "TP Huế",
@@ -103,39 +99,22 @@ export default function RegisterPage() {
           {message && <div className={`p-3 border rounded-lg mb-6 ${getMessageClass()}`}>{message.text}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Hàng 1: Họ, Tên, STT */}
             <div className="flex gap-4">
-              <div className="flex-1">
-                <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">
-                  Họ
+              <div className="flex-[3]">
+                <label htmlFor="fullName" className="block text-gray-700 text-sm font-bold mb-2">
+                  Họ và tên
                 </label>
                 <input
                   type="text"
-                  id="lastName"
+                  id="fullName"
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Họ"
+                  placeholder="Nhập đầy đủ họ và tên"
                   required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">
-                  Tên
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Tên"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
               <div className="w-20">
-                {" "}
-                {/* Ô STT để độ rộng cố định */}
                 <label htmlFor="order" className="block text-gray-700 text-sm font-bold mb-2">
                   STT
                 </label>
@@ -150,71 +129,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Hàng 2: Tên đăng nhập & Mật khẩu */}
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
-                  Tên đăng nhập
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Username"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-                  Mật khẩu
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="******"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Hàng 3: Email & Số điện thoại */}
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="example@gmail.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
-                  Số điện thoại
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="09xxx..."
-                  // Lưu ý: Bạn nên tạo thêm state [phone, setPhone] thay vì dùng chung state email
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Hàng 4: Loại người dùng & Tỉnh thành */}
             <div className="flex gap-4">
               <div className="flex-1">
                 <label htmlFor="userType" className="block text-gray-700 text-sm font-bold mb-2">
@@ -248,6 +162,53 @@ export default function RegisterPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
+                  Số điện thoại
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="09xxx..."
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
+                  Tên đăng nhập
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Username"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+                  Mật khẩu
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="******"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </div>
 

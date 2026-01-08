@@ -10,6 +10,7 @@ import { IUser } from "@/types/user";
 import Image from "next/image";
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function UsersPage() {
   const [userData, setUserData] = useState<IUser[]>([]);
@@ -100,9 +101,11 @@ export default function UsersPage() {
       // console.log("Upload thành công:", response.data);
 
       setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });
+      toast.success(`Đã up file thành công.`);
     } catch (error) {
       console.error(error);
       setMessage({ type: "error", text: getErrorMessage(error) });
+      toast.success(`Up file thất bại`);
     } finally {
       setIsLoading(false);
       setShowBillingModal(false);
@@ -125,6 +128,7 @@ export default function UsersPage() {
       username: user.username || "",
       pass: user.pass || "",
       phone: user.phone || "",
+      stt: user.stt || "",
       usertype: user.usertype || "",
     });
   };
@@ -161,8 +165,10 @@ export default function UsersPage() {
         username: "",
         pass: "",
         phone: "",
+        stt: "",
         usertype: "",
       });
+      toast.success("Cập nhật thông tin người dùng thành công");
     } catch (err) {
       console.error(err);
       setEditingUser(null);
@@ -298,6 +304,9 @@ export default function UsersPage() {
                   <thead>
                     <tr className="bg-gray-100 border-b">
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        STT
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -326,6 +335,7 @@ export default function UsersPage() {
                       .map((user) => {
                         return (
                           <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.stt}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
@@ -386,23 +396,33 @@ export default function UsersPage() {
                 </button>
               </div>
 
-              {/* BODY */}
               <div className="p-6 space-y-4">
-                {/* Hàng 1: Họ tên (Full width) */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Họ và tên</label>
-                  <input
-                    type="text"
-                    value={formData?.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
-                    placeholder="Nhập họ và tên..."
-                  />
+                <div className="flex gap-4 items-start">
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold text-gray-600 mb-1.5 ml-1">Họ và tên</label>
+                    <input
+                      type="text"
+                      value={formData?.fullName || ""}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 block p-2.5 transition-all duration-200 outline-none placeholder:text-gray-400"
+                      placeholder="Nhập đầy đủ họ và tên..."
+                    />
+                  </div>
+
+                  <div className="w-20">
+                    <label className="block text-sm font-semibold text-gray-600 mb-1.5 text-center">STT</label>
+                    <input
+                      type="text"
+                      id="order"
+                      value={formData?.stt || ""}
+                      onChange={(e) => setFormData({ ...formData, stt: e.target.value })}
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 block p-2.5 text-center transition-all duration-200 outline-none placeholder:text-gray-400"
+                      placeholder="Số"
+                    />
+                  </div>
                 </div>
 
-                {/* Hàng 2: Loại tài khoản & Tỉnh (Grid 2 cột) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Thay đổi vai trò */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Loại tài khoản</label>
                     <select
@@ -435,18 +455,8 @@ export default function UsersPage() {
                   </div>
                 </div>
 
-                {/* Hàng 3: Email & Phone (Grid 2 cột) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={formData?.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Số điện thoại</label>
                     <input
                       type="text"
@@ -459,7 +469,6 @@ export default function UsersPage() {
 
                 <hr className="border-gray-100 my-2" />
 
-                {/* Hàng 4: Username & Pass (Grid 2 cột) - Khu vực bảo mật */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tên đăng nhập</label>

@@ -11,11 +11,12 @@ export const login = async (userName: string, password: string) => {
 
 export const register = async (
   userName: string,
-  email: string,
   password: string,
   fullName: string,
   province: string,
-  usertype: string
+  usertype: string,
+  phone: string,
+  stt: string
 ) => {
   const token = localStorage.getItem("token");
 
@@ -23,11 +24,12 @@ export const register = async (
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/register`,
     {
       userName,
-      email,
       password,
       fullName,
       province,
       usertype,
+      phone,
+      stt,
     },
     {
       headers: {
