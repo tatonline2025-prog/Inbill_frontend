@@ -19,18 +19,18 @@ import {
   TextField,
 } from "@mui/material";
 import { IUser } from "@/types/user";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export const FILTER_STATUS = {
   ALL: "all",
-  PAID: "collected", // Đã thu
-  UNPAID: "not_collected", // Chưa thu
+  PAID: "collected",
+  UNPAID: "not_collected",
 };
 
 export const CLOSING_STATUS = {
   ALL: "all",
-  TRUE: "true", // Đã đóng
-  FALSE: "false", // Chưa đóng
+  TRUE: "true",
+  FALSE: "false",
 };
 
 interface ExportModalsProps {
@@ -56,7 +56,7 @@ interface ExportModalsProps {
 
   // 2. Chọn nhiều người (Mảng string)
   selectedCollectedUsers: string[];
-  setSelectedCollectedUsers: (userIds: string[]) => void; // Lưu ý kiểu dữ liệu là mảng string[]
+  setSelectedCollectedUsers: (userIds: string[]) => void;
 
   // 3. Các trạng thái
   collectedStatus: string;
@@ -151,6 +151,15 @@ export default function ExportModals({
       setSelectedCollectedUsers(filteredUsers.map((u) => u._id));
     }
   };
+
+  useEffect(() => {
+    if (filteredUsers.length > 0) {
+      const allIds = filteredUsers.map((u) => u._id);
+      setSelectedCollectedUsers(allIds);
+    } else {
+      setSelectedCollectedUsers([]);
+    }
+  }, [filteredUsers, setSelectedCollectedUsers]);
 
   return (
     <>
@@ -250,7 +259,6 @@ export default function ExportModals({
               InputLabelProps={{ shrink: true }}
             />
           </div>
-          {/* )} */}
 
           <div style={{ marginTop: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
             <FormControl fullWidth margin="dense" size="small" sx={{ marginBottom: "12px" }}>
@@ -274,7 +282,7 @@ export default function ExportModals({
               </Select>
             </FormControl>
 
-            {/* 2. Chọn nhiều người phụ trách */}
+            {/* Chọn nhiều người phụ trách */}
             <FormControl fullWidth margin="dense">
               <InputLabel shrink={openExportCollected || selectedCollectedUsers.length > 0}>
                 Người phụ trách ({filterProvince === "ALL" ? "Toàn quốc" : filterProvince})
@@ -285,8 +293,6 @@ export default function ExportModals({
                 value={selectedCollectedUsers}
                 label="Người phụ trách (Toàn quốc)"
                 onChange={(e) => {
-                  // Chặn sự kiện click của nút "Chọn tất cả" lọt vào đây nếu cần,
-                  // nhưng logic handleSelectAll xử lý riêng ở onClick của MenuItem rồi
                   const val = e.target.value;
                   // Chỉ set giá trị nếu nó là array chuỗi ID (tránh lỗi conflict với nút Select All)
                   if (Array.isArray(val) && !val.includes("SELECT_ALL_OPTION")) {

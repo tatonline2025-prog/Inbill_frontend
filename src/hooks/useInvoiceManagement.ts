@@ -82,7 +82,7 @@ export const useInvoiceManagement = () => {
   const today = new Date().toLocaleDateString("en-CA");
   const [collectedFromDate, setCollectedFromDate] = useState<string>(today);
   const [collectedToDate, setCollectedToDate] = useState<string>(today);
-  const [selectedCollectedUsers, setSelectedCollectedUsers] = useState<string[]>([]); // Array ID
+  const [selectedCollectedUsers, setSelectedCollectedUsers] = useState<string[]>([]);
   const [collectedStatus, setCollectedStatus] = useState<string>("paid");
   const [closingStatus, setClosingStatus] = useState<string>("false");
 

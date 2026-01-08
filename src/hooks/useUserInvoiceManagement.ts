@@ -57,14 +57,14 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo>();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceInfo | null>(null); // --- Sort States ---
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceInfo | null>(null);
 
   const [sortField, setSortField] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("none"); // --- 1. Data Fetching ---
+  const [sortDirection, setSortDirection] = useState<SortDirection>("none");
 
   const [collectedFromDate, setCollectedFromDate] = useState(today); // Từ ngày
   const [collectedToDate, setCollectedToDate] = useState(today); // Đến ngày
-  // const [selectedCollectedUsers, setSelectedCollectedUsers] = useState([]);
+
   const [collectedStatus, setCollectedStatus] = useState("paid"); // Trạng thái thu (mặc định là đã thu)
   const [closingStatus, setClosingStatus] = useState("false");
 
@@ -90,11 +90,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         invoicesPerPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
         filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
-        user?._id, // **GỬI USER ID CỦA NGƯỜI DÙNG HIỆN TẠI**
+        user?._id,
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
         searchParams.stationCode,
-        user?.province, // **GỬI PROVINCE CỦA NGƯỜI DÙNG HIỆN TẠI**
+        user?.province,
         sortFieldToSend,
         sortDirectionToSend
       );
@@ -168,7 +168,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       return "desc";
     });
     setCurrentPage(1);
-  }; // --- 3. Table Handlers (Select/Toggle/Delete) ---
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -236,7 +236,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
     }
-  }; // --- 4. Menu Handlers ---
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, invoice: InvoiceInfo) => {
     setAnchorEl(event.currentTarget);
@@ -275,7 +275,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     } finally {
       handleMenuClose();
     }
-  }; // --- 5. Export Handlers ---
+  };
 
   const handleExport = async () => {
     const token = await localStorage.getItem("token");
@@ -337,7 +337,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       console.error("Lỗi khi xuất file:", error);
       alert("Không thể kết nối tới máy chủ để xuất file.");
     }
-  }; // --- 6. Dialog Close Handlers & Sort ---
+  };
 
   const handleAddSuccess = () => {
     setOpenAddDialog(false);
