@@ -19,6 +19,7 @@ import {
   Radio,
   RadioGroup,
   Select,
+  Stack,
   TextField,
   Typography,
 } from "@mui/material";
@@ -111,7 +112,14 @@ export default function InvoicesPage() {
     setCollectedStatus,
     closingStatus,
     setClosingStatus,
-  } = useUserInvoiceManagement({ user: currentUser }); // Truyền user
+
+    openExportAllModal,
+    setOpenExportAllModal,
+    allCollectionStatus,
+    setAllCollectionStatus,
+    allPaymentStatus,
+    setAllPaymentStatus,
+  } = useUserInvoiceManagement({ user: currentUser });
 
   const [dateFilterType, setDateFilterType] = useState("range");
 
@@ -153,12 +161,13 @@ export default function InvoicesPage() {
               variant="contained"
               color="primary"
               startIcon={<DownloadIcon />}
-              onClick={handleExport}
+              onClick={() => setOpenExportAllModal(true)}
               disabled={sortedInvoices.length === 0}
               sx={{ borderRadius: 2, textTransform: "none" }}
             >
               Xuất ra Excel toàn bộ
             </Button>
+
             <Button
               variant="contained"
               startIcon={<DownloadIcon />}
@@ -346,12 +355,7 @@ export default function InvoicesPage() {
       />
 
       {/* --- Export Collected Dialog --- */}
-      <Dialog
-        open={openExportCollected}
-        onClose={() => setOpenExportCollected(false)}
-        maxWidth="sm" // Tăng độ rộng modal
-        fullWidth
-      >
+      <Dialog open={openExportCollected} onClose={() => setOpenExportCollected(false)} maxWidth="sm" fullWidth>
         <DialogTitle
           sx={{
             paddingBottom: 0,
@@ -416,7 +420,6 @@ export default function InvoicesPage() {
           </div>
           {/* )} */}
 
-          {/* 3. Chọn trạng thái (Giữ nguyên code của bạn) */}
           <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
             {/* Trạng thái thu */}
             <FormControl fullWidth margin="dense">
@@ -448,6 +451,62 @@ export default function InvoicesPage() {
           <Button onClick={() => setOpenExportCollected(false)}>Hủy</Button>
           <Button variant="contained" color="success" onClick={handleExportCollectedConfirm}>
             Xuất Excel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openExportAllModal}
+        onClose={() => setOpenExportAllModal(false)}
+        maxWidth="xs" // Thu nhỏ lại một chút cho cân đối
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            paddingBottom: 1,
+            borderBottom: "1px solid #eee",
+            fontWeight: "bold",
+          }}
+        >
+          Xuất Excel Toàn Bộ Hóa Đơn
+        </DialogTitle>
+
+        <DialogContent sx={{ paddingTop: "20px !important" }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Chọn các trạng thái bạn muốn lọc trước khi xuất file toàn bộ dữ liệu:
+          </Typography>
+
+          <Stack spacing={2.5}>
+            {/* Lọc Trạng thái thu */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Trạng thái thu</InputLabel>
+              <Select
+                value={allCollectionStatus}
+                label="Trạng thái thu"
+                onChange={(e) => setAllCollectionStatus(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả trạng thái thu</MenuItem>
+                <MenuItem value="paid">Đã thu</MenuItem>
+                <MenuItem value="unpaid">Chưa thu</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, borderTop: "1px solid #eee" }}>
+          <Button onClick={() => setOpenExportAllModal(false)} color="inherit">
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={async () => {
+              // Gọi hàm handleExport và truyền các trạng thái đã lọc
+              await handleExport(allCollectionStatus, allPaymentStatus);
+              setOpenExportAllModal(false);
+            }}
+          >
+            Xác nhận Xuất Excel
           </Button>
         </DialogActions>
       </Dialog>

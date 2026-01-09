@@ -50,6 +50,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [openExportCollected, setOpenExportCollected] = useState(false);
+  const [openExportAllModal, setOpenExportAllModal] = useState(false);
 
   const today = new Date().toLocaleDateString("en-CA");
   const [selectedCollectedDate, setSelectedCollectedDate] = useState(today);
@@ -65,8 +66,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [collectedFromDate, setCollectedFromDate] = useState(today); // Từ ngày
   const [collectedToDate, setCollectedToDate] = useState(today); // Đến ngày
 
-  const [collectedStatus, setCollectedStatus] = useState("paid"); // Trạng thái thu (mặc định là đã thu)
+  const [collectedStatus, setCollectedStatus] = useState("paid");
   const [closingStatus, setClosingStatus] = useState("false");
+
+  const [allCollectionStatus, setAllCollectionStatus] = useState("paid");
+  const [allPaymentStatus, setAllPaymentStatus] = useState("false");
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -277,11 +281,18 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (collStatus: string, payStatus: string) => {
     const token = await localStorage.getItem("token");
+    const params = new URLSearchParams();
 
-    // Export file của riêng user này
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?token=${token}`;
+    params.append("token", token || "");
+
+    // Chỉ append nếu người dùng chọn khác "Tất cả" (hoặc append "all" tùy backend xử lý)
+    if (collStatus !== "all") params.append("collectionStatus", collStatus);
+    if (payStatus !== "all") params.append("paymentStatus", payStatus);
+
+    // Redirect để tải file
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
   };
 
   const handleOpenExportCollected = () => {
@@ -436,5 +447,12 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setCollectedStatus,
     closingStatus,
     setClosingStatus,
+
+    openExportAllModal,
+    setOpenExportAllModal,
+    allCollectionStatus,
+    setAllCollectionStatus,
+    allPaymentStatus,
+    setAllPaymentStatus,
   };
 };

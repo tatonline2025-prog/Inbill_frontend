@@ -16,6 +16,7 @@ import {
   Radio,
   RadioGroup,
   Select,
+  Stack,
   TextField,
 } from "@mui/material";
 import { IUser } from "@/types/user";
@@ -48,6 +49,10 @@ interface ExportModalsProps {
   setOpenExportCollected: (open: boolean) => void;
   handleExportCollectedConfirm: () => Promise<void>;
 
+  openExportModal: boolean;
+  setOpenExportModal: (open: boolean) => void;
+  handleExportConfirm: () => Promise<void>;
+
   // 1. Khoảng thời gian
   collectedFromDate: string;
   setCollectedFromDate: (date: string) => void;
@@ -58,11 +63,19 @@ interface ExportModalsProps {
   selectedCollectedUsers: string[];
   setSelectedCollectedUsers: (userIds: string[]) => void;
 
+  selectedUsers: string[];
+  setSelectedUsers: (userIds: string[]) => void;
+
   // 3. Các trạng thái
   collectedStatus: string;
   setCollectedStatus: (status: string) => void;
   closingStatus: string;
   setClosingStatus: (status: string) => void;
+
+  collectionStatus: string;
+  setCollectionStatus: (status: string) => void;
+  paymentStatus: string;
+  setPaymentStatus: (status: string) => void;
 }
 
 const provinces = [
@@ -117,7 +130,6 @@ export default function ExportModals({
   setOpenExportCollected,
   handleExportCollectedConfirm,
 
-  // Nhận các props mới khai báo
   collectedFromDate,
   setCollectedFromDate,
   collectedToDate,
@@ -128,6 +140,16 @@ export default function ExportModals({
   setCollectedStatus,
   closingStatus,
   setClosingStatus,
+
+  openExportModal,
+  setOpenExportModal,
+  handleExportConfirm,
+  selectedUsers,
+  setSelectedUsers,
+  collectionStatus,
+  setCollectionStatus,
+  paymentStatus,
+  setPaymentStatus,
 }: ExportModalsProps) {
   const [dateFilterType, setDateFilterType] = useState("range");
   const [filterProvince, setFilterProvince] = useState<string>("Đồng Tháp");
@@ -191,12 +213,7 @@ export default function ExportModals({
       </Dialog>
 
       {/* Modal Export Collected */}
-      <Dialog
-        open={openExportCollected}
-        onClose={() => setOpenExportCollected(false)}
-        maxWidth="sm" // Tăng độ rộng modal một chút cho đẹp
-        fullWidth
-      >
+      <Dialog open={openExportCollected} onClose={() => setOpenExportCollected(false)} maxWidth="sm" fullWidth>
         <DialogTitle
           sx={{
             paddingBottom: 0,
@@ -400,6 +417,76 @@ export default function ExportModals({
           <Button onClick={() => setOpenExportCollected(false)}>Hủy</Button>
           <Button variant="contained" color="success" onClick={handleExportCollectedConfirm}>
             Xuất Excel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* MODAL XUẤT EXCEL */}
+      <Dialog open={openExportModal} onClose={() => setOpenExportModal(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: "bold", borderBottom: "1px solid #eee" }}>Xuất Excel toàn bộ</DialogTitle>
+
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {/* 1. Chọn Người phụ trách (Multiple) */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Người phụ trách</InputLabel>
+              <Select
+                multiple
+                value={selectedUsers}
+                label="Người phụ trách"
+                onChange={(e) => {
+                  const {
+                    target: { value },
+                  } = e;
+
+                  setSelectedUsers(typeof value === "string" ? value.split(",") : value);
+                }}
+                renderValue={(selected) => {
+                  if (selected.length === 0) return "Tất cả";
+                  return `Đã chọn ${selected.length} người`;
+                }}
+              >
+                {userData.map((user) => (
+                  <MenuItem key={user._id} value={user._id}>
+                    <Checkbox checked={selectedUsers.indexOf(user._id) > -1} />
+                    <ListItemText primary={user.fullName} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* 2. Trạng thái thu */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Trạng thái thu</InputLabel>
+              <Select
+                value={collectionStatus}
+                label="Trạng thái thu"
+                onChange={(e) => setCollectionStatus(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="paid">Đã thu</MenuItem>
+                <MenuItem value="unpaid">Chưa thu</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* 3. Trạng thái đóng cước */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Đóng cước</InputLabel>
+              <Select value={paymentStatus} label="Đóng cước" onChange={(e) => setPaymentStatus(e.target.value)}>
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="true">Đã đóng</MenuItem>
+                <MenuItem value="false">Chưa đóng</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, bgcolor: "#f9f9f9" }}>
+          <Button onClick={() => setOpenExportModal(false)} color="inherit">
+            Hủy
+          </Button>
+          <Button variant="contained" color="success" onClick={handleExportConfirm}>
+            Báo cáo Excel
           </Button>
         </DialogActions>
       </Dialog>

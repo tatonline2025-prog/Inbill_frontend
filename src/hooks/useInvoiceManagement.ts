@@ -78,6 +78,11 @@ export const useInvoiceManagement = () => {
 
   // --- Export Collected ---
   const [openExportCollected, setOpenExportCollected] = useState(false);
+  const [openExportModal, setOpenExportModal] = useState(false);
+
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [collectionStatus, setCollectionStatus] = useState<string>("paid");
+  const [paymentStatus, setPaymentStatus] = useState<string>("false");
 
   const today = new Date().toLocaleDateString("en-CA");
   const [collectedFromDate, setCollectedFromDate] = useState<string>(today);
@@ -368,11 +373,28 @@ export const useInvoiceManagement = () => {
     }
   };
 
-  // --- Hàm Export (Vẫn giữ lại logic trong hook để dễ quản lý state modal) ---
-  const handleExport = async () => {
+  // --- Hàm Export ---
+  const handleExportConfirm = async () => {
     const token = await localStorage.getItem("token");
 
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?token=${token}`;
+    const params = new URLSearchParams();
+    params.append("token", token || "");
+
+    if (selectedUsers.length > 0) {
+      params.append("userIds", selectedUsers.join(","));
+    }
+    if (collectionStatus !== "all") {
+      params.append("collectionStatus", collectionStatus);
+    }
+    if (paymentStatus !== "all") {
+      params.append("paymentStatus", paymentStatus);
+    }
+
+    // Thực hiện redirect để tải file
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+
+    // Đóng modal sau khi xuất
+    setOpenExportModal(false);
   };
 
   const handleExportPrinted = () => {
@@ -550,9 +572,18 @@ export const useInvoiceManagement = () => {
     handleSelectOne,
     handleToggle,
     handleToggleIsPaid,
-    handleExport,
+    handleExportConfirm,
     handleExportPrinted,
     handleExportByUserConfirm,
     handleExportCollectedConfirm,
+
+    openExportModal,
+    setOpenExportModal,
+    selectedUsers,
+    setSelectedUsers,
+    collectionStatus,
+    setCollectionStatus,
+    paymentStatus,
+    setPaymentStatus,
   };
 };

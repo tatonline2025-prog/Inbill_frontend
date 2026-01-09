@@ -101,10 +101,19 @@ export default function InvoicesPage() {
     handleSelectOne,
     handleToggle,
     handleToggleIsPaid,
-    handleExport,
+    handleExportConfirm,
     handleExportPrinted,
     handleExportByUserConfirm,
     handleExportCollectedConfirm,
+
+    openExportModal,
+    setOpenExportModal,
+    selectedUsers,
+    setSelectedUsers,
+    collectionStatus,
+    setCollectionStatus,
+    paymentStatus,
+    setPaymentStatus,
   } = useInvoiceManagement();
 
   if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
@@ -131,7 +140,7 @@ export default function InvoicesPage() {
         {/* === TOOLBAR === */}
         <InvoiceToolbar
           invoicesCount={invoices.length}
-          onExport={handleExport}
+          onExport={() => setOpenExportModal(true)}
           onExportPrinted={handleExportPrinted}
           invoicesPerPage={invoicesPerPage}
           onInvoicesPerPageChange={handleInvoicesPerPageChange}
@@ -271,18 +280,14 @@ export default function InvoicesPage() {
       {/* === EXPORT MODALS (Tách ra) === */}
       <ExportModals
         userData={userData}
-        // --- Phần Export By User (Giữ nguyên) ---
         openExportByUser={openExportByUser}
         selectedExportUser={selectedExportUser}
         setOpenExportByUser={setOpenExportByUser}
         setSelectedExportUser={setSelectedExportUser}
         handleExportByUserConfirm={handleExportByUserConfirm}
-        // --- Phần Export Collected (CẬP NHẬT MỚI) ---
         openExportCollected={openExportCollected}
         setOpenExportCollected={setOpenExportCollected}
-        // Dùng hàm xử lý mới vừa tạo ở trên
         handleExportCollectedConfirm={handleExportCollectedConfirm}
-        // Truyền các state mới vào
         collectedFromDate={collectedFromDate}
         setCollectedFromDate={setCollectedFromDate}
         collectedToDate={collectedToDate}
@@ -293,6 +298,15 @@ export default function InvoicesPage() {
         setCollectedStatus={setCollectedStatus}
         closingStatus={closingStatus}
         setClosingStatus={setClosingStatus}
+        openExportModal={openExportModal}
+        setOpenExportModal={setOpenExportModal}
+        handleExportConfirm={handleExportConfirm}
+        selectedUsers={selectedUsers}
+        setSelectedUsers={setSelectedUsers}
+        collectionStatus={collectionStatus}
+        setCollectionStatus={setCollectionStatus}
+        paymentStatus={paymentStatus}
+        setPaymentStatus={setPaymentStatus}
       />
     </ProtectedRoute>
   );
