@@ -246,7 +246,7 @@ export default function UsersPage() {
                         Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
+                        Số điện thoại
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Ngày tạo
@@ -259,7 +259,7 @@ export default function UsersPage() {
                       .map((user) => (
                         <tr key={user._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{user.phone}</td>
                           <td className="px-6 py-4 text-sm text-gray-500">
                             {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                           </td>
@@ -310,7 +310,7 @@ export default function UsersPage() {
                         Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
+                        Số điện thoại
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Tỉnh
@@ -337,7 +337,7 @@ export default function UsersPage() {
                           <tr key={user._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-700">{user.stt}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{user.phone}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {new Date(user.createdAt).toLocaleDateString("vi-VN")}
