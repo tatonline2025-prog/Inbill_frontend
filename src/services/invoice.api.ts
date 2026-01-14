@@ -41,10 +41,49 @@ export const fetchallInvoice = async (
   return res;
 };
 
-export const fetchInvoiceBylist = async (codes?: string[]) => {
+export const fetchuserinvoices = async (
+  currentPage: number,
+  invoicesPerPage: number,
+  printStatus?: "printed" | "not_printed",
+  collectionStatus?: "collected" | "not_collected",
+  province?: string,
+  customerCode?: string,
+  stationCode?: string,
+  userprovince?: string,
+  sortField?: string | null,
+  sortDirection?: "asc" | "desc",
+  isPaid?: boolean
+) => {
   const token = localStorage.getItem("token");
 
-  console.log(codes);
+  const res = await axios.get<FetchInvoiceResponse>(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchuserinvoices`,
+    {
+      params: {
+        currentPage,
+        invoicesPerPage,
+        printStatus,
+        collectionStatus,
+        province,
+        customerCode,
+        stationCode,
+        userprovince,
+        sortField,
+        sortDirection,
+        isPaid,
+      },
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res;
+};
+
+export const fetchInvoiceBylist = async (codes?: string[]) => {
+  const token = localStorage.getItem("token");
 
   const res = await axios.post(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchbylist`,
@@ -68,6 +107,20 @@ export const invoiceSummary = async (userId?: string) => {
   });
 
   return res;
+};
+
+export const collectSummaryAPI = async (assignedUserId?: string) => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/collectsummary`, {
+    params: { assignedUserId },
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
 };
 
 export const fetchInvoiceByUser = async (token: string) => {

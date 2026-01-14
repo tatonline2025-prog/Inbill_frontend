@@ -1,21 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Bar,
-} from "recharts";
-import { fetchInvoiceByUser, invoiceSummary } from "@/services/invoice.api";
-import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { invoiceSummary } from "@/services/invoice.api";
+import { IInvoiceSummaryByUser } from "@/types/invoice";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -54,13 +42,15 @@ export default function Dashboard() {
   }, [user]);
 
   // ===================== TÍNH TOÁN SỐ LIỆU =====================
-  const { totalCollected, totalNotCollected, collected, notCollected } = useMemo(() => {
+  const { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected, isPaid } = useMemo(() => {
     const totalCollected = summaryData.reduce((sum, inv) => sum + (inv.collectedTotal || 0), 0);
     const totalNotCollected = summaryData.reduce((sum, inv) => sum + (inv.notCollectedTotal || 0), 0);
+    const totalIsPaid = summaryData.reduce((sum, inv) => sum + (inv.paidTotal || 0), 0);
     const collected = summaryData.reduce((sum, inv) => sum + (inv.collectedCount || 0), 0);
     const notCollected = summaryData.reduce((sum, inv) => sum + (inv.notCollectedCount || 0), 0);
+    const isPaid = summaryData.reduce((sum, inv) => sum + (inv.paidCount || 0), 0);
 
-    return { totalCollected, totalNotCollected, collected, notCollected };
+    return { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected, isPaid };
   }, [summaryData]);
 
   // ===================== DỮ LIỆU BIỂU ĐỒ =====================
@@ -108,6 +98,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap justify-center gap-6 mt-8">
           <SummaryCard label="Tổng tiền đã thu" value={totalCollected} color="green" />
           <SummaryCard label="Tổng tiền chưa thu" value={totalNotCollected} color="red" />
+          <SummaryCard label="Tổng tiền đã đóng cước" value={totalIsPaid} color="blue" />
         </div>
       </div>
     </ProtectedRoute>
@@ -115,10 +106,15 @@ export default function Dashboard() {
 }
 
 // ===================== COMPONENT PHỤ =====================
-function SummaryCard({ label, value, color }: { label: string; value: number; color: "green" | "red" }) {
-  const colorClass = color === "green" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+function SummaryCard({ label, value, color }: { label: string; value: number; color: "green" | "red" | "blue" }) {
+  const colorMap = {
+    green: "bg-green-100 text-green-700",
+    red: "bg-red-100 text-red-700",
+    blue: "bg-blue-100 text-blue-700",
+  };
+
   return (
-    <div className={`${colorClass} px-6 py-4 rounded-lg shadow-md min-w-[180px] text-center`}>
+    <div className={`${colorMap[color]} px-6 py-4 rounded-lg shadow-md min-w-[180px] text-center`}>
       <p className="font-semibold">{label}</p>
       <p className="text-xl font-bold">{value.toLocaleString()}</p>
     </div>

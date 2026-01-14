@@ -1,11 +1,18 @@
 // hooks/useUserInvoiceManagement.ts
 
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { deleteInvoice_API, fetchallInvoice, handleToggle_API } from "@/services/invoice.api";
+import {
+  collectSummaryAPI,
+  deleteInvoice_API,
+  fetchallInvoice,
+  fetchuserinvoices,
+  handleToggle_API,
+} from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user"; // Giả định IUser được import
 import toast from "react-hot-toast";
 import { SelectChangeEvent } from "@mui/material";
+import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
@@ -27,6 +34,7 @@ interface UseUserInvoiceManagementProps {
 export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps) => {
   // --- Data & Loading States ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+  const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // --- State Tìm kiếm ---
 
@@ -89,12 +97,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       }
     }
     try {
-      const res = await fetchallInvoice(
+      const res = await fetchuserinvoices(
         currentPage,
         invoicesPerPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
         filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
-        user?._id,
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
         searchParams.stationCode,
@@ -105,7 +112,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
       setTotalPages(res.data.pagination.totalPages);
       setAssignedCustomerCodes(res.data.summary.totalInvoices);
-      setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
+      setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices || 0);
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
     } catch (err) {
@@ -127,13 +134,33 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     sortDirection,
   ]);
 
+  const fetchCollectSummary = async () => {
+    setLoading(true);
+
+    try {
+      const res = await collectSummaryAPI(user?._id);
+
+      if (res?.success) {
+        setCollectSummary(res.data);
+      } else {
+        console.error("Lỗi lấy dữ liệu:", res?.message);
+      }
+    } catch (error) {
+      console.error("Lỗi kết nối API:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const reloadInvoices = () => {
     fetchInvoices();
+    fetchCollectSummary();
   };
 
   useEffect(() => {
     if (!user?._id) return;
     fetchInvoices();
+    fetchCollectSummary();
   }, [fetchInvoices, user?._id]);
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
@@ -379,6 +406,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   return {
     // States & Derived Values
     invoices,
+    collectSummary,
     loading,
     error,
     currentPage,

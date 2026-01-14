@@ -10,14 +10,10 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  FormControlLabel,
-  FormLabel,
   InputLabel,
   Menu,
   MenuItem,
   Pagination,
-  Radio,
-  RadioGroup,
   Select,
   Stack,
   TextField,
@@ -33,11 +29,10 @@ import InvoiceSummary from "@/components/invoices/InvoiceSummary";
 import UploadInvoiceDialog from "@/components/UploadInvoiceByUserDialog";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
 import { useUserInvoiceManagement } from "@/hooks/useUserInvoiceManagement";
-import { IUser } from "@/types/user";
-import LoadingComponent from "@/components/common/LoadingComponent";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
 import { useState } from "react";
+import CollectionSummary from "@/components/invoices/CollectionSummary";
 
 export default function InvoicesPage() {
   const { isAuthenticated, user } = useAuth(); // Hook 1
@@ -49,6 +44,7 @@ export default function InvoicesPage() {
   const currentUser = user;
 
   const {
+    collectSummary,
     loading,
     error,
     currentPage,
@@ -286,6 +282,12 @@ export default function InvoicesPage() {
           assignedCustomerCodes={assignedCustomerCodes}
           unassignedCustomerCodes={unassignedCustomerCodes}
           totalAmountInfo={totalAmountInfo}
+        />
+
+        <CollectionSummary
+          collected={collectSummary?.collected}
+          notCollected={collectSummary?.notCollected}
+          total={collectSummary?.total}
         />
 
         {/* --- Data Table --- */}

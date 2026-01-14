@@ -1,21 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Bar,
-} from "recharts";
-import { fetchallInvoice, invoiceSummary } from "@/services/invoice.api";
-import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { invoiceSummary } from "@/services/invoice.api";
+import { IInvoiceSummaryByUser } from "@/types/invoice";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function Dashboard() {

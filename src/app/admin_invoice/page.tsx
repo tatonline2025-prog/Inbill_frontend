@@ -23,10 +23,12 @@ import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
 import { fetchInvoiceBylist, fetchInvoicesForCopyAPI } from "@/services/invoice.api";
 import { useState } from "react";
+import CollectionSummary from "@/components/invoices/CollectionSummary";
 
 export default function InvoicesPage() {
   const {
     invoices,
+    collectSummary,
     userData,
     loading,
     error,
@@ -181,6 +183,13 @@ export default function InvoicesPage() {
           assignedCustomerCodes={assignedCustomerCodes}
           unassignedCustomerCodes={unassignedCustomerCodes}
           totalAmountInfo={totalAmountInfo}
+        />
+
+        <CollectionSummary
+          collected={collectSummary?.collected}
+          notCollected={collectSummary?.notCollected}
+          isPaid={collectSummary?.isPaid}
+          total={collectSummary?.total}
         />
 
         {/* === DATA TABLE === */}

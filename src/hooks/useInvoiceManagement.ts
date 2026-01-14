@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  collectSummaryAPI,
   deleteInvoice_API,
   fetchallInvoice,
   fetchInvoiceBylist,
@@ -15,6 +16,7 @@ import toast from "react-hot-toast";
 
 // Import hằng số
 import { PROVINCES, generateBillingPeriods } from "@/constants/invoice.constants";
+import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
@@ -33,6 +35,7 @@ export const useInvoiceManagement = () => {
   // --- State Dữ liệu chính ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [userData, setUserData] = useState<IUser[]>([]);
+  const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -130,8 +133,6 @@ export const useInvoiceManagement = () => {
         isPaidFilter
       );
 
-      // console.log(res);
-
       setTotalPages(res.data.pagination.totalPages);
       setAssignedCustomerCodes(res.data.summary.totalInvoices);
       setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
@@ -145,8 +146,27 @@ export const useInvoiceManagement = () => {
     }
   };
 
+  const fetchCollectSummary = async () => {
+    setLoading(true);
+
+    try {
+      const res = await collectSummaryAPI(filterAssignedUser);
+
+      if (res?.success) {
+        setCollectSummary(res.data);
+      } else {
+        console.error("Lỗi lấy dữ liệu:", res?.message);
+      }
+    } catch (error) {
+      console.error("Lỗi kết nối API:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const reloadInvoices = () => {
     fetchInvoices(currentPage, invoicesPerPage);
+    fetchCollectSummary();
   };
 
   // --- Effects ---
@@ -168,6 +188,7 @@ export const useInvoiceManagement = () => {
   // 2. Fetch danh sách Invoice khi filters, pagination, sort, search thay đổi
   useEffect(() => {
     fetchInvoices(currentPage, invoicesPerPage);
+    fetchCollectSummary();
   }, [
     currentPage,
     invoicesPerPage,
@@ -495,6 +516,7 @@ export const useInvoiceManagement = () => {
   return {
     // State
     invoices,
+    collectSummary,
     userData,
     loading,
     error,

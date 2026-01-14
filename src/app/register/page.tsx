@@ -3,8 +3,8 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { register } from "@/services/auth.api";
-import axios, { AxiosError } from "axios";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import axios from "axios";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -32,9 +32,8 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/");
       }, 2000);
-    } catch (err) {
-      // console.log(err.response.data.message);
-      if (err instanceof AxiosError) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
         console.error("Axios error: ", err);
         setMessage({ type: "error", text: err.response?.data.message });
       } else {
