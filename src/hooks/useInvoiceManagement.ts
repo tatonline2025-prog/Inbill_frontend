@@ -62,6 +62,10 @@ export const useInvoiceManagement = () => {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("none");
 
+  // --- State Bulk Search ---
+  const [isBulkSearchActive, setIsBulkSearchActive] = useState(false);
+  const [bulkSearchCodes, setBulkSearchCodes] = useState<string[]>([]);
+
   // --- State Hành động & Modal ---
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -165,8 +169,13 @@ export const useInvoiceManagement = () => {
   };
 
   const reloadInvoices = () => {
-    fetchInvoices(currentPage, invoicesPerPage);
-    fetchCollectSummary();
+    if (isBulkSearchActive) {
+      // If bulk search is active, re-run the bulk search to maintain the search state
+      handleBulkSearch(bulkSearchCodes);
+    } else {
+      fetchInvoices(currentPage, invoicesPerPage);
+      fetchCollectSummary();
+    }
   };
 
   // --- Effects ---
@@ -185,10 +194,16 @@ export const useInvoiceManagement = () => {
     fetchData();
   }, []);
 
-  // 2. Fetch danh sách Invoice khi filters, pagination, sort, search thay đổi
+  // 2. Fetch danh sách Invoice khi filters, pagination, sort, search thay đổi (chỉ khi không bulk search)
   useEffect(() => {
-    fetchInvoices(currentPage, invoicesPerPage);
-    fetchCollectSummary();
+    if (!isBulkSearchActive) {
+      fetchInvoices(currentPage, invoicesPerPage);
+      fetchCollectSummary();
+    } else if (debouncedSearchValue) {
+      // If bulk search is active but user starts typing a new search, reset bulk search
+      setIsBulkSearchActive(false);
+      setBulkSearchCodes([]);
+    }
   }, [
     currentPage,
     invoicesPerPage,
@@ -201,6 +216,7 @@ export const useInvoiceManagement = () => {
     sortField,
     sortDirection,
     isPaidFilter,
+    isBulkSearchActive, // Thêm dependency để tránh trigger khi bulk search
   ]);
 
   // --- Handlers ---
@@ -209,6 +225,9 @@ export const useInvoiceManagement = () => {
     return (value: string) => {
       setter(value);
       setCurrentPage(1);
+      // Reset bulk search when filters change
+      setIsBulkSearchActive(false);
+      setBulkSearchCodes([]);
     };
   };
 
@@ -228,6 +247,9 @@ export const useInvoiceManagement = () => {
     setSearchType(newType);
     setSearchValue("");
     setCurrentPage(1);
+    // Reset bulk search when search type changes
+    setIsBulkSearchActive(false);
+    setBulkSearchCodes([]);
   };
 
   const handleSearchChange = (value: string) => {
@@ -267,6 +289,8 @@ export const useInvoiceManagement = () => {
       }
     });
 
+    setIsBulkSearchActive(true);
+    setBulkSearchCodes(codes);
     setTotalPages(1);
     setInvoices(mergedInvoices);
 
