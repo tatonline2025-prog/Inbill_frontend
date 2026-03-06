@@ -8,13 +8,9 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  FormControlLabel,
-  FormLabel,
   InputLabel,
   ListItemText,
   MenuItem,
-  Radio,
-  RadioGroup,
   Select,
   Stack,
   TextField,
@@ -78,43 +74,6 @@ interface ExportModalsProps {
   setPaymentStatus: (status: string) => void;
 }
 
-const provinces = [
-  "TP Hà Nội",
-  "TP Huế",
-  "Quảng Ninh",
-  "Cao Bằng",
-  "Lạng Sơn",
-  "Lai Châu",
-  "Điện Biên",
-  "Sơn La",
-  "Thanh Hóa",
-  "Nghệ An",
-  "Hà Tĩnh",
-  "Tuyên Quang",
-  "Lào Cai",
-  "Thái Nguyên",
-  "Phú Thọ",
-  "Bắc Ninh",
-  "Hưng Yên",
-  "TP Hải Phòng",
-  "Ninh Bình",
-  "Quảng Trị",
-  "TP Đà Nẵng",
-  "Quảng Ngãi",
-  "Gia Lai",
-  "Khánh Hòa",
-  "Lâm Đồng",
-  "Đắk Lắk",
-  "TP Hồ Chí Minh",
-  "Đồng Nai",
-  "Tây Ninh",
-  "TP Cần Thơ",
-  "Vĩnh Long",
-  "Đồng Tháp",
-  "Cà Mau",
-  "An Giang",
-];
-
 export default function ExportModals({
   userData,
 
@@ -151,8 +110,7 @@ export default function ExportModals({
   paymentStatus,
   setPaymentStatus,
 }: ExportModalsProps) {
-  const [dateFilterType, setDateFilterType] = useState("range");
-  const [filterProvince, setFilterProvince] = useState<string>("Đồng Tháp");
+    const [filterProvince, setFilterProvince] = useState<string>("Đồng Tháp");
 
   const filteredUsers = useMemo(() => {
     if (filterProvince === "ALL") return userData;
@@ -493,3 +451,4 @@ export default function ExportModals({
     </>
   );
 }
+

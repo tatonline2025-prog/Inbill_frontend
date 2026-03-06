@@ -1,17 +1,14 @@
 // frontend/src/app/login/page.tsx
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { changepass, login } from "@/services/auth.api";
+import { useState, FormEvent } from "react";
+import { changepass } from "@/services/auth.api";
 
 export default function ChangePassPage() {
   const [newPass, setNewPass] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,7 +22,7 @@ export default function ChangePassPage() {
     }
 
     try {
-      const res = await changepass(newPass, token);
+      await changepass(newPass, token);
 
       // **LƯU TOKEN VÀO LOCAL STORAGE (hoặc Cookie)**
       localStorage.removeItem("token");

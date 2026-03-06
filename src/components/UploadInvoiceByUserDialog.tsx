@@ -3,20 +3,19 @@
 import React, { useState } from "react";
 import { Box, Button, Dialog, FormControl, InputLabel, MenuItem, Select, Typography } from "@mui/material";
 import toast from "react-hot-toast";
-import { excelUp, excelUpProvince } from "@/services/excel.api";
+import { excelUp } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
-import { InvoiceInfo } from "@/types/invoice";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  province: string; // ✅ truyền từ ngoài vào
-  assignedUserId: string; // ✅ truyền từ ngoài vào
-  assignedUserName: string; // ✅ truyền từ ngoài vào
+  onSuccess?: () => void;
+  assignedUserId: string;
+  assignedUserName: string;
 }
 
-const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assignedUserId, assignedUserName }) => {
+const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assignedUserId, assignedUserName }) => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
@@ -25,12 +24,16 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
     const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.error("Không thể xác nhận tài khoản. Vui lòng đăng nhập lại");
+      toast.error("Khong the xac nhan tai khoan. Vui long dang nhap lai");
       return;
     }
 
     if (!uploadFile) {
-      toast.error("Vui lòng chọn file cần upload!");
+      toast.error("Vui long chon file can upload!");
+      return;
+    }
+    if (!selectedBillingPeriod) {
+      toast.error("Vui long chon ky hoa don!");
       return;
     }
 
@@ -44,14 +47,15 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
       const res = await excelUp(formData, token);
 
       if (res?.status === 200) {
-        toast.success("Upload file thành công!");
+        toast.success("Upload file thanh cong!");
+        onSuccess?.();
         onClose();
       } else {
-        toast.error("❌ Upload thất bại!");
+        toast.error("Upload that bai!");
       }
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi upload!");
+      toast.error("Co loi xay ra khi upload!");
     } finally {
       setLoading(false);
     }
@@ -65,18 +69,18 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
-          Người phụ trách: <b>{assignedUserName}</b>
+          Nguoi phu trach: <b>{assignedUserName}</b>
         </Typography>
 
         <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="billing-period-label">Chọn Kỳ</InputLabel>
+          <InputLabel id="billing-period-label">Chon Ky</InputLabel>
           <Select
             labelId="billing-period-label"
             value={selectedBillingPeriod}
-            label="Chọn Kỳ"
+            label="Chon Ky"
             onChange={(e) => setSelectedBillingPeriod(e.target.value)}
           >
-            <MenuItem value="">-- Chọn Kỳ --</MenuItem>
+            <MenuItem value="">-- Chon Ky --</MenuItem>
             {generateBillingPeriods().map((period) => (
               <MenuItem key={period} value={period}>
                 {period}
@@ -86,7 +90,7 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
         </FormControl>
 
         <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
-          Chọn file Excel
+          Chon file Excel
           <input type="file" accept=".xls,.xlsx" hidden onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)} />
         </Button>
 
@@ -94,15 +98,15 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, province, assigne
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
           <Button onClick={onClose} disabled={loading}>
-            Hủy
+            Huy
           </Button>
           <Button
             variant="contained"
-            disabled={!uploadFile || loading}
+            disabled={!uploadFile || !selectedBillingPeriod || loading}
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >
-            {loading ? "Đang upload..." : "Upload"}
+            {loading ? "Dang upload..." : "Upload"}
           </Button>
         </Box>
       </Box>

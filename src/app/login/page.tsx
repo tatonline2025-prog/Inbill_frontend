@@ -1,8 +1,7 @@
 // frontend/src/app/login/page.tsx
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, FormEvent } from "react";
 import { login } from "@/services/auth.api";
 
 export default function LoginPage() {
@@ -10,8 +9,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +32,6 @@ export default function LoginPage() {
       // Chuyển hướng sau 1.5 giây (ví dụ về trang tài khoản)
       setTimeout(() => {
         const role = res.data.user.role;
-        const userType = res.data.user.usertype;
 
         if (role === "admin") {
           window.location.href = "/home";

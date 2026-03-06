@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiUpdateUser } from "@/services/user.api";
 import axios from "axios";
-import { VIET_BANKS } from "@/constants/bankqr.constants";
 
 type Message = {
   type: "success" | "error";
@@ -244,7 +243,7 @@ export default function ProfilePage() {
             <div className="flex-1">
               <label className="block text-gray-700 text-sm font-bold mb-2">Mật khẩu</label>
               <input
-                type="pass"
+                type="password"
                 id="pass"
                 name="pass"
                 value={formData.pass}

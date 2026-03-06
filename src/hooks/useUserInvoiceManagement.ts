@@ -1,13 +1,7 @@
 // hooks/useUserInvoiceManagement.ts
 
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
-import {
-  collectSummaryAPI,
-  deleteInvoice_API,
-  fetchallInvoice,
-  fetchuserinvoices,
-  handleToggle_API,
-} from "@/services/invoice.api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { collectSummaryAPI, deleteInvoice_API, fetchuserinvoices, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user"; // Giả định IUser được import
 import toast from "react-hot-toast";
@@ -44,6 +38,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
+  const [isPaidFilter, setIsPaidFilter] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState("all"); // --- Pagination States ---
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,7 +102,8 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         searchParams.stationCode,
         user?.province,
         sortFieldToSend,
-        sortDirectionToSend
+        sortDirectionToSend,
+        isPaidFilter
       );
 
       setTotalPages(res.data.pagination.totalPages);
@@ -132,9 +128,10 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     searchType,
     sortField,
     sortDirection,
+    isPaidFilter,
   ]);
 
-  const fetchCollectSummary = async () => {
+  const fetchCollectSummary = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -150,7 +147,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?._id]);
 
   const reloadInvoices = () => {
     fetchInvoices();
@@ -161,7 +158,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     if (!user?._id) return;
     fetchInvoices();
     fetchCollectSummary();
-  }, [fetchInvoices, user?._id]);
+  }, [fetchCollectSummary, fetchInvoices, user?._id]);
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     if (value >= 1 && value <= totalPages) {
@@ -176,6 +173,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
   const handleFilterChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: SelectChangeEvent) => {
     setter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleIsPaidFilterChange = (checked: boolean) => {
+    setIsPaidFilter(checked);
     setCurrentPage(1);
   };
 
@@ -309,17 +311,43 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   };
 
   const handleExport = async (collStatus: string, payStatus: string) => {
-    const token = await localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui long dang nhap lai");
+      return;
+    }
     const params = new URLSearchParams();
-
-    params.append("token", token || "");
 
     // Chỉ append nếu người dùng chọn khác "Tất cả" (hoặc append "all" tùy backend xử lý)
     if (collStatus !== "all") params.append("collectionStatus", collStatus);
     if (payStatus !== "all") params.append("paymentStatus", payStatus);
 
-    // Redirect để tải file
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+    try {
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Co loi xay ra khi xuat file.");
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileNameMatch = contentDisposition?.match(/filename=\"(.+)\"/);
+      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-hoa-don.xlsx";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Loi khi xuat file:", error);
+      toast.error("Khong the ket noi toi may chu de xuat file.");
+    }
   };
 
   const handleOpenExportCollected = () => {
@@ -329,6 +357,10 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const handleExportCollectedConfirm = async () => {
     if (!user) {
       toast.error("Không tìm thấy thông tin người dùng.");
+      return;
+    }
+    if (user.role !== "admin") {
+      toast.error("Chuc nang nay chi danh cho admin.");
       return;
     }
 
@@ -347,9 +379,16 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     });
 
     const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui long dang nhap lai");
+      return;
+    }
 
     try {
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
         alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
@@ -383,8 +422,18 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     toast.success("Thêm hoá đơn thành công!");
   };
 
-  const handleEditSuccess = () => {
+  const handleEditSuccess = (updatedInvoice?: InvoiceInfo) => {
     setEditModalOpen(false);
+
+    // Cập nhật ngay trên list hiện tại để giữ nguyên page/vị trí đang xem.
+    if (updatedInvoice?._id) {
+      setInvoices((prev) => prev.map((inv) => (inv._id === updatedInvoice._id ? { ...inv, ...updatedInvoice } : inv)));
+      setSelectedInvoice((prev) => (prev?._id === updatedInvoice._id ? { ...prev, ...updatedInvoice } : prev));
+      setEditingInvoice((prev) => (prev?._id === updatedInvoice._id ? { ...prev, ...updatedInvoice } : prev));
+      return;
+    }
+
+    // Fallback nếu backend không trả lại object invoice đầy đủ
     reloadInvoices();
   };
 
@@ -417,6 +466,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     totalAmountInfo,
     filterPrint,
     filterCollection,
+    isPaidFilter,
     selectedProvince,
     searchType,
     searchValue,
@@ -438,6 +488,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     // Setters
     setFilterPrint,
     setFilterCollection,
+    setIsPaidFilter,
     setSelectedProvince,
     setOpenAddDialog,
     setOpenUploadDialog,
@@ -450,6 +501,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     handlePageChange,
     handleRowsPerPageChange,
     handleFilterChange,
+    handleIsPaidFilterChange,
     onSearchChange,
     handleSearchTypeChange,
     handleSort,

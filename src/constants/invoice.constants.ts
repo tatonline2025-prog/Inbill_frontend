@@ -1,7 +1,6 @@
 // constants/invoice.constants.ts
 
 import { InvoiceInfo } from "@/types/invoice";
-import { LensBlur } from "@mui/icons-material";
 
 export const PROVINCES = [
   "TP Hà Nội",

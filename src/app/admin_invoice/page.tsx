@@ -21,8 +21,7 @@ import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
 import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
-import { fetchInvoiceBylist, fetchInvoicesForCopyAPI } from "@/services/invoice.api";
-import { useState } from "react";
+import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
 import CollectionSummary from "@/components/invoices/CollectionSummary";
 
 export default function InvoicesPage() {
@@ -98,6 +97,7 @@ export default function InvoicesPage() {
     handleMenuOpen,
     handleMenuClose,
     handleEditInvoice,
+    handleEditSuccess,
     handleDeleteSelected,
     handleSelectAll,
     handleSelectOne,
@@ -259,16 +259,14 @@ export default function InvoicesPage() {
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         invoice={editingInvoice}
-        onSuccess={reloadInvoices}
+        onSuccess={handleEditSuccess}
         assignedUsers={userData}
       />
 
       <UploadInvoiceWithProvinceDialog
         open={openUploadWithProvince}
         onClose={() => setOpenUploadWithProvince(false)}
-        onSuccess={(data) => {
-          reloadInvoices();
-        }}
+        onSuccess={reloadInvoices}
       />
 
       <UploadPaidInvoicesDialog

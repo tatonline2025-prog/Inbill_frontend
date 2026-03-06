@@ -2,7 +2,11 @@ import { IUser } from "@/types/user";
 import axios from "axios";
 
 export const fetchallUser = async () => {
-  const res = await axios.get<{ user: IUser[] }>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/fetchall`);
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+  const res = await axios.get<{ user: IUser[] }>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/fetchall`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res;
 };
 
@@ -29,9 +33,10 @@ export const deleteUserByAdmin = async (userId: string, token: string) => {
 
 export const apiUpdateUser = async (editinguserId: string, formData: Partial<IUser>) => {
   const token = await localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
 
   const res = await axios.put(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/changeinfo`,
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/changeinfo-self`,
     {
       editinguserId,
       formData,

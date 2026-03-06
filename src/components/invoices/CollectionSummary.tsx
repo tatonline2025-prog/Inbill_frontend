@@ -15,7 +15,7 @@ export interface CollectionSummaryProps {
 
 const DEFAULT_DATA: StatusDetail = { count: 0, amount: 0 };
 
-export default function CollectionSummary({ collected, notCollected, isPaid, total }: CollectionSummaryProps) {
+export default function CollectionSummary({ collected, notCollected, isPaid }: CollectionSummaryProps) {
   const SummaryItem = ({
     label,
     data = DEFAULT_DATA,

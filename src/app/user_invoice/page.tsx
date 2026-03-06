@@ -5,11 +5,13 @@
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   Menu,
   MenuItem,
@@ -30,8 +32,6 @@ import UploadInvoiceDialog from "@/components/UploadInvoiceByUserDialog";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
 import { useUserInvoiceManagement } from "@/hooks/useUserInvoiceManagement";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
-import { useState } from "react";
 import CollectionSummary from "@/components/invoices/CollectionSummary";
 
 export default function InvoicesPage() {
@@ -55,6 +55,7 @@ export default function InvoicesPage() {
     totalAmountInfo,
     filterPrint,
     filterCollection,
+    isPaidFilter,
     searchType,
     searchValue,
     sortField,
@@ -62,12 +63,10 @@ export default function InvoicesPage() {
     openAddDialog,
     openUploadDialog,
     openExportCollected,
-    selectedCollectedDate,
     editingInvoice,
     editModalOpen,
     selectedInvoices,
     anchorEl,
-    selectedInvoice,
 
     sortedInvoices,
     searchLabel,
@@ -77,12 +76,12 @@ export default function InvoicesPage() {
     setOpenAddDialog,
     setOpenUploadDialog,
     setOpenExportCollected,
-    setSelectedCollectedDate,
     setEditModalOpen,
 
     handlePageChange,
     handleRowsPerPageChange,
     handleFilterChange,
+    handleIsPaidFilterChange,
     onSearchChange,
     handleSearchTypeChange,
     handleSort,
@@ -97,6 +96,7 @@ export default function InvoicesPage() {
     handleExport,
     handleOpenExportCollected,
     handleExportCollectedConfirm,
+    reloadInvoices,
     handleAddSuccess,
     handleEditSuccess,
 
@@ -114,10 +114,7 @@ export default function InvoicesPage() {
     allCollectionStatus,
     setAllCollectionStatus,
     allPaymentStatus,
-    setAllPaymentStatus,
   } = useUserInvoiceManagement({ user: currentUser });
-
-  const [dateFilterType, setDateFilterType] = useState("range");
 
   if (!isAuthenticated || !user) {
     return <p style={{ padding: "2rem" }}>Vui lòng đăng nhập...</p>;
@@ -129,9 +126,7 @@ export default function InvoicesPage() {
   }
 
   const fetchAllInvoicesForCopy = async () => {
-    // Gọi API lấy TẤT CẢ hóa đơn theo filter hiện tại (bỏ qua page/limit)
-    const response = await fetchInvoicesForCopyAPI(filterPrint, filterCollection, user._id);
-    return response; // Trả về mảng InvoiceInfo[]
+    return sortedInvoices;
   };
 
   return (
@@ -168,7 +163,7 @@ export default function InvoicesPage() {
               variant="contained"
               startIcon={<DownloadIcon />}
               onClick={handleOpenExportCollected}
-              disabled={sortedInvoices.length === 0}
+              disabled={sortedInvoices.length === 0 || user.role !== "admin"}
               sx={{
                 borderRadius: 2,
                 textTransform: "none",
@@ -182,6 +177,7 @@ export default function InvoicesPage() {
               variant="contained"
               color="success"
               onClick={() => setOpenUploadDialog(true)}
+              disabled={user.role !== "admin"}
               sx={{ borderRadius: 2, textTransform: "none" }}
             >
               Upload Excel
@@ -275,6 +271,18 @@ export default function InvoicesPage() {
               <MenuItem value="not_collected">Chưa thu</MenuItem>
             </Select>
           </FormControl>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isPaidFilter}
+                onChange={(e) => handleIsPaidFilterChange(e.target.checked)}
+                size="small"
+                color="primary"
+              />
+            }
+            label="Đã đóng cước"
+            sx={{ ml: 0.5 }}
+          />
         </Box>
 
         {/* --- Summary --- */}
@@ -304,7 +312,7 @@ export default function InvoicesPage() {
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={handleSort}
-          showIsPaidColumn={false}
+          showIsPaidColumn
           onFetchAllData={fetchAllInvoicesForCopy}
         />
         {!loading && sortedInvoices.length > 0 && (
@@ -350,10 +358,9 @@ export default function InvoicesPage() {
       <UploadInvoiceDialog
         open={openUploadDialog}
         onClose={() => setOpenUploadDialog(false)}
-        province={user.province || "TP Cần Thơ"}
+        onSuccess={reloadInvoices}
         assignedUserId={user._id || ""}
         assignedUserName={user.fullName || "Người phụ trách"}
-        // onSuccess={reloadInvoices}
       />
 
       {/* --- Export Collected Dialog --- */}
@@ -515,3 +522,7 @@ export default function InvoicesPage() {
     </ProtectedRoute>
   );
 }
+
+
+
+

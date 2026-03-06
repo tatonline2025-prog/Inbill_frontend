@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Box, Button, Dialog, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
+import { Box, Button, Dialog, TextField, Typography } from "@mui/material";
 import toast from "react-hot-toast";
 import Spinner from "./SpinnerLoading";
-import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { handleToggleIsPaidList_API } from "@/services/invoice.api";
 import { isAxiosError } from "axios";
 // Import API mới của bạn ở đây (ví dụ: updatePaidInvoices)
@@ -50,7 +49,7 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
     setLoading(true);
     try {
       // 3. Gọi API (Thay thế hàm này bằng API thực tế của bạn)
-      const res = await handleToggleIsPaidList_API(payload);
+      await handleToggleIsPaidList_API(payload);
 
       // Giả lập thành công để test UI
       await new Promise((resolve) => setTimeout(resolve, 1000));

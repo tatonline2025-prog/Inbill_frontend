@@ -1,0 +1,158 @@
+﻿<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BE/FE Audit Report - 2026-03-06</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; line-height: 1.45; }
+    h1, h2 { margin: 0 0 10px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; margin-top: 26px; }
+    .meta { color: #4b5563; margin-bottom: 18px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .high { background: #fee2e2; color: #991b1b; }
+    .medium { background: #fef3c7; color: #92400e; }
+    .low { background: #dbeafe; color: #1e40af; }
+    .ok { background: #dcfce7; color: #166534; }
+    .warn { background: #fef3c7; color: #92400e; }
+    .fail { background: #fee2e2; color: #991b1b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px; vertical-align: top; }
+    th { background: #f9fafb; text-align: left; }
+    code { background: #f3f4f6; padding: 1px 4px; border-radius: 4px; }
+    .small { color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Báo Cáo Audit Tổng Thể BE/FE</h1>
+  <div class="meta">
+    Dự án: Inbill Backend + Frontend<br/>
+    Thời điểm audit: 2026-03-06<br/>
+    Phạm vi: rà soát code, lint/type/build, đối chiếu API contract và phân quyền admin/user.
+  </div>
+
+  <h2>1) Kết quả nhanh</h2>
+  <table>
+    <tr><th>Hạng mục</th><th>Kết quả</th><th>Chi tiết</th></tr>
+    <tr><td>BE typecheck</td><td><span class="badge ok">PASS</span></td><td><code>npm run typecheck</code> OK</td></tr>
+    <tr><td>BE build</td><td><span class="badge ok">PASS</span></td><td><code>npm run build</code> OK</td></tr>
+    <tr><td>BE encoding scan</td><td><span class="badge ok">PASS</span></td><td><code>scan:encoding</code> không phát hiện lỗi mã hóa</td></tr>
+    <tr><td>FE lint</td><td><span class="badge warn">WARN</span></td><td>0 error, 50 warning</td></tr>
+    <tr><td>FE typecheck</td><td><span class="badge ok">PASS</span></td><td><code>npx tsc --noEmit</code> OK</td></tr>
+    <tr><td>FE build</td><td><span class="badge fail">FAIL</span></td><td>Không tải được Google Font Inter từ <code>fonts.googleapis.com</code></td></tr>
+  </table>
+
+  <h2>2) Findings theo mức độ</h2>
+  <table>
+    <tr>
+      <th>Severity</th><th>Vấn đề</th><th>Bằng chứng</th><th>Tác động</th><th>Khuyến nghị</th>
+    </tr>
+    <tr>
+      <td><span class="badge high">HIGH</span></td>
+      <td>Upload theo tỉnh gửi sai field file</td>
+      <td>
+        FE gửi <code>formData.append("file", ...)</code> tại <code>src/components/UploadInvoiceWithProvinceDialog.tsx:31</code>.<br/>
+        BE nhận <code>upload.single("excelFile")</code> tại <code>src/routes/invoiceRoutes.ts:67</code>.
+      </td>
+      <td>Upload tổng theo tỉnh có thể lỗi 400/"không tìm thấy file".</td>
+      <td>Thống nhất key multipart: FE đổi sang <code>excelFile</code> hoặc BE chấp nhận cả 2 key.</td>
+    </tr>
+    <tr>
+      <td><span class="badge high">HIGH</span></td>
+      <td>Trang hồ sơ user dùng endpoint admin-only</td>
+      <td>
+        FE profile gọi <code>apiUpdateUser</code> tại <code>src/app/profile/page.tsx:121</code>.<br/>
+        Endpoint <code>/api/user/changeinfo</code> bị khóa admin tại <code>src/routes/userRoute.ts:10</code>.
+      </td>
+      <td>User thường không cập nhật được hồ sơ (403).</td>
+      <td>Tách endpoint self-update riêng (ví dụ <code>/api/user/me</code>) hoặc nới rule theo user hiện tại.</td>
+    </tr>
+    <tr>
+      <td><span class="badge high">HIGH</span></td>
+      <td>Rủi ro không giữ đúng thứ tự Excel khi hiển thị</td>
+      <td>
+        Sort mặc định ưu tiên <code>excelRowIndex</code> trước <code>sortPriority</code> tại <code>src/controllers/invoice.query.controller.ts:456-459</code>.<br/>
+        Mỗi file upload lại bắt đầu <code>excelRowIndex</code> từ đầu tại <code>src/controllers/invoice.excel.controller.ts:112</code>.
+      </td>
+      <td>Dễ bị "trộn" thứ tự giữa nhiều đợt upload, trái kỳ vọng giữ nguyên thứ tự nguồn.</td>
+      <td>Đổi sort mặc định theo <code>sortPriority</code> trước, rồi <code>excelRowIndex</code>; hoặc thêm <code>uploadBatchId</code> + <code>batchRow</code>.</td>
+    </tr>
+    <tr>
+      <td><span class="badge medium">MEDIUM</span></td>
+      <td>Export tổng chưa bám thứ tự Excel gốc</td>
+      <td>
+        <code>exportInvoicesToExcel</code> sort theo <code>issueDate: -1, excelRowIndex: 1</code> tại <code>src/controllers/invoice.excel.controller.ts:245</code>.
+      </td>
+      <td>File export "không lọc" có thể khác thứ tự kỳ vọng nghiệp vụ.</td>
+      <td>Nếu yêu cầu là "giữ nguyên thứ tự DB/import", cần chuẩn hóa sort export theo cùng chiến lược hiển thị.</td>
+    </tr>
+    <tr>
+      <td><span class="badge medium">MEDIUM</span></td>
+      <td>FE build phụ thuộc internet do Google Font</td>
+      <td>
+        Dùng <code>Inter</code> từ <code>next/font/google</code> tại <code>src/app/layout.tsx:5,9</code>.
+      </td>
+      <td>Build thất bại ở môi trường bị chặn mạng/CDN.</td>
+      <td>Dùng <code>next/font/local</code> hoặc fallback nội bộ.</td>
+    </tr>
+    <tr>
+      <td><span class="badge medium">MEDIUM</span></td>
+      <td>Nhiều API FE gửi request dù thiếu token kiểm tra sớm</td>
+      <td>
+        Một số hàm vẫn lấy token rồi gửi ngay (ví dụ <code>fetchallInvoice</code>) mà không throw sớm nếu null tại <code>src/services/invoice.api.ts:18-37</code>.
+      </td>
+      <td>Tạo lỗi 401 khó đọc (Bearer null), khó debug cho người dùng.</td>
+      <td>Chuẩn hóa helper lấy token + throw thông báo thống nhất trước khi gọi API.</td>
+    </tr>
+    <tr>
+      <td><span class="badge low">LOW</span></td>
+      <td>Hook dependency warnings (stale closure risk)</td>
+      <td>
+        ESLint cảnh báo tại <code>src/hooks/useInvoiceManagement.ts:207</code> và <code>src/hooks/useUserInvoiceManagement.ts:167</code>.
+      </td>
+      <td>Có thể gây fetch thiếu nhất quán ở một số state transition.</td>
+      <td>Dùng <code>useCallback</code> + dependency đầy đủ hoặc refactor effect.</td>
+    </tr>
+    <tr>
+      <td><span class="badge low">LOW</span></td>
+      <td>Lặp dữ liệu danh mục tỉnh ở nhiều nơi</td>
+      <td>
+        Danh sách tỉnh hardcode trong UI upload tỉnh tại <code>src/components/UploadInvoiceWithProvinceDialog.tsx</code> trong khi đã có constants khác.
+      </td>
+      <td>Rủi ro lệch dữ liệu giữa màn hình.</td>
+      <td>Chuẩn hóa dùng một nguồn constants duy nhất.</td>
+    </tr>
+  </table>
+
+  <h2>3) Đánh giá chức năng admin/user</h2>
+  <table>
+    <tr><th>Luồng</th><th>Admin</th><th>User</th><th>Nhận xét</th></tr>
+    <tr><td>Đăng nhập + xác thực <code>/api/auth/me</code></td><td><span class="badge ok">OK</span></td><td><span class="badge ok">OK</span></td><td>FE đã gửi Bearer token đúng.</td></tr>
+    <tr><td>Lấy danh sách user <code>/api/user/fetchall</code></td><td><span class="badge ok">OK</span></td><td><span class="badge fail">BLOCK</span></td><td>Đúng theo policy mới: admin-only.</td></tr>
+    <tr><td>Upload Excel user-assigned</td><td><span class="badge ok">OK</span></td><td><span class="badge fail">BLOCK</span></td><td>BE route upload đang admin-only.</td></tr>
+    <tr><td>Upload Excel theo tỉnh</td><td><span class="badge fail">RISK</span></td><td><span class="badge fail">BLOCK</span></td><td>Admin có thể vẫn lỗi do mismatch key <code>file/excelFile</code>.</td></tr>
+    <tr><td>Export Excel collected/by user</td><td><span class="badge ok">OK</span></td><td><span class="badge fail">BLOCK</span></td><td>Đúng policy mới: admin-only; FE đã chặn theo role cho user page.</td></tr>
+    <tr><td>Cập nhật profile cá nhân</td><td><span class="badge ok">OK</span></td><td><span class="badge fail">RISK</span></td><td>User profile hiện gọi endpoint admin-only.</td></tr>
+  </table>
+
+  <h2>4) Mongo/Cấu hình kết nối</h2>
+  <ul>
+    <li>BE bắt buộc env <code>MONGO_URI</code> và <code>JWT_SECRET</code> qua <code>src/config/env.ts</code>: hợp lý, fail-fast.</li>
+    <li>Kết nối DB dùng <code>mongoose.connect(getMongoUri())</code> tại <code>src/config/db.ts</code>: đúng chuẩn cơ bản.</li>
+    <li>Có endpoint health <code>/health</code> để theo dõi trạng thái DB tại <code>src/server.ts</code>.</li>
+    <li>Rủi ro vận hành: chưa thấy retry/backoff hoặc timeout cấu hình riêng cho connect (không lỗi chức năng ngay, nhưng là điểm cải thiện).</li>
+  </ul>
+
+  <h2>5) Kết luận</h2>
+  <p>
+    Codebase hiện không có lỗi type/build phía BE, FE typecheck sạch nhưng có lỗi build do phụ thuộc Google Font mạng ngoài.
+    Rủi ro chức năng lớn nhất đang nằm ở mismatch contract upload tỉnh, profile user bị khóa bởi policy admin-only,
+    và logic sort chưa đảm bảo yêu cầu giữ thứ tự Excel xuyên suốt nhiều lần upload.
+  </p>
+
+  <p class="small">
+    Ghi chú giới hạn audit: chưa chạy kiểm thử E2E thực tế trên môi trường có DB dữ liệu thật; kết luận dựa trên static analysis + lệnh lint/type/build.
+  </p>
+</body>
+</html>

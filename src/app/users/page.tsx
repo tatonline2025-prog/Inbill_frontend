@@ -3,13 +3,13 @@
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants";
 import { excelUp } from "@/services/excel.api";
-import { fetchallInvoice, invoiceSummary } from "@/services/invoice.api";
+import { invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
-import { IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
+import { IInvoiceSummaryByUser } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
 import Link from "next/link";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function UsersPage() {
@@ -97,7 +97,7 @@ export default function UsersPage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Bạn chưa đăng nhập!");
 
-      const response = await excelUp(formData, token);
+      await excelUp(formData, token);
       // console.log("Upload thành công:", response.data);
 
       setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });

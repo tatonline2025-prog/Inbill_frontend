@@ -1,6 +1,6 @@
 // hooks/useInvoiceManagement.ts
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   collectSummaryAPI,
   deleteInvoice_API,
@@ -104,7 +104,7 @@ export const useInvoiceManagement = () => {
 
   // --- Logic Fetch Dữ liệu ---
 
-  const fetchInvoices = async (page = currentPage, perPage = invoicesPerPage) => {
+  const fetchInvoices = useCallback(async (page = currentPage, perPage = invoicesPerPage) => {
     try {
       setLoading(true);
       setError(null);
@@ -148,9 +148,21 @@ export const useInvoiceManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    invoicesPerPage,
+    sortDirection,
+    sortField,
+    debouncedSearchValue,
+    searchType,
+    filterPrint,
+    filterCollection,
+    filterAssignedUser,
+    selectedProvince,
+    isPaidFilter,
+  ]);
 
-  const fetchCollectSummary = async () => {
+  const fetchCollectSummary = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -166,7 +178,7 @@ export const useInvoiceManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterAssignedUser]);
 
   const reloadInvoices = () => {
     if (isBulkSearchActive) {
@@ -207,16 +219,10 @@ export const useInvoiceManagement = () => {
   }, [
     currentPage,
     invoicesPerPage,
-    filterPrint,
-    filterCollection,
-    filterAssignedUser,
-    selectedProvince,
-    debouncedSearchValue, // Kích hoạt tìm kiếm trì hoãn
-    searchType,
-    sortField,
-    sortDirection,
-    isPaidFilter,
-    isBulkSearchActive, // Thêm dependency để tránh trigger khi bulk search
+    debouncedSearchValue,
+    isBulkSearchActive,
+    fetchCollectSummary,
+    fetchInvoices,
   ]);
 
   // --- Handlers ---
@@ -328,6 +334,21 @@ export const useInvoiceManagement = () => {
     setEditModalOpen(true);
   };
 
+  const handleEditSuccess = (updatedInvoice?: InvoiceInfo) => {
+    setEditModalOpen(false);
+
+    // Cập nhật ngay trên danh sách hiện tại theo _id để không bị "nhảy" sang dòng trùng mã khách hàng.
+    if (updatedInvoice?._id) {
+      setInvoices((prev) => prev.map((inv) => (inv._id === updatedInvoice._id ? { ...inv, ...updatedInvoice } : inv)));
+      setSelectedInvoice((prev) => (prev?._id === updatedInvoice._id ? { ...prev, ...updatedInvoice } : prev));
+      setEditingInvoice((prev) => (prev?._id === updatedInvoice._id ? { ...prev, ...updatedInvoice } : prev));
+      return;
+    }
+
+    // Fallback nếu backend không trả object đầy đủ
+    reloadInvoices();
+  };
+
   // Tác vụ Xóa
   const handleDeleteSelected = async () => {
     if (selectedInvoices.length === 0) {
@@ -420,10 +441,12 @@ export const useInvoiceManagement = () => {
 
   // --- Hàm Export ---
   const handleExportConfirm = async () => {
-    const token = await localStorage.getItem("token");
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui long dang nhap lai");
+      return;
+    }
     const params = new URLSearchParams();
-    params.append("token", token || "");
 
     if (selectedUsers.length > 0) {
       params.append("userIds", selectedUsers.join(","));
@@ -435,8 +458,33 @@ export const useInvoiceManagement = () => {
       params.append("paymentStatus", paymentStatus);
     }
 
-    // Thực hiện redirect để tải file
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+    try {
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Co loi xay ra khi xuat file.");
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileNameMatch = contentDisposition?.match(/filename=\"(.+)\"/);
+      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-hoa-don.xlsx";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Loi khi xuat file:", error);
+      toast.error("Khong the ket noi toi may chu de xuat file.");
+      return;
+    }
 
     // Đóng modal sau khi xuất
     setOpenExportModal(false);
@@ -452,9 +500,15 @@ export const useInvoiceManagement = () => {
       alert("Vui lòng chọn người phụ trách!");
       return;
     }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui long dang nhap lai");
+      return;
+    }
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelByUser?assignedUserId=${selectedExportUser}`
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelByUser?assignedUserId=${selectedExportUser}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
@@ -502,10 +556,17 @@ export const useInvoiceManagement = () => {
     }
 
     const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui long dang nhap lai");
+      return;
+    }
 
     // 3. Gọi API
     try {
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
         toast.error(errorData.message || "Có lỗi xảy ra khi xuất file.");
@@ -613,6 +674,7 @@ export const useInvoiceManagement = () => {
     handleMenuOpen,
     handleMenuClose,
     handleEditInvoice,
+    handleEditSuccess,
     handleDeleteSelected,
     handleSelectAll,
     handleSelectOne,

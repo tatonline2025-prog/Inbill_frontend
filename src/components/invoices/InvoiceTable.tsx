@@ -15,8 +15,7 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
-import { useEffect, useMemo, useState } from "react";
-import { fetchLatestPeriod_API } from "@/services/invoice.api";
+import { useEffect, useState } from "react";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import toast from "react-hot-toast";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
@@ -38,7 +37,6 @@ interface InvoiceTableProps {
   onSort: (field: string) => void;
   showIsPaidColumn?: boolean;
   onFetchAllData?: () => Promise<InvoiceInfo[]>;
-  isMissing?: boolean;
 }
 
 export default function InvoiceTable({
@@ -57,7 +55,6 @@ export default function InvoiceTable({
   onSort,
   showIsPaidColumn = true,
   onFetchAllData,
-  isMissing,
 }: InvoiceTableProps) {
   const defaultColumns = TABLE_HEADERS.map((h) => h.key);
 

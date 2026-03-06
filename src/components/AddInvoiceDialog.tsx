@@ -248,7 +248,11 @@ export default function AddInvoiceDialog({
     if (!commonInfo.billing_period) return toast.error("Vui lòng chọn Kỳ hóa đơn!");
     try {
       setLoading(true);
-      const finalData = invoices.map(({ id, ...rest }) => ({ ...rest, ...commonInfo }));
+      const finalData = invoices.map((invoice) => {
+        const payload = { ...invoice, ...commonInfo } as InvoiceItem & typeof commonInfo;
+        delete (payload as { id?: string }).id;
+        return payload;
+      });
       for (const data of finalData) {
         await createInvoice_API(data);
       }

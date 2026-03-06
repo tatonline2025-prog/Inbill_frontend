@@ -9,7 +9,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 export default function Dashboard() {
   // ===================== STATE =====================
   const [summaryData, setSummaryData] = useState<IInvoiceSummaryByUser[]>([]);
-  const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [isMobile, setIsMobile] = useState(false);
 
   // ===================== EFFECTS =====================
@@ -37,13 +36,7 @@ export default function Dashboard() {
   }, []);
 
   // ===================== FILTER =====================
-  const filteredInvoices = useMemo(() => {
-    return summaryData.filter((inv) => {
-      const matchUser = filterAssignedUser === "all" ? true : inv.assignedTo?._id === filterAssignedUser;
-
-      return matchUser;
-    });
-  }, [summaryData, filterAssignedUser]);
+  const filteredInvoices = useMemo(() => summaryData, [summaryData]);
 
   // ===================== TÍNH TOÁN SỐ LIỆU =====================
   const { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected, isPaid } = useMemo(() => {

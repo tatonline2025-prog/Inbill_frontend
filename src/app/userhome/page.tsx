@@ -42,15 +42,13 @@ export default function Dashboard() {
   }, [user]);
 
   // ===================== TÍNH TOÁN SỐ LIỆU =====================
-  const { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected, isPaid } = useMemo(() => {
+  const { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected } = useMemo(() => {
     const totalCollected = summaryData.reduce((sum, inv) => sum + (inv.collectedTotal || 0), 0);
     const totalNotCollected = summaryData.reduce((sum, inv) => sum + (inv.notCollectedTotal || 0), 0);
     const totalIsPaid = summaryData.reduce((sum, inv) => sum + (inv.paidTotal || 0), 0);
     const collected = summaryData.reduce((sum, inv) => sum + (inv.collectedCount || 0), 0);
     const notCollected = summaryData.reduce((sum, inv) => sum + (inv.notCollectedCount || 0), 0);
-    const isPaid = summaryData.reduce((sum, inv) => sum + (inv.paidCount || 0), 0);
-
-    return { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected, isPaid };
+    return { totalCollected, totalNotCollected, totalIsPaid, collected, notCollected };
   }, [summaryData]);
 
   // ===================== DỮ LIỆU BIỂU ĐỒ =====================

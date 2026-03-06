@@ -102,8 +102,14 @@ export const fetchInvoiceBylist = async (codes?: string[]) => {
 };
 
 export const invoiceSummary = async (userId?: string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
   const res = await axios.get<IInvoiceSummaryByUser[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/summary`, {
     params: { userId },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   return res;
@@ -260,8 +266,14 @@ interface LatestPeriodResponse {
   billing_period: string;
 }
 export const fetchLatestPeriod_API = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
   const res = await axios.get<LatestPeriodResponse>(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/latest-period`
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/latest-period`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
   );
   return res.data;
 };
@@ -273,6 +285,9 @@ export const fetchInvoicesForCopyAPI = async (
   isPaidFilter?: boolean,
   selectedProvince?: string
 ) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
   const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/forcopy`, {
     params: {
       filterPrint,
@@ -281,6 +296,7 @@ export const fetchInvoicesForCopyAPI = async (
       isPaidFilter,
       selectedProvince,
     },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   // console.log(res);
@@ -290,13 +306,13 @@ export const fetchInvoicesForCopyAPI = async (
 
 export const updateInvoice = async (
   formData: Partial<Omit<InvoiceInfo, "assignedTo">> & { assignedTo?: string },
-  invoiceNumber: string
+  invoiceId: string
 ) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");
 
   const res = await axios.put(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/update/${invoiceNumber}`,
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/update/${invoiceId}`,
     {
       formData,
     },

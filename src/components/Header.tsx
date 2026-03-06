@@ -7,7 +7,6 @@ import Link from "next/link";
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [ctvOpen, setCtvOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const UserDropdown = () => (
@@ -180,10 +179,3 @@ export default function Header() {
     </header>
   );
 }
-
-/* 💅 Tailwind helper class */
-const style = `
-.nav-item {
-  @apply block py-2 px-3 rounded-md hover:bg-blue-500 hover:text-white transition text-sm font-medium;
-}
-`;

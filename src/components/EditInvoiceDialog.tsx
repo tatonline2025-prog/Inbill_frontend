@@ -17,7 +17,7 @@ import {
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import toast from "react-hot-toast";
-import axios from "axios";
+import { isAxiosError } from "axios";
 import { updateInvoice } from "@/services/invoice.api";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
 
@@ -25,7 +25,7 @@ interface EditInvoiceDialogProps {
   open: boolean;
   onClose: () => void;
   invoice: InvoiceInfo | undefined;
-  onSuccess: () => void;
+  onSuccess: (updatedInvoice?: InvoiceInfo) => void;
   assignedUsers: IUser[];
 }
 
@@ -74,15 +74,46 @@ export default function EditInvoiceDialog({
     if (!invoice) return;
 
     try {
+      const normalizedForm = {
+        ...formData,
+        _id: invoice._id,
+        customerName: formData.customerName?.trim() || "",
+        billing_period: formData.billing_period?.trim() || "",
+        currentAmount: formData.currentAmount?.toString().trim() || "0",
+        previousAmount: formData.previousAmount?.toString().trim() || "0",
+        totalAmount: formData.totalAmount?.toString().trim() || "0",
+      };
+
       // res ở đây bây giờ chính là res.data từ server
-      const res = await updateInvoice(formData, invoice.invoiceNumber);
+      const res = await updateInvoice(normalizedForm, invoice._id);
+
+      const selectedAssignedUser = assignedUsers.find((u) => u._id === normalizedForm.assignedTo);
+      const nextAssignedTo =
+        normalizedForm.assignedTo && selectedAssignedUser
+          ? {
+              _id: selectedAssignedUser._id,
+              fullName: selectedAssignedUser.fullName,
+              email: selectedAssignedUser.email,
+            }
+          : invoice.assignedTo ?? null;
+
+      // Cập nhật UI theo đúng hóa đơn đang chỉnh sửa để tránh "nhảy" sang hóa đơn trùng mã khách hàng.
+      const localUpdatedInvoice: InvoiceInfo = {
+        ...invoice,
+        ...normalizedForm,
+        assignedTo: nextAssignedTo,
+      };
 
       // Backend của bạn trả về 200 kèm message, axios sẽ không ném lỗi nếu status 2xx
       toast.success(res.message || "Cập nhật hoá đơn thành công!");
-      onSuccess();
+      onSuccess(localUpdatedInvoice);
       onClose();
     } catch (err) {
       console.error(err);
+      if (isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Đã xảy ra lỗi khi cập nhật hoá đơn.");
+        return;
+      }
       toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn.");
     }
   };
