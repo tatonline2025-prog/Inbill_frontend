@@ -41,20 +41,20 @@ export default function LoginPage() {
           typeof err.response?.data?.message === "string" ? err.response.data.message : undefined;
 
         if (status === 401) {
-          setMessage({ type: "error", text: "Sai ten dang nhap hoac mat khau." });
+          setMessage({ type: "error", text: "Sai tên đăng nhập hoặc mật khẩu." });
         } else if (status === 404) {
-          setMessage({ type: "error", text: "Khong tim thay API dang nhap. Kiem tra BE/FE local." });
+          setMessage({ type: "error", text: "Không tìm thấy API đăng nhập. Kiểm tra BE/FE local." });
         } else if (status === 500) {
-          setMessage({ type: "error", text: serverMessage || "Server login dang loi noi bo (HTTP 500)." });
+          setMessage({ type: "error", text: serverMessage || "Server login đang lỗi nội bộ (HTTP 500)." });
         } else if (!err.response) {
-          setMessage({ type: "error", text: "Khong ket noi duoc toi server." });
+          setMessage({ type: "error", text: "Không kết nối được với Server." });
         } else {
-          setMessage({ type: "error", text: serverMessage || `Dang nhap that bai (HTTP ${status}).` });
+          setMessage({ type: "error", text: serverMessage || `Đăng nhập thất bại (HTTP ${status}).` });
         }
       } else {
         setMessage({
           type: "error",
-          text: err instanceof Error ? err.message : "Co loi khong xac dinh khi dang nhap.",
+          text: err instanceof Error ? err.message : "Có lỗi không xác định khi đăng nhập.",
         });
       }
     } finally {
@@ -72,20 +72,20 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-start justify-center pt-10">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-6 text-center text-green-600">Dang Nhap</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center text-green-600">Đăng Nhập</h1>
 
         {message && <div className={`p-3 border rounded-lg mb-4 ${getMessageClass()}`}>{message.text}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="userName" className="block text-gray-700 text-sm font-bold mb-2">
-              Ten dang nhap
+              Tên đăng nhập
             </label>
             <input
               type="text"
               id="userName"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Nhap ten dang nhap"
+              placeholder="Nhập tên đăng nhập"
               required
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
@@ -93,13 +93,13 @@ export default function LoginPage() {
           </div>
           <div className="mb-6">
             <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-              Mat khau
+              Mật khẩu
             </label>
             <input
               type="password"
               id="password"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Nhap mat khau"
+              placeholder="Nhập mật khẩu"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -112,7 +112,7 @@ export default function LoginPage() {
               isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
             }`}
           >
-            {isLoading ? "Dang xu ly..." : "Dang Nhap"}
+            {isLoading ? "Đang xử lý..." : "Đăng nhập"}
           </button>
         </form>
       </div>
