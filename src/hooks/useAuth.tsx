@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { IUser, IUserResponse } from "@/types/user";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 
 export function useAuth() {
   const [user, setUser] = useState<IUser | null>(null);
@@ -20,7 +21,7 @@ export function useAuth() {
     }
 
     axios
-      .get<IUserResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/me`, {
+      .get<IUserResponse>(`${getApiBaseUrl()}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -48,3 +49,4 @@ export function useAuth() {
 
   return { user, loading, isAuthenticated, logout };
 }
+

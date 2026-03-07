@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3001",
+    "dev:local": "next dev --turbopack -p 3001",
     "build": "next build --turbopack",
-    "start": "next start",
+    "build:local": "next build --turbopack",
+    "start": "next start -p 3001",
+    "start:local": "next start -p 3001",
+    "test:local": "npm run lint",
     "lint": "eslint"
   },
   "dependencies": {

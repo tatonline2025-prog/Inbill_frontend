@@ -1,5 +1,6 @@
 import { FetchInvoiceResponse, IInvoiceSummaryByUser, InvoiceInfo } from "@/types/invoice";
 import axios from "axios";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 
 export const fetchallInvoice = async (
   currentPage: number,
@@ -17,7 +18,7 @@ export const fetchallInvoice = async (
 ) => {
   const token = localStorage.getItem("token");
 
-  const res = await axios.get<FetchInvoiceResponse>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchall`, {
+  const res = await axios.get<FetchInvoiceResponse>(`${getApiBaseUrl()}/api/invoices/fetchall`, {
     params: {
       currentPage,
       invoicesPerPage,
@@ -57,7 +58,7 @@ export const fetchuserinvoices = async (
   const token = localStorage.getItem("token");
 
   const res = await axios.get<FetchInvoiceResponse>(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchuserinvoices`,
+    `${getApiBaseUrl()}/api/invoices/fetchuserinvoices`,
     {
       params: {
         currentPage,
@@ -86,7 +87,7 @@ export const fetchInvoiceBylist = async (codes?: string[]) => {
   const token = localStorage.getItem("token");
 
   const res = await axios.post(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchbylist`,
+    `${getApiBaseUrl()}/api/invoices/fetchbylist`,
     {
       codes,
     },
@@ -105,7 +106,7 @@ export const invoiceSummary = async (userId?: string) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chua dang nhap");
 
-  const res = await axios.get<IInvoiceSummaryByUser[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/summary`, {
+  const res = await axios.get<IInvoiceSummaryByUser[]>(`${getApiBaseUrl()}/api/invoices/summary`, {
     params: { userId },
     headers: {
       Authorization: `Bearer ${token}`,
@@ -118,7 +119,7 @@ export const invoiceSummary = async (userId?: string) => {
 export const collectSummaryAPI = async (assignedUserId?: string) => {
   const token = localStorage.getItem("token");
 
-  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/collectsummary`, {
+  const res = await axios.get(`${getApiBaseUrl()}/api/invoices/collectsummary`, {
     params: { assignedUserId },
     headers: {
       "Content-Type": "multipart/form-data",
@@ -130,7 +131,7 @@ export const collectSummaryAPI = async (assignedUserId?: string) => {
 };
 
 export const fetchInvoiceByUser = async (token: string) => {
-  const res = await axios.get<InvoiceInfo[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchallbyuser`, {
+  const res = await axios.get<InvoiceInfo[]>(`${getApiBaseUrl()}/api/invoices/fetchallbyuser`, {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
@@ -142,7 +143,7 @@ export const fetchInvoiceByUser = async (token: string) => {
 
 export const fetchInvoiceByUserMonth = async (token: string) => {
   const res = await axios.get<InvoiceInfo[]>(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/fetchallbyusermonth`,
+    `${getApiBaseUrl()}/api/invoices/fetchallbyusermonth`,
     {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -160,7 +161,7 @@ export const handleToggle_API = async (invoiceId: string, field: "printStatus" |
     if (!token) throw new Error("Chưa đăng nhập");
 
     const res = await axios.patch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/${invoiceId}/toggle`,
+      `${getApiBaseUrl()}/api/invoices/${invoiceId}/toggle`,
       { field },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -177,7 +178,7 @@ export const handleToggleIsPaid_API = async (invoiceId: string) => {
 
   try {
     const res = await axios.patch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/${invoiceId}/toggleispaid`,
+      `${getApiBaseUrl()}/api/invoices/${invoiceId}/toggleispaid`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -195,7 +196,7 @@ export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[
 
   try {
     const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/mark-paid-list`,
+      `${getApiBaseUrl()}/api/invoices/mark-paid-list`,
       { data },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -220,7 +221,7 @@ export const createInvoice_API = async (newInvoice: {
     if (!token) throw new Error("Chưa đăng nhập");
 
     const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/creatnew`,
+      `${getApiBaseUrl()}/api/invoices/creatnew`,
       { newInvoice },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -238,7 +239,7 @@ export const deleteInvoice_API = async (invoiceNumber: string) => {
     if (!token) throw new Error("Chưa đăng nhập");
 
     const res = await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/delete/${invoiceNumber}`,
+      `${getApiBaseUrl()}/api/invoices/delete/${invoiceNumber}`,
 
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -254,7 +255,7 @@ export const deleteInvoicesByBillingPeriod_API = async (billing_period: string) 
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");
 
-  const res = await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/deleteByBillingPeriod`, {
+  const res = await axios.delete(`${getApiBaseUrl()}/api/invoices/deleteByBillingPeriod`, {
     params: { billing_period },
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -270,7 +271,7 @@ export const fetchLatestPeriod_API = async () => {
   if (!token) throw new Error("Chua dang nhap");
 
   const res = await axios.get<LatestPeriodResponse>(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/latest-period`,
+    `${getApiBaseUrl()}/api/invoices/latest-period`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -288,7 +289,7 @@ export const fetchInvoicesForCopyAPI = async (
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chua dang nhap");
 
-  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/forcopy`, {
+  const res = await axios.get(`${getApiBaseUrl()}/api/invoices/forcopy`, {
     params: {
       filterPrint,
       filterCollection,
@@ -312,13 +313,17 @@ export const updateInvoice = async (
   if (!token) throw new Error("Chưa đăng nhập");
 
   const res = await axios.put(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/update/${invoiceId}`,
+    `${getApiBaseUrl()}/api/invoices/update/${invoiceId}`,
     {
       formData,
     },
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     }
   );
   return res.data;
 };
+

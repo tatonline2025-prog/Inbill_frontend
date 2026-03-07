@@ -7,6 +7,7 @@ import { IUser } from "@/types/user"; // Giả định IUser được import
 import toast from "react-hot-toast";
 import { SelectChangeEvent } from "@mui/material";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
@@ -322,7 +323,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     if (collStatus !== "all") params.append("collectionStatus", collStatus);
     if (payStatus !== "all") params.append("paymentStatus", payStatus);
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+    const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
     try {
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
@@ -378,7 +379,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       userIds: user._id, // Tự động lấy user ID
     });
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
+    const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcelCollected?${params.toString()}`;
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Vui long dang nhap lai");
@@ -536,3 +537,4 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setAllPaymentStatus,
   };
 };
+

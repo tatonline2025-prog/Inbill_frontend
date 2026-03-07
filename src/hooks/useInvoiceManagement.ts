@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 // Import hằng số
 import { PROVINCES, generateBillingPeriods } from "@/constants/invoice.constants";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
@@ -458,7 +459,7 @@ export const useInvoiceManagement = () => {
       params.append("paymentStatus", paymentStatus);
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcel?${params.toString()}`;
+    const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
     try {
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
@@ -507,7 +508,7 @@ export const useInvoiceManagement = () => {
     }
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelByUser?assignedUserId=${selectedExportUser}`,
+        `${getApiBaseUrl()}/api/invoices/exportExcelByUser?assignedUserId=${selectedExportUser}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
@@ -555,7 +556,7 @@ export const useInvoiceManagement = () => {
       params.append("userIds", selectedCollectedUsers.join(","));
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/exportExcelCollected?${params.toString()}`;
+    const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcelCollected?${params.toString()}`;
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Vui long dang nhap lai");
@@ -695,3 +696,4 @@ export const useInvoiceManagement = () => {
     setPaymentStatus,
   };
 };
+

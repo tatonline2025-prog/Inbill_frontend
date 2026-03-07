@@ -1,7 +1,8 @@
 import axios from "axios";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 
 export const excelUp = async (formData: FormData, token: string) => {
-  const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/upload-preview`, formData, {
+  const res = await axios.post(`${getApiBaseUrl()}/api/invoices/upload-preview`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
@@ -15,7 +16,7 @@ export const excelUpProvince = async (formData: FormData) => {
 
   // console.log(formData);
 
-  const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/invoices/uploadWithProvince`, formData, {
+  const res = await axios.post(`${getApiBaseUrl()}/api/invoices/uploadWithProvince`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
@@ -23,3 +24,4 @@ export const excelUpProvince = async (formData: FormData) => {
   });
   return res;
 };
+
