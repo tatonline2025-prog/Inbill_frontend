@@ -1,16 +1,29 @@
-# TODO: Preserve Excel Row Order in Backend Queries
+# TODO - Hiển thị log lỗi cho người dùng
 
-## Completed Tasks
-1. Update fetchInvoiceByUserMonth to sort by excelRowIndex ASC after billing_period.
-2. Update fetchTop20HighestInvoices to sort by excelRowIndex ASC after realAmount.
-3. Verified other queries (fetchUserInvoices, fetchInvoicesByList, searchInvoice, searchInvoicesByDate) already have excelRowIndex: 1 in defaultSort or sort.
-4. Confirmed export functions sort by excelRowIndex if applicable (already done in exportExcelCollected).
-5. Tested that editing doesn't change order and bulk search returns to filtered list (based on implementation).
-6. Verified frontend doesn't apply client-side sorting (already implemented).
-7. Fixed defaultSort in fetchallInvoice to prioritize excelRowIndex: 1 first to ensure Excel row order is preserved within groups (e.g., same collectionDate).
+## Mục tiêu
+Hiển thị các thông báo lỗi chi tiết từ backend ra màn hình để người dùng hiểu được lỗi gì đã xảy ra, mà không làm ảnh hưởng đến các chức năng hiện có.
 
-## Notes
-- Backend already sets excelRowIndex during import.
-- Frontend avoids client-side sorting and preserves bulk search state.
-- The functionality should now run as expected, preserving Excel row order even when sorting by other fields.
-- Fixed updateInvoice API to properly handle empty amount fields by normalizing them before validation.
+## Các bước thực hiện
+
+### 1. AddInvoiceDialog.tsx
+- [x] Thêm xử lý hiển thị lỗi chi tiết từ API
+- [x] Import `isAxiosError` từ axios
+- [x] Cập nhật catch block để hiển thị message từ server
+
+### 2. EditInvoiceDialog.tsx  
+- [x] Cải thiện xử lý lỗi - hiển thị chi tiết hơn
+- [x] Đảm bảo không thay đổi logic nghiệp vụ
+
+### 3. UploadInvoiceByUserDialog.tsx
+- [x] Thêm import `isAxiosError` 
+- [x] Hiển thị message lỗi từ backend
+
+### 4. UploadInvoiceWithProvinceDialog.tsx
+- [x] Thêm import `isAxiosError`
+- [x] Hiển thị message lỗi từ backend
+
+## Lưu ý
+- Chỉ sửa phần hiển thị lỗi, không thay đổi logic nghiệp vụ
+- Giữ nguyên các validation hiện có
+- Sử dụng toast.error() để hiển thị lỗi cho nhất quán
+

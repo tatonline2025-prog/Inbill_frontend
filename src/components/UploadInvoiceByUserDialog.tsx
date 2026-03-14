@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { excelUp } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
+import { isAxiosError } from "axios";
 
 interface Props {
   open: boolean;
@@ -24,16 +25,16 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assign
     const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.error("Khong the xac nhan tai khoan. Vui long dang nhap lai");
+      toast.error("Không thể xác nhận tài khoản. Vui lòng đăng nhập lại");
       return;
     }
 
     if (!uploadFile) {
-      toast.error("Vui long chon file can upload!");
+      toast.error("Vui lòng chọn file cần upload!");
       return;
     }
     if (!selectedBillingPeriod) {
-      toast.error("Vui long chon ky hoa don!");
+      toast.error("Vui lòng chọn kỳ hóa đơn!");
       return;
     }
 
@@ -47,15 +48,25 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assign
       const res = await excelUp(formData, token);
 
       if (res?.status === 200) {
-        toast.success("Upload file thanh cong!");
+        toast.success("Upload file thành công!");
         onSuccess?.();
         onClose();
       } else {
-        toast.error("Upload that bai!");
+        toast.error("Upload thất bại!");
       }
     } catch (err) {
       console.error(err);
-      toast.error("Co loi xay ra khi upload!");
+      // Hiển thị lỗi chi tiết từ backend cho người dùng
+      if (isAxiosError(err)) {
+        const errorMessage = err.response?.data?.message;
+        if (errorMessage) {
+          toast.error(`Lỗi: ${errorMessage}`);
+        } else {
+          toast.error("Có lỗi xảy ra khi upload! Vui lòng thử lại.");
+        }
+      } else {
+        toast.error("Có lỗi xảy ra khi upload! Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
@@ -106,7 +117,7 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assign
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >
-            {loading ? "Dang upload..." : "Upload"}
+            {loading ? "Đang upload..." : "Upload"}
           </Button>
         </Box>
       </Box>

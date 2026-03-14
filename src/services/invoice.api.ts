@@ -34,7 +34,6 @@ export const fetchallInvoice = async (
       isPaid,
     },
     headers: {
-      "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
     },
   });
@@ -74,7 +73,6 @@ export const fetchuserinvoices = async (
         isPaid,
       },
       headers: {
-        "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
       },
     }
@@ -122,7 +120,6 @@ export const collectSummaryAPI = async (assignedUserId?: string) => {
   const res = await axios.get(`${getApiBaseUrl()}/api/invoices/collectsummary`, {
     params: { assignedUserId },
     headers: {
-      "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
     },
   });
@@ -133,7 +130,6 @@ export const collectSummaryAPI = async (assignedUserId?: string) => {
 export const fetchInvoiceByUser = async (token: string) => {
   const res = await axios.get<InvoiceInfo[]>(`${getApiBaseUrl()}/api/invoices/fetchallbyuser`, {
     headers: {
-      "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
     },
   });
@@ -146,7 +142,6 @@ export const fetchInvoiceByUserMonth = async (token: string) => {
     `${getApiBaseUrl()}/api/invoices/fetchallbyusermonth`,
     {
       headers: {
-        "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
       },
     }
@@ -209,10 +204,13 @@ export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[
 };
 
 export const createInvoice_API = async (newInvoice: {
+  invoiceNumber: string;
   customerName: string;
   customerAddress: string;
   billing_period: string;
   currentAmount: string;
+  previousAmount: string;
+  totalAmount: string;
   recordBookCode: string;
   assignedTo: string;
 }) => {
@@ -233,13 +231,13 @@ export const createInvoice_API = async (newInvoice: {
   }
 };
 
-export const deleteInvoice_API = async (invoiceNumber: string) => {
+export const deleteInvoice_API = async (invoiceId: string) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("Chưa đăng nhập");
 
     const res = await axios.delete(
-      `${getApiBaseUrl()}/api/invoices/delete/${invoiceNumber}`,
+      `${getApiBaseUrl()}/api/invoices/delete/${invoiceId}`,
 
       { headers: { Authorization: `Bearer ${token}` } }
     );

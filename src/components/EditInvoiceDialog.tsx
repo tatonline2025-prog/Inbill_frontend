@@ -111,10 +111,15 @@ export default function EditInvoiceDialog({
     } catch (err) {
       console.error(err);
       if (isAxiosError(err)) {
-        toast.error(err.response?.data?.message || "Đã xảy ra lỗi khi cập nhật hoá đơn.");
+        const errorMessage = err.response?.data?.message;
+        if (errorMessage) {
+          toast.error(`Lỗi: ${errorMessage}`);
+        } else {
+          toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn. Vui lòng thử lại!");
+        }
         return;
       }
-      toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn.");
+      toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn. Vui lòng thử lại!");
     }
   };
 

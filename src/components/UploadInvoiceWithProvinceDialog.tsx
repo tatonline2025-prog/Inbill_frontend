@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { excelUpProvince } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
+import { isAxiosError } from "axios";
 
 interface Props {
   open: boolean;
@@ -43,7 +44,17 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
       }
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi upload!");
+      // Hiển thị lỗi chi tiết từ backend cho người dùng
+      if (isAxiosError(err)) {
+        const errorMessage = err.response?.data?.message;
+        if (errorMessage) {
+          toast.error(`Lỗi: ${errorMessage}`);
+        } else {
+          toast.error("Có lỗi xảy ra khi upload! Vui lòng thử lại.");
+        }
+      } else {
+        toast.error("Có lỗi xảy ra khi upload! Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }

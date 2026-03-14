@@ -21,6 +21,8 @@ import AddIcon from "@mui/icons-material/Add";
 import { createInvoice_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 import toast from "react-hot-toast";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
+import { isAxiosError } from "axios";
+import { IUser } from "@/types/user";
 
 const MAX_INVOICES = 5;
 
@@ -126,17 +128,22 @@ export default function AddInvoiceDialog({
   onClose,
   onSuccess,
   assignedUsers = [],
+  currentUser,
 }: {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   assignedUsers?: { _id: string; fullName: string }[];
+  currentUser?: IUser | null;
 }) {
   const [loading, setLoading] = useState(false);
 
+  // Check if current user is admin
+  const isAdmin = currentUser?.role === "admin";
+
   const [commonInfo, setCommonInfo] = useState({
     billing_period: "",
-    assignedTo: "",
+    assignedTo: isAdmin ? "" : (currentUser?._id || ""),
   });
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -245,14 +252,45 @@ export default function AddInvoiceDialog({
   };
 
   const handleSubmit = async () => {
+    // Validate required fields
     if (!commonInfo.billing_period) return toast.error("Vui lòng chọn Kỳ hóa đơn!");
+    
+    // Validate each invoice has required fields
+    for (const invoice of invoices) {
+      if (!invoice.invoiceNumber?.trim()) {
+        return toast.error("Vui lòng nhập Mã khách hàng!");
+      }
+      if (!invoice.customerName?.trim()) {
+        return toast.error("Vui lòng nhập Tên khách hàng!");
+      }
+      if (!invoice.currentAmount || invoice.currentAmount === "") {
+        return toast.error("Vui lòng nhập Số tiền kỳ này!");
+      }
+    }
+
     try {
       setLoading(true);
       const finalData = invoices.map((invoice) => {
-        const payload = { ...invoice, ...commonInfo } as InvoiceItem & typeof commonInfo;
-        delete (payload as { id?: string }).id;
+        // Calculate totalAmount if not provided
+        const currentAmount = invoice.currentAmount || "0";
+        const previousAmount = invoice.previousAmount || "0";
+        const totalAmount = invoice.totalAmount || 
+          (Number(currentAmount) + Number(previousAmount)).toString();
+        
+        const payload = {
+          invoiceNumber: invoice.invoiceNumber?.trim() || "",
+          customerName: invoice.customerName?.trim() || "",
+          customerAddress: invoice.customerAddress?.trim() || "",
+          billing_period: commonInfo.billing_period,
+          currentAmount: currentAmount,
+          previousAmount: previousAmount,
+          totalAmount: totalAmount,
+          recordBookCode: invoice.recordBookCode?.trim() || "",
+          assignedTo: commonInfo.assignedTo || "",
+        };
         return payload;
       });
+      
       for (const data of finalData) {
         await createInvoice_API(data);
       }
@@ -273,6 +311,17 @@ export default function AddInvoiceDialog({
       ]);
     } catch (error) {
       console.error(error);
+      // Hiển thị lỗi chi tiết từ backend cho người dùng
+      if (isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message;
+        if (errorMessage) {
+          toast.error(`Lỗi: ${errorMessage}`);
+        } else {
+          toast.error("Đã xảy ra lỗi khi thêm hóa đơn. Vui lòng thử lại!");
+        }
+      } else {
+        toast.error("Đã xảy ra lỗi khi thêm hóa đơn. Vui lòng thử lại!");
+      }
     } finally {
       setLoading(false);
     }
@@ -281,6 +330,7 @@ export default function AddInvoiceDialog({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
       <DialogTitle
+        component="div"
         sx={{ borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
         <Typography variant="h6" fontWeight="bold">
