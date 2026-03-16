@@ -1,29 +1,30 @@
-# TODO - Hiển thị log lỗi cho người dùng
+# Fix Excel Export Order Mismatch
+## Status: ✅ In Progress
 
-## Mục tiêu
-Hiển thị các thông báo lỗi chi tiết từ backend ra màn hình để người dùng hiểu được lỗi gì đã xảy ra, mà không làm ảnh hưởng đến các chức năng hiện có.
+## Plan Breakdown (Approved ✅)
 
-## Các bước thực hiện
+### Phase 1: Backend - Make Exports Sort-Aware [CURRENT]
+- [x] 1. Create TODO.md ✅
+- [x] 2. Edit `../../AppInBill_BE/Inbill_backend/src/controllers/invoice.excel.controller.ts` ✅ **Backend Phase 1 COMPLETE**
+  - Add `sortField/sortDirection` params to ALL 4 export functions
+  - Implement dynamic sort logic (mirror query.controller)
+  - Test backend endpoints accept sort params
 
-### 1. AddInvoiceDialog.tsx
-- [x] Thêm xử lý hiển thị lỗi chi tiết từ API
-- [x] Import `isAxiosError` từ axios
-- [x] Cập nhật catch block để hiển thị message từ server
+### Phase 2: Frontend - Pass Current Sort State
+- [x] 3. Edit `src/services/invoice.api.ts` ✅ **API wrappers added**
+  - Add 4 new export API functions with sort params
+- [ ] 4. Edit `src/components/invoices/ExportModals.tsx`
+  - Receive & pass current sort state to APIs
+- [ ] 5. Update parent components/hooks (`useInvoiceManagement.ts`)
 
-### 2. EditInvoiceDialog.tsx  
-- [x] Cải thiện xử lý lỗi - hiển thị chi tiết hơn
-- [x] Đảm bảo không thay đổi logic nghiệp vụ
+### Phase 3: Test & Verify
+- [ ] 6. End-to-end test: Sort table → Export → Verify matching order
+- [ ] 7. Update TODO.md → `attempt_completion`
 
-### 3. UploadInvoiceByUserDialog.tsx
-- [x] Thêm import `isAxiosError` 
-- [x] Hiển thị message lỗi từ backend
-
-### 4. UploadInvoiceWithProvinceDialog.tsx
-- [x] Thêm import `isAxiosError`
-- [x] Hiển thị message lỗi từ backend
-
-## Lưu ý
-- Chỉ sửa phần hiển thị lỗi, không thay đổi logic nghiệp vụ
-- Giữ nguyên các validation hiện có
-- Sử dụng toast.error() để hiển thị lỗi cho nhất quán
-
+## Next Steps (Phase 2 Frontend)
+- [ ] 3. Edit `src/services/invoice.api.ts` ✅ **API functions added**
+- [ ] 4. Edit `src/components/invoices/ExportModals.tsx` 
+  - Pass `sortField/sortDirection` from parent hook
+- [ ] 5. Update `src/hooks/useInvoiceManagement.ts` 
+  - Import exportExcelAPI, update handleExportConfirm to pass sort state
+- [ ] 6. Update ExportModals props interface

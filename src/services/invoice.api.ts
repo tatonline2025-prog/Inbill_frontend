@@ -2,6 +2,96 @@ import { FetchInvoiceResponse, IInvoiceSummaryByUser, InvoiceInfo } from "@/type
 import axios from "axios";
 import { getApiBaseUrl } from "@/lib/api-base-url";
 
+// Export Excel APIs - NEW (Phase 2)
+export const exportExcelAPI = async (
+  userIds?: string,
+  collectionStatus?: string,
+  paymentStatus?: string,
+  sortField: string = "issueDate",
+  sortDirection: string = "-1"
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  const res = await axios.get(`${getApiBaseUrl()}/api/invoices/exportExcel`, {
+    params: {
+      userIds,
+      collectionStatus,
+      paymentStatus,
+      sortField,
+      sortDirection
+    },
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob' // Important for Excel download
+  });
+
+  return res;
+};
+
+export const exportCollectedByDateAPI = async (
+  date: string,
+  sortField: string = "excelRowIndex", 
+  sortDirection: string = "1"
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  const res = await axios.get(`${getApiBaseUrl()}/api/invoices/exportExcelPrinted`, {
+    params: { date, sortField, sortDirection },
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob'
+  });
+
+  return res;
+};
+
+export const exportByUserAPI = async (
+  assignedUserId: string,
+  sortField: string = "excelRowIndex",
+  sortDirection: string = "1"  
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  const res = await axios.get(`${getApiBaseUrl()}/api/invoices/exportExcelByUser`, {
+    params: { assignedUserId, sortField, sortDirection },
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob'
+  });
+
+  return res;
+};
+
+export const exportExcelCollectedAPI = async (
+  fromDate: string,
+  toDate: string,
+  isClosed: string,
+  status: string,
+  userIds?: string,
+  sortField: string = "excelRowIndex",
+  sortDirection: string = "1"
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+
+  const res = await axios.get(`${getApiBaseUrl()}/api/invoices/exportExcelCollected`, {
+    params: { 
+      fromDate, 
+      toDate, 
+      isClosed, 
+      status, 
+      userIds,
+      sortField,
+      sortDirection
+    },
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob'
+  });
+
+  return res;
+};
+
+// Original fetchallInvoice (unchanged)
 export const fetchallInvoice = async (
   currentPage: number,
   invoicesPerPage: number,
