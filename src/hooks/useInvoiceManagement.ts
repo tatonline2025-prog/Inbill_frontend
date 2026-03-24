@@ -1,4 +1,4 @@
-// hooks/useInvoiceManagement.ts
+﻿// hooks/useInvoiceManagement.ts
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -14,15 +14,16 @@ import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
 import toast from "react-hot-toast";
 
-// Import hằng số
+// Import háº±ng sá»‘
 import { PROVINCES, generateBillingPeriods } from "@/constants/invoice.constants";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 import { getApiBaseUrl } from "@/lib/api-base-url";
+import { toDateKeyVN, toISOStringVN } from "@/lib/date-vn";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
 
-// Custom hook Debounce (tạm thời đặt ở đây)
+// Custom hook Debounce (táº¡m thá»i Ä‘áº·t á»Ÿ Ä‘Ă¢y)
 const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -33,14 +34,14 @@ const useDebounce = (value: string, delay: number) => {
 };
 
 export const useInvoiceManagement = () => {
-  // --- State Dữ liệu chính ---
+  // --- State Dá»¯ liá»‡u chĂ­nh ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [userData, setUserData] = useState<IUser[]>([]);
   const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- State Phân trang & Tóm tắt ---
+  // --- State PhĂ¢n trang & TĂ³m táº¯t ---
   const [currentPage, setCurrentPage] = useState(1);
   const [invoicesPerPage, setInvoicesPerPage] = useState(15);
   const [totalPages, setTotalPages] = useState(1);
@@ -48,14 +49,14 @@ export const useInvoiceManagement = () => {
   const [unassignedCustomerCodes, setUnAssignedCustomerCodes] = useState(0);
   const [totalAmountInfo, setTotalAmountInfo] = useState(0);
 
-  // --- State Bộ lọc ---
+  // --- State Bá»™ lá»c ---
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("all");
   const [isPaidFilter, setIsPaidFilter] = useState(false);
 
-  // --- State Tìm kiếm & Sắp xếp ---
+  // --- State TĂ¬m kiáº¿m & Sáº¯p xáº¿p ---
   const [searchType, setSearchType] = useState<SearchType>("customerCode");
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearchValue = useDebounce(searchValue, 500); // 500ms debounce
@@ -67,7 +68,7 @@ export const useInvoiceManagement = () => {
   const [isBulkSearchActive, setIsBulkSearchActive] = useState(false);
   const [bulkSearchCodes, setBulkSearchCodes] = useState<string[]>([]);
 
-  // --- State Hành động & Modal ---
+  // --- State HĂ nh Ä‘á»™ng & Modal ---
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
@@ -92,18 +93,18 @@ export const useInvoiceManagement = () => {
   const [collectionStatus, setCollectionStatus] = useState<string>("paid");
   const [paymentStatus, setPaymentStatus] = useState<string>("false");
 
-  const today = new Date().toLocaleDateString("en-CA");
+  const today = toDateKeyVN();
   const [collectedFromDate, setCollectedFromDate] = useState<string>(today);
   const [collectedToDate, setCollectedToDate] = useState<string>(today);
   const [selectedCollectedUsers, setSelectedCollectedUsers] = useState<string[]>([]);
   const [collectedStatus, setCollectedStatus] = useState<string>("paid");
   const [closingStatus, setClosingStatus] = useState<string>("false");
 
-  // --- Hằng số ---
+  // --- Háº±ng sá»‘ ---
   const billingPeriods = useMemo(() => generateBillingPeriods(), []);
   const provinces = useMemo(() => PROVINCES, []);
 
-  // --- Logic Fetch Dữ liệu ---
+  // --- Logic Fetch Dá»¯ liá»‡u ---
 
   const fetchInvoices = useCallback(async (page = currentPage, perPage = invoicesPerPage) => {
     try {
@@ -144,8 +145,8 @@ export const useInvoiceManagement = () => {
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
     } catch (err) {
-      console.error("Lỗi khi tải hóa đơn:", err);
-      setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
+      console.error("Lá»—i khi táº£i hĂ³a Ä‘Æ¡n:", err);
+      setError("KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u hĂ³a Ä‘Æ¡n. Vui lĂ²ng thá»­ láº¡i sau.");
     } finally {
       setLoading(false);
     }
@@ -172,10 +173,10 @@ export const useInvoiceManagement = () => {
       if (res?.success) {
         setCollectSummary(res.data);
       } else {
-        console.error("Lỗi lấy dữ liệu:", res?.message);
+        console.error("Lá»—i láº¥y dá»¯ liá»‡u:", res?.message);
       }
     } catch (error) {
-      console.error("Lỗi kết nối API:", error);
+      console.error("Lá»—i káº¿t ná»‘i API:", error);
     } finally {
       setLoading(false);
     }
@@ -193,7 +194,7 @@ export const useInvoiceManagement = () => {
 
   // --- Effects ---
 
-  // 1. Fetch danh sách User
+  // 1. Fetch danh sĂ¡ch User
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -207,7 +208,7 @@ export const useInvoiceManagement = () => {
     fetchData();
   }, []);
 
-  // 2. Fetch danh sách Invoice khi filters, pagination, sort, search thay đổi (chỉ khi không bulk search)
+  // 2. Fetch danh sĂ¡ch Invoice khi filters, pagination, sort, search thay Ä‘á»•i (chá»‰ khi khĂ´ng bulk search)
   useEffect(() => {
     if (!isBulkSearchActive) {
       fetchInvoices(currentPage, invoicesPerPage);
@@ -249,7 +250,7 @@ export const useInvoiceManagement = () => {
     }
   };
 
-  // Tìm kiếm
+  // TĂ¬m kiáº¿m
   const handleSearchTypeChange = (newType: SearchType) => {
     setSearchType(newType);
     setSearchValue("");
@@ -261,33 +262,36 @@ export const useInvoiceManagement = () => {
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
-    // KHÔNG setCurrentPage(1) ở đây để input không bị giật,
-    // việc gọi API và reset page sẽ do useEffect(debouncedSearchValue) đảm nhiệm
+    // KHĂ”NG setCurrentPage(1) á»Ÿ Ä‘Ă¢y Ä‘á»ƒ input khĂ´ng bá»‹ giáº­t,
+    // viá»‡c gá»i API vĂ  reset page sáº½ do useEffect(debouncedSearchValue) Ä‘áº£m nhiá»‡m
   };
 
   const handleBulkSearch = async (codes: string[]) => {
-    // console.log("Danh sách mã cần tìm:", codes);
-    const res = await fetchInvoiceBylist(codes);
+    // console.log("Danh sĂ¡ch mĂ£ cáº§n tĂ¬m:", codes);
+    const normalizedCodes = codes.map((code) => code.trim().toUpperCase());
+    const res = await fetchInvoiceBylist(normalizedCodes, searchType);
 
     const foundInvoices = res.data.data;
 
-    const mergedInvoices = codes.flatMap((code) => {
-      // Tìm xem mã này có trong kết quả trả về không
-      // Lưu ý: searchType quyết định so sánh theo invoiceNumber hay recordBookCode
+    const mergedInvoices = normalizedCodes.flatMap((code) => {
+      // TĂ¬m xem mĂ£ nĂ y cĂ³ trong káº¿t quáº£ tráº£ vá» khĂ´ng
+      // LÆ°u Ă½: searchType quyáº¿t Ä‘á»‹nh so sĂ¡nh theo invoiceNumber hay recordBookCode
       const matches = foundInvoices.filter((inv: InvoiceInfo) =>
-        searchType === "stationCode" ? inv.recordBookCode === code : inv.invoiceNumber === code
+        searchType === "stationCode"
+          ? String(inv.recordBookCode || "").trim().toUpperCase() === code
+          : String(inv.invoiceNumber || "").trim().toUpperCase() === code
       );
 
       if (matches.length > 0) {
-        // Có dữ liệu -> Trả về danh sách hoá đơn tìm thấy
+        // CĂ³ dá»¯ liá»‡u -> Tráº£ vá» danh sĂ¡ch hoĂ¡ Ä‘Æ¡n tĂ¬m tháº¥y
         return matches;
       } else {
-        // Không có dữ liệu -> Tạo một hoá đơn "giả" để hiển thị lỗi
+        // KhĂ´ng cĂ³ dá»¯ liá»‡u -> Táº¡o má»™t hoĂ¡ Ä‘Æ¡n "giáº£" Ä‘á»ƒ hiá»ƒn thá»‹ lá»—i
         return [
           {
             _id: `missing-${code}`,
             invoiceNumber: code,
-            customerName: "Không có dữ liệu",
+            customerName: "KhĂ´ng cĂ³ dá»¯ liá»‡u",
             totalAmount: 0,
             isMissing: true,
             recordBookCode: searchType === "stationCode" ? code : undefined,
@@ -297,7 +301,7 @@ export const useInvoiceManagement = () => {
     });
 
     setIsBulkSearchActive(true);
-    setBulkSearchCodes(codes);
+    setBulkSearchCodes(normalizedCodes);
     setTotalPages(1);
     setInvoices(mergedInvoices);
 
@@ -306,7 +310,7 @@ export const useInvoiceManagement = () => {
     setTotalAmountInfo(res.data.summary.totalAmount);
   };
 
-  // Sắp xếp
+  // Sáº¯p xáº¿p
   const handleSort = (field: string) => {
     const isNewField = sortField !== field;
 
@@ -320,7 +324,7 @@ export const useInvoiceManagement = () => {
     setCurrentPage(1);
   };
 
-  // Tác vụ dòng
+  // TĂ¡c vá»¥ dĂ²ng
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, invoice: InvoiceInfo) => {
     setAnchorEl(event.currentTarget);
     setSelectedInvoice(invoice);
@@ -338,7 +342,7 @@ export const useInvoiceManagement = () => {
   const handleEditSuccess = (updatedInvoice?: InvoiceInfo) => {
     setEditModalOpen(false);
 
-    // Cập nhật ngay trên danh sách hiện tại theo _id để không bị "nhảy" sang dòng trùng mã khách hàng.
+    // Cáº­p nháº­t ngay trĂªn danh sĂ¡ch hiá»‡n táº¡i theo _id Ä‘á»ƒ khĂ´ng bá»‹ "nháº£y" sang dĂ²ng trĂ¹ng mĂ£ khĂ¡ch hĂ ng.
     if (updatedInvoice?._id) {
       setInvoices((prev) => prev.map((inv) => (inv._id === updatedInvoice._id ? { ...inv, ...updatedInvoice } : inv)));
       setSelectedInvoice((prev) => (prev?._id === updatedInvoice._id ? { ...prev, ...updatedInvoice } : prev));
@@ -346,31 +350,31 @@ export const useInvoiceManagement = () => {
       return;
     }
 
-    // Fallback nếu backend không trả object đầy đủ
+    // Fallback náº¿u backend khĂ´ng tráº£ object Ä‘áº§y Ä‘á»§
     reloadInvoices();
   };
 
-  // Tác vụ Xóa
+  // TĂ¡c vá»¥ XĂ³a
   const handleDeleteSelected = async () => {
     if (selectedInvoices.length === 0) {
-      toast.error("Vui lòng chọn ít nhất một hoá đơn để xoá!");
+      toast.error("Vui lĂ²ng chá»n Ă­t nháº¥t má»™t hoĂ¡ Ä‘Æ¡n Ä‘á»ƒ xoĂ¡!");
       return;
     }
-    const confirmDelete = window.confirm(`Bạn có chắc muốn xoá ${selectedInvoices.length} hoá đơn đã chọn không?`);
+    const confirmDelete = window.confirm(`Báº¡n cĂ³ cháº¯c muá»‘n xoĂ¡ ${selectedInvoices.length} hoĂ¡ Ä‘Æ¡n Ä‘Ă£ chá»n khĂ´ng?`);
     if (!confirmDelete) return;
 
     try {
       await Promise.all(selectedInvoices.map((id) => deleteInvoice_API(id)));
-      toast.success("Đã xoá thành công các hoá đơn đã chọn!");
+      toast.success("ÄĂ£ xoĂ¡ thĂ nh cĂ´ng cĂ¡c hoĂ¡ Ä‘Æ¡n Ä‘Ă£ chá»n!");
       setSelectedInvoices([]);
       await reloadInvoices();
     } catch (error) {
       console.error(error);
-      toast.error("Lỗi khi xoá hoá đơn!");
+      toast.error("Lá»—i khi xoĂ¡ hoĂ¡ Ä‘Æ¡n!");
     }
   };
 
-  // Tác vụ Chọn
+  // TĂ¡c vá»¥ Chá»n
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedInvoices(invoices.map((inv) => inv._id));
@@ -386,11 +390,11 @@ export const useInvoiceManagement = () => {
     }
   };
 
-  // Tác vụ Toggle
+  // TĂ¡c vá»¥ Toggle
   const handleToggle = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
     try {
       await handleToggle_API(invoiceId, field);
-      // Cập nhật state cục bộ để UI phản hồi nhanh hơn
+      // Cáº­p nháº­t state cá»¥c bá»™ Ä‘á»ƒ UI pháº£n há»“i nhanh hÆ¡n
       setInvoices((prev) =>
         prev.map((inv) =>
           inv._id === invoiceId
@@ -408,7 +412,7 @@ export const useInvoiceManagement = () => {
                   field === "collectionStatus"
                     ? inv.collectionStatus === "collected"
                       ? null
-                      : new Date().toISOString()
+                      : toISOStringVN()
                     : inv.collectionDate,
               }
             : inv
@@ -416,31 +420,31 @@ export const useInvoiceManagement = () => {
       );
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi khi cập nhật trạng thái!");
+      toast.error("Lá»—i khi cáº­p nháº­t tráº¡ng thĂ¡i!");
     }
   };
 
   const handleToggleIsPaid = async (invoiceId: string) => {
     try {
       await handleToggleIsPaid_API(invoiceId);
-      // Cập nhật state cục bộ để UI phản hồi nhanh hơn
+      // Cáº­p nháº­t state cá»¥c bá»™ Ä‘á»ƒ UI pháº£n há»“i nhanh hÆ¡n
       setInvoices((prev) =>
         prev.map((inv) =>
           inv._id === invoiceId
             ? {
                 ...inv,
-                isPaid: !inv.isPaid, // 1. Đảo ngược trạng thái isPaid
+                isPaid: !inv.isPaid, // 1. Äáº£o ngÆ°á»£c tráº¡ng thĂ¡i isPaid
               }
             : inv
         )
       );
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi khi cập nhật trạng thái!");
+      toast.error("Lá»—i khi cáº­p nháº­t tráº¡ng thĂ¡i!");
     }
   };
 
-  // --- Hàm Export ---
+  // --- HĂ m Export ---
   const handleExportConfirm = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -457,6 +461,29 @@ export const useInvoiceManagement = () => {
     }
     if (paymentStatus !== "all") {
       params.append("paymentStatus", paymentStatus);
+    }
+    if (filterPrint !== "all") {
+      params.append("printStatus", filterPrint);
+    }
+    if (filterAssignedUser !== "all") {
+      params.append("assignedUserId", filterAssignedUser);
+    }
+    if (selectedProvince !== "all") {
+      params.append("province", selectedProvince);
+    }
+    if (searchValue) {
+      if (searchType === "customerCode") {
+        params.append("customerCode", searchValue);
+      } else if (searchType === "stationCode") {
+        params.append("stationCode", searchValue);
+      }
+    }
+    if (isPaidFilter) {
+      params.append("isPaid", "true");
+    }
+    if (sortField && sortDirection !== "none") {
+      params.append("sortField", sortField);
+      params.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
     }
 
     const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
@@ -487,7 +514,7 @@ export const useInvoiceManagement = () => {
       return;
     }
 
-    // Đóng modal sau khi xuất
+    // ÄĂ³ng modal sau khi xuáº¥t
     setOpenExportModal(false);
   };
 
@@ -496,9 +523,9 @@ export const useInvoiceManagement = () => {
   };
 
   const handleExportByUserConfirm = async () => {
-    // (Giữ nguyên logic ExportByUserConfirm)
+    // (Giá»¯ nguyĂªn logic ExportByUserConfirm)
     if (!selectedExportUser) {
-      alert("Vui lòng chọn người phụ trách!");
+      alert("Vui lĂ²ng chá»n ngÆ°á»i phá»¥ trĂ¡ch!");
       return;
     }
     const token = localStorage.getItem("token");
@@ -507,13 +534,18 @@ export const useInvoiceManagement = () => {
       return;
     }
     try {
-      const response = await fetch(
-        `${getApiBaseUrl()}/api/invoices/exportExcelByUser?assignedUserId=${selectedExportUser}`,
+          const exportByUserParams = new URLSearchParams({ assignedUserId: selectedExportUser });
+    if (sortField && sortDirection !== "none") {
+      exportByUserParams.append("sortField", sortField);
+      exportByUserParams.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
+    }
+    const response = await fetch(
+      `${getApiBaseUrl()}/api/invoices/exportExcelByUser?${exportByUserParams.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
-        alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
+        alert(errorData.message || "CĂ³ lá»—i xáº£y ra khi xuáº¥t file.");
         return;
       }
 
@@ -531,19 +563,19 @@ export const useInvoiceManagement = () => {
       window.URL.revokeObjectURL(url);
       setOpenExportByUser(false);
     } catch (error) {
-      console.error("Lỗi khi xuất file:", error);
-      alert("Không thể kết nối tới máy chủ để xuất file.");
+      console.error("Lá»—i khi xuáº¥t file:", error);
+      alert("KhĂ´ng thá»ƒ káº¿t ná»‘i tá»›i mĂ¡y chá»§ Ä‘á»ƒ xuáº¥t file.");
     }
   };
 
   const handleExportCollectedConfirm = async () => {
     // 1. Validate
     if (!collectedFromDate || !collectedToDate) {
-      toast.error("Vui lòng chọn khoảng thời gian (Từ ngày - Đến ngày)!");
+      toast.error("Vui lĂ²ng chá»n khoáº£ng thá»i gian (Tá»« ngĂ y - Äáº¿n ngĂ y)!");
       return;
     }
 
-    // 2. Tạo Query Params
+    // 2. Táº¡o Query Params
     const params = new URLSearchParams({
       fromDate: collectedFromDate,
       toDate: collectedToDate,
@@ -551,7 +583,12 @@ export const useInvoiceManagement = () => {
       isClosed: closingStatus, // 'true' | 'false' | 'all'
     });
 
-    // Xử lý mảng userIds (nối chuỗi bằng dấu phẩy)
+    if (sortField && sortDirection !== "none") {
+      params.append("sortField", sortField);
+      params.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
+    }
+
+    // Xá»­ lĂ½ máº£ng userIds (ná»‘i chuá»—i báº±ng dáº¥u pháº©y)
     if (selectedCollectedUsers.length > 0) {
       params.append("userIds", selectedCollectedUsers.join(","));
     }
@@ -563,14 +600,14 @@ export const useInvoiceManagement = () => {
       return;
     }
 
-    // 3. Gọi API
+    // 3. Gá»i API
     try {
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
-        toast.error(errorData.message || "Có lỗi xảy ra khi xuất file.");
+        toast.error(errorData.message || "CĂ³ lá»—i xáº£y ra khi xuáº¥t file.");
         return;
       }
 
@@ -588,14 +625,14 @@ export const useInvoiceManagement = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      // Reset và đóng modal
+      // Reset vĂ  Ä‘Ă³ng modal
       setOpenExportCollected(false);
-      // Có thể reset form
+      // CĂ³ thá»ƒ reset form
       setSelectedCollectedUsers([]);
       setCollectedStatus("paid");
     } catch (error) {
-      console.error("Lỗi khi xuất file:", error);
-      toast.error("Không thể kết nối tới máy chủ để xuất file.");
+      console.error("Lá»—i khi xuáº¥t file:", error);
+      toast.error("KhĂ´ng thá»ƒ káº¿t ná»‘i tá»›i mĂ¡y chá»§ Ä‘á»ƒ xuáº¥t file.");
     }
   };
 
@@ -638,7 +675,7 @@ export const useInvoiceManagement = () => {
     collectedStatus,
     closingStatus,
 
-    // Hằng số
+    // Háº±ng sá»‘
     billingPeriods,
     provinces,
 
@@ -696,4 +733,7 @@ export const useInvoiceManagement = () => {
     setPaymentStatus,
   };
 };
+
+
+
 

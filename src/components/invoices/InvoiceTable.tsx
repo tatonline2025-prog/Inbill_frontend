@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
+import { formatDateVN } from "@/lib/date-vn";
 import { useEffect, useState } from "react";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import toast from "react-hot-toast";
@@ -438,13 +439,13 @@ export default function InvoiceTable({
 
                     {isColVisible("collectionDate") && (
                       <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem" }}>
-                        {invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString("vi-VN") : "-"}
+                        {formatDateVN(invoice.collectionDate)}
                       </td>
                     )}
 
                     {isColVisible("issueDate") && (
                       <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem" }}>
-                        {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString("vi-VN") : "-"}
+                        {formatDateVN(invoice.issueDate)}
                       </td>
                     )}
 

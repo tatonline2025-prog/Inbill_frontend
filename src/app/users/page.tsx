@@ -5,6 +5,7 @@ import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants
 import { excelUp } from "@/services/excel.api";
 import { invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
+import { formatDateVN } from "@/lib/date-vn";
 import { IInvoiceSummaryByUser } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
@@ -261,7 +262,7 @@ export default function UsersPage() {
                           <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{user.phone}</td>
                           <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                            {formatDateVN(user.createdAt)}
                           </td>
                         </tr>
                       ))}
@@ -340,7 +341,7 @@ export default function UsersPage() {
                             <td className="px-6 py-4 text-sm text-gray-700">{user.phone}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
                             <td className="px-6 py-4 text-sm text-gray-500">
-                              {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                              {formatDateVN(user.createdAt)}
                             </td>
                             <td className="px-6 py-4 text-sm text-center font-semibold text-blue-600">
                               {(user.collectedCount ?? 0) + (user.notCollectedCount ?? 0)}

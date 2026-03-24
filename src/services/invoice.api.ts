@@ -171,13 +171,17 @@ export const fetchuserinvoices = async (
   return res;
 };
 
-export const fetchInvoiceBylist = async (codes?: string[]) => {
+export const fetchInvoiceBylist = async (
+  codes?: string[],
+  searchType?: "customerCode" | "stationCode"
+) => {
   const token = localStorage.getItem("token");
 
   const res = await axios.post(
     `${getApiBaseUrl()}/api/invoices/fetchbylist`,
     {
       codes,
+      searchType,
     },
     {
       headers: {

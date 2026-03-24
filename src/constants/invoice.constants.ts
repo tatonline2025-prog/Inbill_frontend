@@ -1,6 +1,7 @@
 // constants/invoice.constants.ts
 
 import { InvoiceInfo } from "@/types/invoice";
+import { getNowVNDate } from "@/lib/date-vn";
 
 export const PROVINCES = [
   "TP Hà Nội",
@@ -40,13 +41,15 @@ export const PROVINCES = [
 ];
 
 export const generateBillingPeriods = () => {
-  const now = new Date();
+  const nowVN = getNowVNDate();
+  const currentYear = nowVN.getUTCFullYear();
+  const currentMonth = nowVN.getUTCMonth();
 
   return Array.from({ length: 7 }, (_, i) => {
     const offset = i - 3;
-    const date = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
+    const date = new Date(Date.UTC(currentYear, currentMonth + offset, 1));
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const year = date.getUTCFullYear();
 
     return `${month}/${year}`;
   });
