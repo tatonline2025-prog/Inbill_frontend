@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { collectSummaryAPI, deleteInvoice_API, fetchuserinvoices, handleToggle_API } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
-import { IUser } from "@/types/user"; // Giáº£ Ä‘á»‹nh IUser Ä‘Æ°á»£c import
+import { IUser } from "@/types/user"; // Giả định IUser được import
 import toast from "react-hot-toast";
 import { SelectChangeEvent } from "@mui/material";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
@@ -13,7 +13,7 @@ import { toDateKeyVN, toISOStringVN } from "@/lib/date-vn";
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
 
-// Custom hook Debounce (TĂ¡ch riĂªng náº¿u cáº§n tĂ¡i sá»­ dá»¥ng á»Ÿ nhiá»u nÆ¡i)
+// Custom hook Debounce (Tách riêng nếu cần tái sử dụng ở nhiều nơi)
 const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -32,7 +32,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // --- State TĂ¬m kiáº¿m ---
+  const [error, setError] = useState<string | null>(null); // --- State Tìm kiếm ---
 
   const [searchType, setSearchType] = useState<SearchType>("customerCode");
   const [searchValue, setSearchValue] = useState("");
@@ -68,8 +68,8 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("none");
 
-  const [collectedFromDate, setCollectedFromDate] = useState(today); // Tá»« ngĂ y
-  const [collectedToDate, setCollectedToDate] = useState(today); // Äáº¿n ngĂ y
+  const [collectedFromDate, setCollectedFromDate] = useState(today); // Từ ngày
+  const [collectedToDate, setCollectedToDate] = useState(today); // Đến ngày
 
   const [collectedStatus, setCollectedStatus] = useState("paid");
   const [closingStatus, setClosingStatus] = useState("false");
@@ -114,8 +114,8 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
     } catch (err) {
-      console.error("Lá»—i khi táº£i hĂ³a Ä‘Æ¡n:", err);
-      setError("KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u hĂ³a Ä‘Æ¡n. Vui lĂ²ng thá»­ láº¡i sau.");
+      console.error("Lỗi khi tải hóa đơn:", err);
+      setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -142,10 +142,10 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       if (res?.success) {
         setCollectSummary(res.data);
       } else {
-        console.error("Lá»—i láº¥y dá»¯ liá»‡u:", res?.message);
+        console.error("Lỗi lấy dữ liệu:", res?.message);
       }
     } catch (error) {
-      console.error("Lá»—i káº¿t ná»‘i API:", error);
+      console.error("Lỗi kết nối API:", error);
     } finally {
       setLoading(false);
     }
@@ -184,13 +184,13 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   };
 
   const onSearchChange = (value: string) => {
-    setSearchValue(value); // KHĂ”NG reset page á»Ÿ Ä‘Ă¢y, debounce sáº½ xá»­ lĂ½.
+    setSearchValue(value); // KHÔNG reset page ở đây, debounce sẽ xử lý.
   };
 
   const handleSearchTypeChange = (e: SelectChangeEvent) => {
     setSearchType(e.target.value as SearchType);
-    setSearchValue(""); // Reset giĂ¡ trá»‹ tĂ¬m kiáº¿m khi Ä‘á»•i loáº¡i
-    setCurrentPage(1); // Reset page khi Ä‘á»•i loáº¡i
+    setSearchValue(""); // Reset giá trị tìm kiếm khi đổi loại
+    setCurrentPage(1); // Reset page khi đổi loại
   };
 
   const handleSort = (field: string) => {
@@ -223,21 +223,21 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
   const handleDeleteSelected = async () => {
     if (selectedInvoices.length === 0) {
-      toast.error("Vui lĂ²ng chá»n Ă­t nháº¥t má»™t hoĂ¡ Ä‘Æ¡n Ä‘á»ƒ xoĂ¡!");
+      toast.error("Vui lòng chọn ít nhất một hoá đơn để xoá!");
       return;
     }
 
-    const confirmDelete = window.confirm(`Báº¡n cĂ³ cháº¯c muá»‘n xoĂ¡ ${selectedInvoices.length} hoĂ¡ Ä‘Æ¡n Ä‘Ă£ chá»n khĂ´ng?`);
+    const confirmDelete = window.confirm(`Bạn có chắc muốn xoá ${selectedInvoices.length} hoá đơn đã chọn không?`);
     if (!confirmDelete) return;
 
     try {
       await Promise.all(selectedInvoices.map((id) => deleteInvoice_API(id)));
-      toast.success("ÄĂ£ xoĂ¡ thĂ nh cĂ´ng cĂ¡c hoĂ¡ Ä‘Æ¡n Ä‘Ă£ chá»n!");
+      toast.success("Đã xoá thành công các hoá đơn đã chọn!");
       setSelectedInvoices([]);
       await reloadInvoices();
     } catch (error) {
       console.error(error);
-      toast.error("Lá»—i khi xoĂ¡ hoĂ¡ Ä‘Æ¡n!");
+      toast.error("Lỗi khi xoá hoá đơn!");
     }
   };
 
@@ -269,7 +269,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       );
     } catch (err) {
       console.error(err);
-      toast.error("Lá»—i khi cáº­p nháº­t tráº¡ng thĂ¡i!");
+      toast.error("Lỗi khi cập nhật trạng thái!");
     }
   };
 
@@ -293,20 +293,20 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const handleDeleteInvoice = async () => {
     if (!selectedInvoice) return;
 
-    const confirmDelete = window.confirm(`Báº¡n cĂ³ cháº¯c muá»‘n xoĂ¡ hoĂ¡ Ä‘Æ¡n ${selectedInvoice.invoiceNumber}?`);
+    const confirmDelete = window.confirm(`Bạn có chắc muốn xoá hoá đơn ${selectedInvoice.invoiceNumber}?`);
     if (!confirmDelete) return;
 
     try {
       const res = await deleteInvoice_API(selectedInvoice._id);
       if (res!.status === 200 || res!.status === 204) {
-        toast.success("XoĂ¡ hoĂ¡ Ä‘Æ¡n thĂ nh cĂ´ng!");
+        toast.success("Xoá hoá đơn thành công!");
         reloadInvoices();
       } else {
-        toast.error("KhĂ´ng thá»ƒ xoĂ¡ hoĂ¡ Ä‘Æ¡n, vui lĂ²ng thá»­ láº¡i.");
+        toast.error("Không thể xoá hoá đơn, vui lòng thử lại.");
       }
     } catch (error) {
-      console.error("Lá»—i khi xoĂ¡ hoĂ¡ Ä‘Æ¡n:", error);
-      alert("ÄĂ£ xáº£y ra lá»—i khi xoĂ¡ hoĂ¡ Ä‘Æ¡n.");
+      console.error("Lỗi khi xoá hoá đơn:", error);
+      alert("Đã xảy ra lỗi khi xoá hoá đơn.");
     } finally {
       handleMenuClose();
     }
@@ -383,7 +383,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
   const handleExportCollectedConfirm = async () => {
     if (!user) {
-      toast.error("KhĂ´ng tĂ¬m tháº¥y thĂ´ng tin ngÆ°á»i dĂ¹ng.");
+      toast.error("Không tìm thấy thông tin người dùng.");
       return;
     }
     if (user.role !== "admin") {
@@ -392,7 +392,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     }
 
     if (!collectedFromDate || !collectedToDate) {
-      toast.error("Vui lĂ²ng chá»n khoáº£ng thá»i gian (Tá»« ngĂ y - Äáº¿n ngĂ y)!");
+      toast.error("Vui lòng chọn khoảng thời gian (Từ ngày - Đến ngày)!");
       return;
     }
 
@@ -402,7 +402,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       status: collectedStatus,
       isClosed: closingStatus,
       date: selectedCollectedDate,
-      userIds: user._id, // Tá»± Ä‘á»™ng láº¥y user ID
+      userIds: user._id, // Tự động lấy user ID
     });
 
     if (sortField && sortDirection !== "none") {
@@ -423,7 +423,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       });
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
-        alert(errorData.message || "CĂ³ lá»—i xáº£y ra khi xuáº¥t file.");
+        alert(errorData.message || "Có lỗi xảy ra khi xuất file.");
         return;
       }
 
@@ -443,21 +443,21 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       window.URL.revokeObjectURL(url);
       setOpenExportCollected(false);
     } catch (error) {
-      console.error("Lá»—i khi xuáº¥t file:", error);
-      alert("KhĂ´ng thá»ƒ káº¿t ná»‘i tá»›i mĂ¡y chá»§ Ä‘á»ƒ xuáº¥t file.");
+      console.error("Lỗi khi xuất file:", error);
+      alert("Không thể kết nối tới máy chủ để xuất file.");
     }
   };
 
   const handleAddSuccess = () => {
     setOpenAddDialog(false);
     reloadInvoices();
-    toast.success("ThĂªm hoĂ¡ Ä‘Æ¡n thĂ nh cĂ´ng!");
+    toast.success("Thêm hoá đơn thành công!");
   };
 
   const handleEditSuccess = (updatedInvoice?: InvoiceInfo) => {
     setEditModalOpen(false);
 
-    // Cáº­p nháº­t ngay trĂªn list hiá»‡n táº¡i Ä‘á»ƒ giá»¯ nguyĂªn page/vá»‹ trĂ­ Ä‘ang xem.
+    // Cập nhật ngay trên list hiện tại để giữ nguyên page/vị trí đang xem.
     if (updatedInvoice?._id) {
       setInvoices((prev) => prev.map((inv) => (inv._id === updatedInvoice._id ? { ...inv, ...updatedInvoice } : inv)));
       setSelectedInvoice((prev) => (prev?._id === updatedInvoice._id ? { ...prev, ...updatedInvoice } : prev));
@@ -465,7 +465,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       return;
     }
 
-    // Fallback náº¿u backend khĂ´ng tráº£ láº¡i object invoice Ä‘áº§y Ä‘á»§
+    // Fallback nếu backend không trả lại object invoice đầy đủ
     reloadInvoices();
   };
 
@@ -481,9 +481,9 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     return invoices;
   }, [invoices, sortField, sortDirection]);
 
-  const searchLabel = searchType === "customerCode" ? "TĂ¬m theo MĂ£ khĂ¡ch hĂ ng" : "TĂ¬m theo MĂ£ tráº¡m";
+  const searchLabel = searchType === "customerCode" ? "Tìm theo Mã khách hàng" : "Tìm theo Mã trạm";
 
-  // --- RETURN OBJECT Cá»¦A HOOK ---
+  // --- RETURN OBJECT CỦA HOOK ---
   return {
     // States & Derived Values
     invoices,
