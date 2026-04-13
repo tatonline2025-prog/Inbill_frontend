@@ -258,6 +258,7 @@ export const handleToggle_API = async (invoiceId: string, field: "printStatus" |
     return res;
   } catch (err) {
     console.error("Cập nhật trạng thái thất bại:", err);
+    throw err;
   }
 };
 

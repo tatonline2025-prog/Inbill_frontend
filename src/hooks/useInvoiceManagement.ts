@@ -392,28 +392,46 @@ export const useInvoiceManagement = () => {
 
   // Tác vụ Toggle
   const handleToggle = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
+    const targetInvoice = invoices.find((inv) => inv._id === invoiceId);
+    if (!targetInvoice) return;
+
     try {
-      await handleToggle_API(invoiceId, field);
-      // Cập nhật state cục bộ để UI phản hồi nhanh hơn
+      if (field === "printStatus") {
+        await handleToggle_API(invoiceId, field);
+        setInvoices((prev) =>
+          prev.map((inv) =>
+            inv._id === invoiceId
+              ? {
+                  ...inv,
+                  printStatus: inv.printStatus === "printed" ? "not_printed" : "printed",
+                }
+              : inv
+          )
+        );
+        return;
+      }
+
+      // Nếu bật "Đã thu" thì tự động tắt "Đã đóng cước".
+      // Nếu tắt "Đã thu" thì chuyển về "Chưa thu".
+      const nextCollectionStatus =
+        targetInvoice.collectionStatus === "collected" ? "not_collected" : "collected";
+      const nextIsPaid = false;
+
+      if (targetInvoice.collectionStatus !== nextCollectionStatus) {
+        await handleToggle_API(invoiceId, "collectionStatus");
+      }
+      if ((targetInvoice.isPaid ?? false) !== nextIsPaid) {
+        await handleToggleIsPaid_API(invoiceId);
+      }
+
       setInvoices((prev) =>
         prev.map((inv) =>
           inv._id === invoiceId
             ? {
                 ...inv,
-                [field]:
-                  field === "printStatus"
-                    ? inv.printStatus === "printed"
-                      ? "not_printed"
-                      : "printed"
-                    : inv.collectionStatus === "collected"
-                    ? "not_collected"
-                    : "collected",
-                collectionDate:
-                  field === "collectionStatus"
-                    ? inv.collectionStatus === "collected"
-                      ? null
-                      : toISOStringVN()
-                    : inv.collectionDate,
+                collectionStatus: nextCollectionStatus,
+                isPaid: nextIsPaid,
+                collectionDate: nextCollectionStatus === "collected" ? toISOStringVN() : null,
               }
             : inv
         )
@@ -421,19 +439,35 @@ export const useInvoiceManagement = () => {
     } catch (err) {
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
+      reloadInvoices();
     }
   };
 
   const handleToggleIsPaid = async (invoiceId: string) => {
+    const targetInvoice = invoices.find((inv) => inv._id === invoiceId);
+    if (!targetInvoice) return;
+
     try {
-      await handleToggleIsPaid_API(invoiceId);
-      // Cập nhật state cục bộ để UI phản hồi nhanh hơn
+      // Bật "Đã đóng cước" => tự tắt "Đã thu".
+      // Tắt "Đã đóng cước" => về "Chưa thu".
+      const nextIsPaid = !(targetInvoice.isPaid ?? false);
+      const nextCollectionStatus = "not_collected";
+
+      if ((targetInvoice.isPaid ?? false) !== nextIsPaid) {
+        await handleToggleIsPaid_API(invoiceId);
+      }
+      if (targetInvoice.collectionStatus !== nextCollectionStatus) {
+        await handleToggle_API(invoiceId, "collectionStatus");
+      }
+
       setInvoices((prev) =>
         prev.map((inv) =>
           inv._id === invoiceId
             ? {
                 ...inv,
-                isPaid: !inv.isPaid, // 1. Đảo ngược trạng thái isPaid
+                isPaid: nextIsPaid,
+                collectionStatus: nextCollectionStatus,
+                collectionDate: null,
               }
             : inv
         )
@@ -441,6 +475,7 @@ export const useInvoiceManagement = () => {
     } catch (err) {
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
+      reloadInvoices();
     }
   };
 
@@ -733,7 +768,6 @@ export const useInvoiceManagement = () => {
     setPaymentStatus,
   };
 };
-
 
 
 

@@ -1,7 +1,13 @@
 ﻿// hooks/useUserInvoiceManagement.ts
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { collectSummaryAPI, deleteInvoice_API, fetchuserinvoices, handleToggle_API } from "@/services/invoice.api";
+import {
+  collectSummaryAPI,
+  deleteInvoice_API,
+  fetchuserinvoices,
+  handleToggle_API,
+  handleToggleIsPaid_API,
+} from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user"; // Giả định IUser được import
 import toast from "react-hot-toast";
@@ -242,27 +248,46 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   };
 
   const handleToggle = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
+    const targetInvoice = invoices.find((inv) => inv._id === invoiceId);
+    if (!targetInvoice) return;
+
     try {
-      await handleToggle_API(invoiceId, field);
+      if (field === "printStatus") {
+        await handleToggle_API(invoiceId, field);
+        setInvoices((prev) =>
+          prev.map((inv) =>
+            inv._id === invoiceId
+              ? {
+                  ...inv,
+                  printStatus: inv.printStatus === "printed" ? "not_printed" : "printed",
+                }
+              : inv
+          )
+        );
+        return;
+      }
+
+      // Nhánh user không có switch "Đã đóng cước" để bật,
+      // nhưng khi bật/tắt "Đã thu" vẫn phải ép "Đã đóng cước" về false.
+      const nextCollectionStatus =
+        targetInvoice.collectionStatus === "collected" ? "not_collected" : "collected";
+      const nextIsPaid = false;
+
+      if (targetInvoice.collectionStatus !== nextCollectionStatus) {
+        await handleToggle_API(invoiceId, "collectionStatus");
+      }
+      if ((targetInvoice.isPaid ?? false) !== nextIsPaid) {
+        await handleToggleIsPaid_API(invoiceId);
+      }
+
       setInvoices((prev) =>
         prev.map((inv) =>
           inv._id === invoiceId
             ? {
                 ...inv,
-                [field]:
-                  field === "printStatus"
-                    ? inv.printStatus === "printed"
-                      ? "not_printed"
-                      : "printed"
-                    : inv.collectionStatus === "collected"
-                    ? "not_collected"
-                    : "collected",
-                collectionDate:
-                  field === "collectionStatus"
-                    ? inv.collectionStatus === "collected"
-                      ? null
-                      : toISOStringVN()
-                    : inv.collectionDate,
+                collectionStatus: nextCollectionStatus,
+                isPaid: nextIsPaid,
+                collectionDate: nextCollectionStatus === "collected" ? toISOStringVN() : null,
               }
             : inv
         )
@@ -270,6 +295,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     } catch (err) {
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
+      reloadInvoices();
     }
   };
 
@@ -568,7 +594,6 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setAllPaymentStatus,
   };
 };
-
 
 
 
