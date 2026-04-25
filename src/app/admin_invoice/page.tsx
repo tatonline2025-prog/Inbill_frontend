@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Box, Pagination, Typography } from "@mui/material";
+import { Box, Pagination } from "@mui/material";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
@@ -135,10 +135,6 @@ export default function InvoicesPage() {
   return (
     <ProtectedRoute fallback={<p>Redirecting...</p>}>
       <Box sx={{ p: 4 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          Danh Sách Hóa Đơn
-        </Typography>
-
         {/* === TOOLBAR === */}
         <InvoiceToolbar
           invoicesCount={invoices.length}
@@ -177,10 +173,7 @@ export default function InvoicesPage() {
           }}
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
-          selectedProvince={selectedProvince}
-          onSelectedProvinceChange={createFilterChangeHandler(setSelectedProvince)}
           userData={userData}
-          provinces={provinces}
         />
 
         {/* === SUMMARY === */}
@@ -274,6 +267,7 @@ export default function InvoicesPage() {
         open={openUploadWithProvince}
         onClose={() => setOpenUploadWithProvince(false)}
         onSuccess={reloadInvoices}
+        userData={userData}
       />
 
       <UploadPaidInvoicesDialog

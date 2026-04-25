@@ -11,10 +11,7 @@ interface InvoiceFilterBarProps {
   onFilterCollectionChange: (value: string) => void;
   filterAssignedUser: string;
   onFilterAssignedUserChange: (value: string) => void;
-  selectedProvince: string;
-  onSelectedProvinceChange: (value: string) => void;
   userData: IUser[];
-  provinces: string[];
 }
 
 export default function InvoiceFilterBar({
@@ -24,10 +21,7 @@ export default function InvoiceFilterBar({
   onFilterCollectionChange,
   filterAssignedUser,
   onFilterAssignedUserChange,
-  selectedProvince,
-  onSelectedProvinceChange,
   userData,
-  provinces,
 }: InvoiceFilterBarProps) {
   return (
     <Box
@@ -103,30 +97,7 @@ export default function InvoiceFilterBar({
         </Select>
       </FormControl>
 
-      <FormControl
-        size="small"
-        sx={{
-          minWidth: { xs: 140, sm: 160 },
-          fontSize: { xs: "0.7rem", sm: "0.875rem" },
-        }}
-      >
-        <InputLabel id="province-label">Tỉnh</InputLabel>
-        <Select
-          labelId="province-label"
-          value={selectedProvince}
-          label="Tỉnh"
-          onChange={(e: SelectChangeEvent) => onSelectedProvinceChange(e.target.value)}
-        >
-          <MenuItem value="all">Tất cả</MenuItem>
-          {provinces.map((province) => (
-            <MenuItem key={province} value={province}>
-              {province}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      {/* Ô 'Tinh' đã chứa trên. Ô chọn 'Đã đóng cước' đã được gộp vào dropdown 'Trạng thái hóa đơn'. */}
+      {/* Ô chọn 'Đã đóng cước' đã được gộp vào dropdown 'Trạng thái hóa đơn'. Ô 'Tỉnh' đã bỏ theo yêu cầu. */}
     </Box>
   );
 }

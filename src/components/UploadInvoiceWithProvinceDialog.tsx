@@ -5,31 +5,37 @@ import { Box, Button, Dialog, FormControl, InputLabel, MenuItem, Select, Typogra
 import toast from "react-hot-toast";
 import { excelUpProvince } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
-import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { isAxiosError } from "axios";
+import { IUser } from "@/types/user";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  userData: IUser[];
 }
 
-const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuccess }) => {
-  const [selectedProvince, setSelectedProvince] = useState("");
+const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuccess, userData }) => {
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState("");
 
   const handleUpload = async () => {
-    if (!uploadFile || !selectedProvince) return;
+    if (!uploadFile || !selectedUserId) return;
     if (!billingPeriod) {
       toast.error("Vui lòng chọn kỳ hóa đơn!");
       return;
     }
 
+    const selectedUser = userData.find((u) => u._id === selectedUserId);
+    const province = selectedUser?.province || "";
+
     const formData = new FormData();
     formData.append("excelFile", uploadFile);
-    formData.append("province", selectedProvince);
+    formData.append("province", province);
+    formData.append("assignedUserId", selectedUserId);
     formData.append("billing_period", billingPeriod);
 
     setLoading(true);
@@ -60,28 +66,26 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     }
   };
 
-  const provinces = PROVINCES;
-
   const billingPeriods = generateBillingPeriods();
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <Box sx={{ p: 3, minWidth: 300 }}>
+      <Box sx={{ p: 3, minWidth: 320 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Upload Excel với tỉnh
+          Upload Excel + NPT
         </Typography>
 
         <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="province-label">Chọn tỉnh</InputLabel>
+          <InputLabel id="user-label">Chọn người phụ trách</InputLabel>
           <Select
-            labelId="province-label"
-            value={selectedProvince}
-            label="Chọn tỉnh"
-            onChange={(e) => setSelectedProvince(e.target.value)}
+            labelId="user-label"
+            value={selectedUserId}
+            label="Chọn người phụ trách"
+            onChange={(e) => setSelectedUserId(e.target.value)}
           >
-            {provinces.map((prov) => (
-              <MenuItem key={prov} value={prov}>
-                {prov}
+            {userData.map((u) => (
+              <MenuItem key={u._id} value={u._id}>
+                {u.fullName || u.email}{u.province ? ` — ${u.province}` : ""}
               </MenuItem>
             ))}
           </Select>
@@ -116,7 +120,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
           </Button>
           <Button
             variant="contained"
-            disabled={!uploadFile || !selectedProvince || !billingPeriod || loading}
+            disabled={!uploadFile || !selectedUserId || !billingPeriod || loading}
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >

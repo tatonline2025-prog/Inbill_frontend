@@ -9,6 +9,7 @@ import {
   DialogTitle,
   FormControl,
   InputLabel,
+  Menu,
   MenuItem,
   Select,
   TextField,
@@ -17,6 +18,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import ListIcon from "@mui/icons-material/List";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { useState } from "react";
 
@@ -65,6 +67,8 @@ export default function InvoiceToolbar({
 }: InvoiceToolbarProps) {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkValue, setBulkValue] = useState("");
+  const [deleteMenuAnchor, setDeleteMenuAnchor] = useState<null | HTMLElement>(null);
+  const isDeleteMenuOpen = Boolean(deleteMenuAnchor);
 
   // Kiểu 'sx' chung cho các nút để tránh lặp code
   const commonButtonSx = {
@@ -72,7 +76,7 @@ export default function InvoiceToolbar({
     textTransform: "none", // Giữ lại kiểu chữ thường
   };
 
-  const searchLabel = searchType === "customerCode" ? "Tìm theo Mã khách hàng" : "Tìm theo Mã trạm";
+  const searchLabel = searchType === "customerCode" ? "Tìm theo Mã KH" : "Tìm theo Mã trạm";
 
   const handleSearchTypeChange = (event: SelectChangeEvent) => {
     // Ép kiểu giá trị thành SearchType
@@ -112,9 +116,78 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {/* Nhử 'Xuất ra Excel toàn bộ' và 'Xuất Excel Theo Người Phụ Trách' đã được bỏ theo yêu cầu */}
+          {/* 1. Upload Excel + NPT */}
+          {onOpenUploadWithProvince && (
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={onOpenUploadWithProvince}
+              sx={commonButtonSx}
+            >
+              Upload Excel + NPT
+            </Button>
+          )}
 
-          {/* Nút Xuất Excel chọn lọc */}
+          {/* 2. Xóa hóa đơn (menu) */}
+          {(onDeleteSelected || onOpenDeleteAllModal) && (
+            <>
+              <Button
+                variant="contained"
+                color="warning"
+                size="small"
+                endIcon={<ArrowDropDownIcon />}
+                onClick={(e) => setDeleteMenuAnchor(e.currentTarget)}
+                sx={commonButtonSx}
+              >
+                Xóa hóa đơn
+              </Button>
+              <Menu
+                anchorEl={deleteMenuAnchor}
+                open={isDeleteMenuOpen}
+                onClose={() => setDeleteMenuAnchor(null)}
+              >
+                {onDeleteSelected && (
+                  <MenuItem
+                    disabled={selectedInvoicesCount === 0}
+                    onClick={() => {
+                      setDeleteMenuAnchor(null);
+                      onDeleteSelected();
+                    }}
+                  >
+                    Xóa hóa đơn đang chọn ({selectedInvoicesCount})
+                  </MenuItem>
+                )}
+                {onOpenDeleteAllModal && (
+                  <MenuItem
+                    onClick={() => {
+                      setDeleteMenuAnchor(null);
+                      onOpenDeleteAllModal();
+                    }}
+                  >
+                    Xóa hóa đơn theo kỳ
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
+          )}
+
+          {/* 3. Cập nhật HĐ đã đóng cước */}
+          {onOpenUploadPaidInvoices && (
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={onOpenUploadPaidInvoices}
+              sx={commonButtonSx}
+            >
+              Cập nhật HĐ đã đóng cước
+            </Button>
+          )}
+
+          {/* 4. Xuất Excel chọn lọc */}
           {onExportPrinted && (
             <Button
               variant="contained"
@@ -128,7 +201,7 @@ export default function InvoiceToolbar({
                 minWidth: { xs: "120px", sm: "160px" },
               }}
             >
-              Xuất ra Excel chọn lọc
+              Xuất Excel chọn lọc
             </Button>
           )}
         </Box>
@@ -159,80 +232,14 @@ export default function InvoiceToolbar({
         )}
       </Box>
 
-      {/* --- Hàng nút hành động --- */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}>
-        {/* Nút Thêm mới */}
-        {onOpenAddDialog && (
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={onOpenAddDialog}
-            sx={commonButtonSx}
-          >
-            Thêm mới hoá đơn
-          </Button>
-        )}
-
-        {/* Nút Xoá đã chọn */}
-        {onDeleteSelected && (
-          <Button
-            variant="contained"
-            color="error"
-            size="small"
-            disabled={selectedInvoicesCount === 0}
-            onClick={onDeleteSelected}
-            sx={commonButtonSx}
-          >
-            Xoá ({selectedInvoicesCount}) HĐ đã chọn
-          </Button>
-        )}
-
-        {/* Nút Xoá tất cả */}
-        {onOpenDeleteAllModal && (
-          <Button variant="contained" color="warning" size="small" onClick={onOpenDeleteAllModal} sx={commonButtonSx}>
-            Xoá tất cả hoá đơn theo kỳ
-          </Button>
-        )}
-
-        {/* Nút Upload Excel */}
-        {onOpenUploadWithProvince && (
-          <Button
-            variant="contained"
-            color="secondary"
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={onOpenUploadWithProvince}
-            sx={commonButtonSx}
-          >
-            Upload Excel + Tỉnh
-          </Button>
-        )}
-
-        {onOpenUploadPaidInvoices && (
-          <Button
-            variant="contained"
-            color="secondary"
-            size="small"
-            startIcon={<AddIcon />}
-            // Sửa tên hàm ở đây
-            onClick={onOpenUploadPaidInvoices}
-            sx={commonButtonSx}
-          >
-            Hoá đơn đã đóng cước
-          </Button>
-        )}
-      </Box>
-
-      {/* --- Ô tìm kiếm --- */}
+      {/* --- Hàng 2: Tìm theo + input + Tìm hàng loạt + Thêm hóa đơn mới --- */}
       <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 3 }}>
         {onSearchChange && (
           <>
             <FormControl size="small" sx={{ minWidth: { xs: 120, sm: 150 } }}>
               <InputLabel id="search-type-label">Tìm theo</InputLabel>
               <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeChange}>
-                <MenuItem value="customerCode">Mã khách hàng</MenuItem>
+                <MenuItem value="customerCode">Mã KH</MenuItem>
                 <MenuItem value="stationCode">Mã trạm</MenuItem>
               </Select>
             </FormControl>
@@ -247,7 +254,7 @@ export default function InvoiceToolbar({
           </>
         )}
 
-        {/* NÚT TÌM KIẾM HÀNG LOẠT */}
+        {/* Nút Tìm hàng loạt */}
         {onBulkSearch && (
           <Button
             variant="outlined"
@@ -257,6 +264,20 @@ export default function InvoiceToolbar({
             sx={{ ...commonButtonSx, height: "40px" }}
           >
             Tìm hàng loạt
+          </Button>
+        )}
+
+        {/* Nút Thêm hóa đơn mới */}
+        {onOpenAddDialog && (
+          <Button
+            variant="contained"
+            color="success"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={onOpenAddDialog}
+            sx={{ ...commonButtonSx, height: "40px" }}
+          >
+            Thêm hóa đơn mới
           </Button>
         )}
       </Box>
