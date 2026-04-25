@@ -23,7 +23,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
   const [billingPeriod, setBillingPeriod] = useState("");
 
   const handleUpload = async () => {
-    if (!uploadFile || !selectedUserId) return;
+    if (!uploadFile) return;
     if (!billingPeriod) {
       toast.error("Vui lòng chọn kỳ hóa đơn!");
       return;
@@ -35,7 +35,9 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     const formData = new FormData();
     formData.append("excelFile", uploadFile);
     formData.append("province", province);
-    formData.append("assignedUserId", selectedUserId);
+    if (selectedUserId) {
+      formData.append("assignedUserId", selectedUserId);
+    }
     formData.append("billing_period", billingPeriod);
 
     setLoading(true);
@@ -76,13 +78,16 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
         </Typography>
 
         <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="user-label">Chọn người phụ trách</InputLabel>
+          <InputLabel id="user-label">Người phụ trách (không bắt buộc)</InputLabel>
           <Select
             labelId="user-label"
             value={selectedUserId}
-            label="Chọn người phụ trách"
+            label="Người phụ trách (không bắt buộc)"
             onChange={(e) => setSelectedUserId(e.target.value)}
           >
+            <MenuItem value="">
+              <em>Để trống — ai thu sẽ là người phụ trách</em>
+            </MenuItem>
             {userData.map((u) => (
               <MenuItem key={u._id} value={u._id}>
                 {u.fullName || u.email}{u.province ? ` — ${u.province}` : ""}
@@ -120,7 +125,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
           </Button>
           <Button
             variant="contained"
-            disabled={!uploadFile || !selectedUserId || !billingPeriod || loading}
+            disabled={!uploadFile || !billingPeriod || loading}
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >
