@@ -21,6 +21,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import toast from "react-hot-toast";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import { useAuth } from "@/hooks/useAuth";
+import { updateCollectionDate_API } from "@/services/invoice.api";
 
 interface InvoiceTableProps {
   loading: boolean;
@@ -65,6 +67,28 @@ export default function InvoiceTable({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const [isCopyingAll, setIsCopyingAll] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [savingDateId, setSavingDateId] = useState<string | null>(null);
+
+  const handleSaveCollectionDate = async (invoice: InvoiceInfo, newDate: string) => {
+    setSavingDateId(invoice._id);
+    try {
+      await updateCollectionDate_API(invoice._id, newDate || null);
+      // Cập nhật local UI ngay
+      invoice.collectionDate = newDate ? new Date(`${newDate}T12:00:00.000Z`).toISOString() : null;
+      invoice.collectionDateAdminEdited = !!newDate;
+      invoice.collectionStatus = newDate ? "collected" : "not_collected";
+      toast.success("Đã cập nhật ngày thu.");
+      setEditingDateId(null);
+    } catch (e) {
+      console.error(e);
+      toast.error("Lưu ngày thu thất bại.");
+    } finally {
+      setSavingDateId(null);
+    }
+  };
 
   // Load cấu hình từ localStorage khi mới vào (key v2 để reset cấu hình cũ)
   useEffect(() => {
@@ -438,7 +462,55 @@ export default function InvoiceTable({
 
                     {isColVisible("collectionDate") && (
                       <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                        {formatDateTimeVN(invoice.collectionDate)}
+                        {(() => {
+                          const adminEdited = invoice.collectionDateAdminEdited === true;
+                          const display = invoice.collectionDate
+                            ? adminEdited
+                              ? formatDateVN(invoice.collectionDate)
+                              : formatDateTimeVN(invoice.collectionDate)
+                            : "-";
+
+                          if (!isAdmin) return display;
+
+                          if (editingDateId === invoice._id) {
+                            // giá trị default để input date hiểu (YYYY-MM-DD)
+                            const defaultVal = invoice.collectionDate
+                              ? new Date(invoice.collectionDate).toISOString().slice(0, 10)
+                              : new Date().toISOString().slice(0, 10);
+                            return (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                <input
+                                  type="date"
+                                  defaultValue={defaultVal}
+                                  disabled={savingDateId === invoice._id}
+                                  style={{ fontSize: "0.75rem", padding: "2px 4px" }}
+                                  onBlur={(e) => handleSaveCollectionDate(invoice, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                                    if (e.key === "Escape") setEditingDateId(null);
+                                  }}
+                                  autoFocus
+                                />
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <span
+                              role="button"
+                              title={adminEdited ? "Đơn bổ sung (admin chỉnh ngày) — nhấp để sửa" : "Nhấp để chỉnh ngày thu"}
+                              onClick={() => setEditingDateId(invoice._id)}
+                              style={{
+                                cursor: "pointer",
+                                color: adminEdited ? "#2563eb" : undefined,
+                                fontWeight: adminEdited ? 600 : undefined,
+                                textDecoration: "underline dotted",
+                              }}
+                            >
+                              {display}
+                            </span>
+                          );
+                        })()}
                       </td>
                     )}
 

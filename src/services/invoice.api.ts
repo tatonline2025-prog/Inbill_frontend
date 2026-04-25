@@ -301,6 +301,17 @@ export const handleToggleIsPaid_API = async (invoiceId: string) => {
   }
 };
 
+export const updateCollectionDate_API = async (invoiceId: string, date: string | null) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+  const res = await axios.patch(
+    `${getApiBaseUrl()}/api/invoices/${invoiceId}/collection-date`,
+    { date },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res;
+};
+
 export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[] }) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");

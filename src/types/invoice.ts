@@ -19,6 +19,7 @@ export interface InvoiceInfo {
   // 📅 Trạng thái và ngày tháng
   issueDate: string; // Ngày phát hành
   collectionDate?: string | null; // Ngày thu tiền (nếu có)
+  collectionDateAdminEdited?: boolean; // true nếu admin chỉnh ngày thu thủ công
   collectionStatus: "collected" | "not_collected";
   printStatus: "printed" | "not_printed";
 
