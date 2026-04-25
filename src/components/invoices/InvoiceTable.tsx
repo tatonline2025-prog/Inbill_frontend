@@ -327,14 +327,15 @@ export default function InvoiceTable({
                   </td>
                 )}
 
-                {isColVisible("customerName") && (
+                {/* Missing row: hiển thị tên lỗi trải dài, bỏ qua các cột khác */}
+                {isMissingRow && isColVisible("customerName") && (
                   <td
                     style={{
                       border: "1px solid #ddd",
                       padding: "6px",
-                      fontStyle: isMissingRow ? "italic" : "normal",
+                      fontStyle: "italic",
                     }}
-                    colSpan={isMissingRow ? 10 : 1}
+                    colSpan={10}
                   >
                     {invoice.customerName}
                   </td>
@@ -369,6 +370,12 @@ export default function InvoiceTable({
                         }}
                       >
                         {invoice.totalAmount}
+                      </td>
+                    )}
+
+                    {isColVisible("customerName") && (
+                      <td style={{ border: "1px solid #ddd", padding: "6px" }}>
+                        {invoice.customerName}
                       </td>
                     )}
 
