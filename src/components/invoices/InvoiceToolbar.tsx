@@ -115,25 +115,25 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {/* 1. Upload Excel + NPT (xanh lá) */}
+          {/* 1. Upload Excel + NPT (vàng) */}
           {onOpenUploadWithProvince && (
             <Button
               variant="contained"
               size="small"
               onClick={onOpenUploadWithProvince}
-              sx={{ ...commonButtonSx, backgroundColor: "#16a34a", "&:hover": { backgroundColor: "#15803d" } }}
+              sx={{ ...commonButtonSx, backgroundColor: "#eab308", color: "#fff", "&:hover": { backgroundColor: "#ca8a04" } }}
             >
               Upload Excel + NPT
             </Button>
           )}
 
-          {/* 2. Cập nhật HĐ đã đóng cước (xanh lá) */}
+          {/* 2. Cập nhật HĐ đã đóng cước (vàng) */}
           {onOpenUploadPaidInvoices && (
             <Button
               variant="contained"
               size="small"
               onClick={onOpenUploadPaidInvoices}
-              sx={{ ...commonButtonSx, backgroundColor: "#16a34a", "&:hover": { backgroundColor: "#15803d" } }}
+              sx={{ ...commonButtonSx, backgroundColor: "#eab308", color: "#fff", "&:hover": { backgroundColor: "#ca8a04" } }}
             >
               Cập nhật HĐ đã đóng cước
             </Button>
@@ -181,7 +181,7 @@ export default function InvoiceToolbar({
             </>
           )}
 
-          {/* 4. Xuất Excel chọn lọc (vàng) */}
+          {/* 4. Xuất Excel chọn lọc (xanh lá) */}
           {onExportPrinted && (
             <Button
               variant="contained"
@@ -192,9 +192,9 @@ export default function InvoiceToolbar({
               sx={{
                 ...commonButtonSx,
                 minWidth: { xs: "120px", sm: "160px" },
-                backgroundColor: "#eab308",
+                backgroundColor: "#16a34a",
                 color: "#fff",
-                "&:hover": { backgroundColor: "#ca8a04" },
+                "&:hover": { backgroundColor: "#15803d" },
               }}
             >
               Xuất Excel chọn lọc
@@ -263,7 +263,7 @@ export default function InvoiceToolbar({
           </Button>
         )}
 
-        {/* Nút Thêm HĐ mới (xanh lá) */}
+        {/* Nút Thêm HĐ mới (vàng) */}
         {onOpenAddDialog && (
           <Button
             variant="contained"
@@ -272,8 +272,9 @@ export default function InvoiceToolbar({
             sx={{
               ...commonButtonSx,
               height: "40px",
-              backgroundColor: "#16a34a",
-              "&:hover": { backgroundColor: "#15803d" },
+              backgroundColor: "#eab308",
+              color: "#fff",
+              "&:hover": { backgroundColor: "#ca8a04" },
             }}
           >
             Thêm HĐ mới
