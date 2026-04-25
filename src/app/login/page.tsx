@@ -8,6 +8,7 @@ import { getApiBaseUrl } from "@/lib/api-base-url";
 export default function LoginPage() {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -95,15 +96,25 @@ export default function LoginPage() {
             <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
               Mật khẩu
             </label>
-            <input
-              type="password"
-              id="password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Nhập mật khẩu"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative mb-3">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="shadow appearance-none border rounded w-full py-2 pl-3 pr-12 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Nhập mật khẩu"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-600 hover:text-gray-900 focus:outline-none"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? "Ẩn" : "Hiện"}
+              </button>
+            </div>
           </div>
           <button
             type="submit"
