@@ -121,7 +121,7 @@ export default function InvoiceToolbar({
               variant="contained"
               size="small"
               onClick={onOpenUploadWithProvince}
-              sx={{ ...commonButtonSx, backgroundColor: "#eab308", color: "#fff", "&:hover": { backgroundColor: "#ca8a04" } }}
+              sx={{ ...commonButtonSx, backgroundColor: "#facc15", color: "#fff", "&:hover": { backgroundColor: "#eab308" } }}
             >
               Upload Excel + NPT
             </Button>
@@ -133,7 +133,7 @@ export default function InvoiceToolbar({
               variant="contained"
               size="small"
               onClick={onOpenUploadPaidInvoices}
-              sx={{ ...commonButtonSx, backgroundColor: "#eab308", color: "#fff", "&:hover": { backgroundColor: "#ca8a04" } }}
+              sx={{ ...commonButtonSx, backgroundColor: "#facc15", color: "#fff", "&:hover": { backgroundColor: "#eab308" } }}
             >
               Cập nhật HĐ đã đóng cước
             </Button>
@@ -272,9 +272,9 @@ export default function InvoiceToolbar({
             sx={{
               ...commonButtonSx,
               height: "40px",
-              backgroundColor: "#eab308",
+              backgroundColor: "#facc15",
               color: "#fff",
-              "&:hover": { backgroundColor: "#ca8a04" },
+              "&:hover": { backgroundColor: "#eab308" },
             }}
           >
             Thêm HĐ mới

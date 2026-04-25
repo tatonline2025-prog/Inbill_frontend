@@ -22,7 +22,6 @@ import ExportModals from "@/components/invoices/ExportModals"; // Component mớ
 import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
 import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
-import CollectionSummary from "@/components/invoices/CollectionSummary";
 
 export default function InvoicesPage() {
   const {
@@ -183,13 +182,9 @@ export default function InvoicesPage() {
           assignedCustomerCodes={assignedCustomerCodes}
           unassignedCustomerCodes={unassignedCustomerCodes}
           totalAmountInfo={totalAmountInfo}
-        />
-
-        <CollectionSummary
           collected={collectSummary?.collected}
           notCollected={collectSummary?.notCollected}
           isPaid={collectSummary?.isPaid}
-          total={collectSummary?.total}
         />
 
         {/* === DATA TABLE === */}

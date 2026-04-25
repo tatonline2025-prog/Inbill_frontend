@@ -35,7 +35,7 @@ export default function CollectionSummary({ collected, notCollected, isPaid }: C
 
   const segments: Segment[] = [
     { key: "collected", label: "Đã thu", data: c, color: "#16a34a", textColor: "#ffffff" },
-    { key: "notCollected", label: "Chưa thu", data: n, color: "#eab308", textColor: "#1f2937" },
+    { key: "notCollected", label: "Chưa thu", data: n, color: "#facc15", textColor: "#1f2937" },
     { key: "isPaid", label: "Đã đóng cước", data: p, color: "#9ca3af", textColor: "#ffffff" },
   ];
 
