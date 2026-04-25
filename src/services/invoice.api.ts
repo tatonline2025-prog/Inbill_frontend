@@ -208,6 +208,27 @@ export const invoiceSummary = async (userId?: string) => {
   return res;
 };
 
+export interface IDailyCollectionSummary {
+  date: string;
+  totalCount: number;
+  totalAmount: number;
+  assignedUsers: string[];
+}
+
+export const dailyCollectionSummaryAPI = async (days = 31) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
+  const res = await axios.get<IDailyCollectionSummary[]>(
+    `${getApiBaseUrl()}/api/invoices/daily-summary`,
+    {
+      params: { days },
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return res;
+};
+
 export const collectSummaryAPI = async (assignedUserId?: string) => {
   const token = localStorage.getItem("token");
 
