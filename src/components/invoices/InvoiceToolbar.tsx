@@ -15,7 +15,6 @@ import {
   TextField,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
-import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import ListIcon from "@mui/icons-material/List";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -116,32 +115,41 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {/* 1. Upload Excel + NPT */}
+          {/* 1. Upload Excel + NPT (xanh lá) */}
           {onOpenUploadWithProvince && (
             <Button
               variant="contained"
-              color="secondary"
               size="small"
-              startIcon={<AddIcon />}
               onClick={onOpenUploadWithProvince}
-              sx={commonButtonSx}
+              sx={{ ...commonButtonSx, backgroundColor: "#16a34a", "&:hover": { backgroundColor: "#15803d" } }}
             >
               Upload Excel + NPT
             </Button>
           )}
 
-          {/* 2. Xóa hóa đơn (menu) */}
+          {/* 2. Cập nhật HĐ đã đóng cước (xanh lá) */}
+          {onOpenUploadPaidInvoices && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={onOpenUploadPaidInvoices}
+              sx={{ ...commonButtonSx, backgroundColor: "#16a34a", "&:hover": { backgroundColor: "#15803d" } }}
+            >
+              Cập nhật HĐ đã đóng cước
+            </Button>
+          )}
+
+          {/* 3. Xóa HĐ (xám, menu) */}
           {(onDeleteSelected || onOpenDeleteAllModal) && (
             <>
               <Button
                 variant="contained"
-                color="warning"
                 size="small"
                 endIcon={<ArrowDropDownIcon />}
                 onClick={(e) => setDeleteMenuAnchor(e.currentTarget)}
-                sx={commonButtonSx}
+                sx={{ ...commonButtonSx, backgroundColor: "#6b7280", color: "#fff", "&:hover": { backgroundColor: "#4b5563" } }}
               >
-                Xóa hóa đơn
+                Xóa HĐ
               </Button>
               <Menu
                 anchorEl={deleteMenuAnchor}
@@ -156,7 +164,7 @@ export default function InvoiceToolbar({
                       onDeleteSelected();
                     }}
                   >
-                    Xóa hóa đơn đang chọn ({selectedInvoicesCount})
+                    Xóa HĐ đang chọn ({selectedInvoicesCount})
                   </MenuItem>
                 )}
                 {onOpenDeleteAllModal && (
@@ -166,32 +174,17 @@ export default function InvoiceToolbar({
                       onOpenDeleteAllModal();
                     }}
                   >
-                    Xóa hóa đơn theo kỳ
+                    Xóa HĐ theo kỳ
                   </MenuItem>
                 )}
               </Menu>
             </>
           )}
 
-          {/* 3. Cập nhật HĐ đã đóng cước */}
-          {onOpenUploadPaidInvoices && (
-            <Button
-              variant="contained"
-              color="secondary"
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={onOpenUploadPaidInvoices}
-              sx={commonButtonSx}
-            >
-              Cập nhật HĐ đã đóng cước
-            </Button>
-          )}
-
-          {/* 4. Xuất Excel chọn lọc */}
+          {/* 4. Xuất Excel chọn lọc (vàng) */}
           {onExportPrinted && (
             <Button
               variant="contained"
-              color="success"
               size="small"
               startIcon={<DownloadIcon />}
               onClick={onExportPrinted}
@@ -199,6 +192,9 @@ export default function InvoiceToolbar({
               sx={{
                 ...commonButtonSx,
                 minWidth: { xs: "120px", sm: "160px" },
+                backgroundColor: "#eab308",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#ca8a04" },
               }}
             >
               Xuất Excel chọn lọc
@@ -267,17 +263,20 @@ export default function InvoiceToolbar({
           </Button>
         )}
 
-        {/* Nút Thêm hóa đơn mới */}
+        {/* Nút Thêm HĐ mới (xanh lá) */}
         {onOpenAddDialog && (
           <Button
             variant="contained"
-            color="success"
             size="small"
-            startIcon={<AddIcon />}
             onClick={onOpenAddDialog}
-            sx={{ ...commonButtonSx, height: "40px" }}
+            sx={{
+              ...commonButtonSx,
+              height: "40px",
+              backgroundColor: "#16a34a",
+              "&:hover": { backgroundColor: "#15803d" },
+            }}
           >
-            Thêm hóa đơn mới
+            Thêm HĐ mới
           </Button>
         )}
       </Box>
