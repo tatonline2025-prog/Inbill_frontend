@@ -164,16 +164,23 @@ export default function InvoicesPage() {
         <InvoiceFilterBar
           filterPrint={filterPrint}
           onFilterPrintChange={createFilterChangeHandler(setFilterPrint)}
-          filterCollection={filterCollection}
-          onFilterCollectionChange={createFilterChangeHandler(setFilterCollection)}
+          filterCollection={isPaidFilter ? "is_paid" : filterCollection}
+          onFilterCollectionChange={(value) => {
+            // Khi chọn "Đã đóng cước" → bật isPaidFilter và reset filterCollection về "all"
+            if (value === "is_paid") {
+              setIsPaidFilter(true);
+              setFilterCollection("all");
+            } else {
+              setIsPaidFilter(false);
+              setFilterCollection(value);
+            }
+          }}
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
           selectedProvince={selectedProvince}
           onSelectedProvinceChange={createFilterChangeHandler(setSelectedProvince)}
           userData={userData}
           provinces={provinces}
-          isPaid={isPaidFilter}
-          onIsPaidChange={(checked) => setIsPaidFilter(checked)}
         />
 
         {/* === SUMMARY === */}

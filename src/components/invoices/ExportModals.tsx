@@ -215,8 +215,7 @@ export default function ExportModals({
             />
           ) : ( */}
           <div style={{ display: "flex", gap: "16px", marginBottom: "8px", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1 }}>
-              <span style={{ color: "#666", fontSize: "0.85rem", whiteSpace: "nowrap" }}>00:00</span>
+            <div style={{ flex: 1 }}>
               <TextField
                 label="Từ"
                 type="date"
@@ -225,10 +224,16 @@ export default function ExportModals({
                 value={collectedFromDate}
                 onChange={(e) => setCollectedFromDate(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <span style={{ color: "#666", fontSize: "0.85rem", whiteSpace: "nowrap", marginRight: 6 }}>
+                      00:00
+                    </span>
+                  ),
+                }}
               />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1 }}>
-              <span style={{ color: "#666", fontSize: "0.85rem", whiteSpace: "nowrap" }}>23:59</span>
+            <div style={{ flex: 1 }}>
               <TextField
                 label="Đến"
                 type="date"
@@ -237,6 +242,13 @@ export default function ExportModals({
                 value={collectedToDate}
                 onChange={(e) => setCollectedToDate(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <span style={{ color: "#666", fontSize: "0.85rem", whiteSpace: "nowrap", marginRight: 6 }}>
+                      23:59
+                    </span>
+                  ),
+                }}
               />
             </div>
           </div>
@@ -323,12 +335,12 @@ export default function ExportModals({
               </Select>
               </FormControl>
 
-              {/* Trạng thái bill */}
+              {/* Trạng thái hóa đơn */}
               <FormControl fullWidth margin="dense" sx={{ flex: 1 }}>
-                <InputLabel>Trạng thái bill</InputLabel>
+                <InputLabel>Trạng thái hóa đơn</InputLabel>
                 <Select
                   value={collectedStatus}
-                  label="Trạng thái bill"
+                  label="Trạng thái hóa đơn"
                   onChange={(e) => setCollectedStatus(e.target.value)}
                 >
                   <MenuItem value="paid">Đã thu</MenuItem>

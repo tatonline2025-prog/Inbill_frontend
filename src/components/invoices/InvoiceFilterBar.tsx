@@ -1,6 +1,6 @@
 // components/invoices/InvoiceFilterBar.tsx
 
-import { Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select } from "@mui/material";
+import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { IUser } from "@/types/user";
 
@@ -15,8 +15,6 @@ interface InvoiceFilterBarProps {
   onSelectedProvinceChange: (value: string) => void;
   userData: IUser[];
   provinces: string[];
-  isPaid: boolean;
-  onIsPaidChange: (checked: boolean) => void;
 }
 
 export default function InvoiceFilterBar({
@@ -30,8 +28,6 @@ export default function InvoiceFilterBar({
   onSelectedProvinceChange,
   userData,
   provinces,
-  isPaid,
-  onIsPaidChange,
 }: InvoiceFilterBarProps) {
   return (
     <Box
@@ -69,16 +65,17 @@ export default function InvoiceFilterBar({
           fontSize: { xs: "0.7rem", sm: "0.875rem" },
         }}
       >
-        <InputLabel id="filter-collection-label">Trạng thái thu tiền</InputLabel>
+        <InputLabel id="filter-collection-label">Trạng thái hóa đơn</InputLabel>
         <Select
           labelId="filter-collection-label"
           value={filterCollection}
-          label="Trạng thái thu tiền"
+          label="Trạng thái hóa đơn"
           onChange={(e: SelectChangeEvent) => onFilterCollectionChange(e.target.value)}
         >
           <MenuItem value="all">Tất cả</MenuItem>
           <MenuItem value="collected">Đã thu</MenuItem>
           <MenuItem value="not_collected">Chưa thu</MenuItem>
+          <MenuItem value="is_paid">Đã đóng cước</MenuItem>
         </Select>
       </FormControl>
 
@@ -129,23 +126,7 @@ export default function InvoiceFilterBar({
         </Select>
       </FormControl>
 
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={isPaid} // Biến boolean (true/false)
-            onChange={(e) => onIsPaidChange(e.target.checked)}
-            size="small"
-            color="primary"
-          />
-        }
-        label="Đã đóng cước"
-        sx={{
-          // Giữ lại style responsive cho label nếu cần
-          "& .MuiFormControlLabel-label": {
-            fontSize: { xs: "0.875rem", sm: "1rem" },
-          },
-        }}
-      />
+      {/* Ô 'Tinh' đã chứa trên. Ô chọn 'Đã đóng cước' đã được gộp vào dropdown 'Trạng thái hóa đơn'. */}
     </Box>
   );
 }

@@ -112,24 +112,9 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {onExport && (
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              startIcon={<DownloadIcon />}
-              onClick={onExport}
-              disabled={invoicesCount === 0}
-              sx={{
-                ...commonButtonSx,
-                minWidth: { xs: "120px", sm: "160px" },
-              }}
-            >
-              Xuất ra Excel toàn bộ
-            </Button>
-          )}
+          {/* Nhử 'Xuất ra Excel toàn bộ' và 'Xuất Excel Theo Người Phụ Trách' đã được bỏ theo yêu cầu */}
 
-          {/* Nút Xuất Excel đã thu */}
+          {/* Nút Xuất Excel chọn lọc */}
           {onExportPrinted && (
             <Button
               variant="contained"
@@ -144,22 +129,6 @@ export default function InvoiceToolbar({
               }}
             >
               Xuất ra Excel chọn lọc
-            </Button>
-          )}
-
-          {/* Nút Xuất Excel theo người phụ trách */}
-          {onOpenExportByUser && (
-            <Button
-              variant="contained"
-              color="success"
-              size="small"
-              onClick={onOpenExportByUser}
-              sx={{
-                ...commonButtonSx,
-                minWidth: { xs: "120px", sm: "160px" },
-              }}
-            >
-              Xuất Excel Theo Người Phụ Trách
             </Button>
           )}
         </Box>
