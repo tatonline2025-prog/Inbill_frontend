@@ -5,7 +5,7 @@ import { Box, Button, Dialog, FormControl, InputLabel, MenuItem, Select, Typogra
 import toast from "react-hot-toast";
 import { excelUpProvince } from "@/services/excel.api";
 import Spinner from "./SpinnerLoading";
-import { generateBillingPeriods } from "@/constants/invoice.constants";
+import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants";
 import { isAxiosError } from "axios";
 
 interface Props {
@@ -60,42 +60,7 @@ const UploadInvoiceWithProvinceDialog: React.FC<Props> = ({ open, onClose, onSuc
     }
   };
 
-  const provinces = [
-    "TP Hà Nội",
-    "TP Huế",
-    "Quảng Ninh",
-    "Cao Bằng",
-    "Lạng Sơn",
-    "Lai Châu",
-    "Điện Biên",
-    "Sơn La",
-    "Thanh Hóa",
-    "Nghệ An",
-    "Hà Tĩnh",
-    "Tuyên Quang",
-    "Lào Cai",
-    "Thái Nguyên",
-    "Phú Thọ",
-    "Bắc Ninh",
-    "Hưng Yên",
-    "TP Hải Phòng",
-    "Ninh Bình",
-    "Quảng Trị",
-    "TP Đà Nẵng",
-    "Quảng Ngãi",
-    "Gia Lai",
-    "Khánh Hòa",
-    "Lâm Đồng",
-    "Đắk Lắk",
-    "TP Hồ Chí Minh",
-    "Đồng Nai",
-    "Tây Ninh",
-    "TP Cần Thơ",
-    "Vĩnh Long",
-    "Đồng Tháp",
-    "Cà Mau",
-    "An Giang",
-  ];
+  const provinces = PROVINCES;
 
   const billingPeriods = generateBillingPeriods();
 

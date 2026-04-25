@@ -19,6 +19,22 @@ export const formatDateVN = (dateStr?: string | null): string => {
   }).format(date);
 };
 
+export const formatDateTimeVN = (dateStr?: string | null): string => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VN_TIMEZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+};
+
 export const toDateKeyVN = (date: Date = new Date()): string => {
   const vn = getNowVNDate(date);
   const year = vn.getUTCFullYear();

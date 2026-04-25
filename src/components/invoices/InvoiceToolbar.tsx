@@ -91,10 +91,8 @@ export default function InvoiceToolbar({
         .map((code) => code.trim())
         .filter((code) => code !== "");
 
-      // Loại bỏ trùng lặp
-      const uniqueCodes = Array.from(new Set(codes));
-
-      onBulkSearch(uniqueCodes);
+      // Giữ nguyên cả mã trùng để hiển thị đầy đủ khi tìm hàng loạt
+      onBulkSearch(codes);
       setIsBulkDialogOpen(false);
       setBulkValue(""); // Reset sau khi tìm
     }

@@ -14,8 +14,8 @@ import {
   CircularProgress,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { TABLE_HEADERS } from "@/constants/invoice.constants"; // Import hằng số
-import { formatDateVN } from "@/lib/date-vn";
+import { TABLE_HEADERS, DEFAULT_HIDDEN_COLUMNS } from "@/constants/invoice.constants"; // Import hằng số
+import { formatDateVN, formatDateTimeVN } from "@/lib/date-vn";
 import { useEffect, useState } from "react";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import toast from "react-hot-toast";
@@ -57,16 +57,18 @@ export default function InvoiceTable({
   showIsPaidColumn = true,
   onFetchAllData,
 }: InvoiceTableProps) {
-  const defaultColumns = TABLE_HEADERS.map((h) => h.key);
+  const defaultColumns = TABLE_HEADERS
+    .map((h) => h.key)
+    .filter((k) => !DEFAULT_HIDDEN_COLUMNS.includes(k as string));
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const [isCopyingAll, setIsCopyingAll] = useState(false);
 
-  // Load cấu hình từ localStorage khi mới vào
+  // Load cấu hình từ localStorage khi mới vào (key v2 để reset cấu hình cũ)
   useEffect(() => {
-    const savedCols = localStorage.getItem("invoice_visible_columns");
+    const savedCols = localStorage.getItem("invoice_visible_columns_v2");
     if (savedCols) {
       setVisibleColumns(JSON.parse(savedCols));
     }
@@ -79,7 +81,7 @@ export default function InvoiceTable({
       : [...visibleColumns, key]; // Chọn thêm
 
     setVisibleColumns(newColumns);
-    localStorage.setItem("invoice_visible_columns", JSON.stringify(newColumns));
+    localStorage.setItem("invoice_visible_columns_v2", JSON.stringify(newColumns));
   };
 
   // Hàm kiểm tra cột có được hiện không (Dùng cho cả Header và Body)
@@ -340,12 +342,6 @@ export default function InvoiceTable({
 
                 {!isMissingRow && (
                   <>
-                    {isColVisible("customerAddress") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word" }}>
-                        {invoice.customerAddress}
-                      </td>
-                    )}
-
                     {isColVisible("currentAmount") && (
                       <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "right" }}>
                         {invoice.currentAmount}
@@ -376,28 +372,24 @@ export default function InvoiceTable({
                       </td>
                     )}
 
-                    {isColVisible("customerPhone") && (
+                    {isColVisible("customerAddress") && (
                       <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word" }}>
-                        {invoice.customerPhone}
+                        {invoice.customerAddress}
                       </td>
                     )}
 
-                    {isColVisible("note") && (
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "4px",
-                          wordBreak: "break-word",
-                          fontSize: "0.75rem",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        {invoice.note}
+                    {isColVisible("recordBookCode") && (
+                      <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap" }}>
+                        {invoice.recordBookCode}
                       </td>
                     )}
 
                     {isColVisible("assignedTo") && (
                       <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.assignedTo?.fullName}</td>
+                    )}
+
+                    {isColVisible("billing_period") && (
+                      <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.billing_period}</td>
                     )}
 
                     {/* Các Switch */}
@@ -438,8 +430,8 @@ export default function InvoiceTable({
                     )}
 
                     {isColVisible("collectionDate") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem" }}>
-                        {formatDateVN(invoice.collectionDate)}
+                      <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                        {formatDateTimeVN(invoice.collectionDate)}
                       </td>
                     )}
 
@@ -449,13 +441,23 @@ export default function InvoiceTable({
                       </td>
                     )}
 
-                    {isColVisible("billing_period") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.billing_period}</td>
+                    {isColVisible("customerPhone") && (
+                      <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word" }}>
+                        {invoice.customerPhone}
+                      </td>
                     )}
 
-                    {isColVisible("recordBookCode") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap" }}>
-                        {invoice.recordBookCode}
+                    {isColVisible("note") && (
+                      <td
+                        style={{
+                          border: "1px solid #ddd",
+                          padding: "4px",
+                          wordBreak: "break-word",
+                          fontSize: "0.75rem",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        {invoice.note}
                       </td>
                     )}
                   </>

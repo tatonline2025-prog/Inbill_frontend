@@ -4,6 +4,10 @@ import { InvoiceInfo } from "@/types/invoice";
 import { getNowVNDate } from "@/lib/date-vn";
 
 export const PROVINCES = [
+  "Đồng Tháp",
+  "Tây Ninh",
+  "Vĩnh Long",
+  "TP Hồ Chí Minh",
   "TP Hà Nội",
   "TP Huế",
   "Quảng Ninh",
@@ -30,12 +34,8 @@ export const PROVINCES = [
   "Khánh Hòa",
   "Lâm Đồng",
   "Đắk Lắk",
-  "TP Hồ Chí Minh",
   "Đồng Nai",
-  "Tây Ninh",
   "TP Cần Thơ",
-  "Vĩnh Long",
-  "Đồng Tháp",
   "Cà Mau",
   "An Giang",
 ];
@@ -63,20 +63,23 @@ export const TABLE_HEADERS: {
   { key: "checkbox", label: "✓", sortable: false },
   { key: "stt", label: "STT", sortable: false },
   { key: "invoiceNumber", label: "Mã KH", sortable: true },
-  { key: "customerName", label: "Tên", sortable: true },
-  { key: "customerAddress", label: "Địa Chỉ", sortable: true },
   { key: "currentAmount", label: "Kỳ này", sortable: true },
   { key: "previousAmount", label: "Kỳ trước", sortable: true },
-  { key: "totalAmount", label: "Tổng tiền", sortable: false }, // Đổi key từ totalAmount
-  { key: "customerPhone", label: "SĐT", sortable: true },
-  { key: "note", label: "Ghi chú", sortable: false },
-  { key: "assignedTo", label: "Nhân viên phụ trách", sortable: false },
+  { key: "totalAmount", label: "Tổng tiền", sortable: false },
+  { key: "customerName", label: "Tên", sortable: true },
+  { key: "customerAddress", label: "Địa chỉ", sortable: true },
+  { key: "recordBookCode", label: "Trạm", sortable: false },
+  { key: "assignedTo", label: "Người phụ trách", sortable: false },
+  { key: "billing_period", label: "Kỳ TT", sortable: true },
   { key: "print", label: "Đã in bill", sortable: false },
   { key: "collect", label: "Đã thu", sortable: false },
   { key: "isPaid", label: "Đã đóng cước", sortable: false },
-  { key: "collectionDate", label: "Ngày thu", sortable: true },
-  { key: "issueDate", label: "Ngày giao", sortable: true },
-  { key: "billing_period", label: "Kỳ", sortable: true },
-  { key: "recordBookCode", label: "Trạm", sortable: false },
-  { key: "actions", label: "Hành động", sortable: false },
+  { key: "collectionDate", label: "Thời điểm thu", sortable: true },
+  { key: "issueDate", label: "Ngày cập nhật", sortable: true },
+  { key: "customerPhone", label: "SĐT", sortable: true },
+  { key: "note", label: "Ghi chú", sortable: false },
+  { key: "actions", label: "Tùy chọn", sortable: false },
 ];
+
+// Các cột ẩn mặc định khi user mới vào (chưa có cấu hình trong localStorage)
+export const DEFAULT_HIDDEN_COLUMNS = ["issueDate", "customerPhone", "note"];
