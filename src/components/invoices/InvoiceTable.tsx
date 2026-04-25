@@ -15,8 +15,10 @@ import {
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { TABLE_HEADERS, DEFAULT_HIDDEN_COLUMNS } from "@/constants/invoice.constants"; // Import hằng số
 import { formatDateVN, formatDateTimeVN } from "@/lib/date-vn";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import toast from "react-hot-toast";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
@@ -64,6 +66,57 @@ export default function InvoiceTable({
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // Thứ tự các cột dữ liệu (không bao gồm checkbox/stt/actions — những cột đó luôn cố định đầu/cuối)
+  const dataColumnKeys = useMemo(
+    () => TABLE_HEADERS.map((h) => h.key).filter((k) => k !== "checkbox" && k !== "stt" && k !== "actions"),
+    []
+  );
+  const [columnOrder, setColumnOrder] = useState<string[]>(dataColumnKeys);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("invoice_column_order_v1");
+    if (saved) {
+      try {
+        const arr = JSON.parse(saved) as string[];
+        const valid = arr.filter((k) => dataColumnKeys.includes(k));
+        const missing = dataColumnKeys.filter((k) => !valid.includes(k));
+        setColumnOrder([...valid, ...missing]);
+      } catch {}
+    }
+  }, [dataColumnKeys]);
+
+  const moveColumn = (key: string, dir: -1 | 1) => {
+    setColumnOrder((prev) => {
+      const idx = prev.indexOf(key);
+      if (idx === -1) return prev;
+      const target = idx + dir;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      localStorage.setItem("invoice_column_order_v1", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const headerByKey = useMemo(() => {
+    const m: Record<string, (typeof TABLE_HEADERS)[number]> = {};
+    TABLE_HEADERS.forEach((h) => {
+      m[h.key] = h;
+    });
+    return m;
+  }, []);
+
+  // Thứ tự hiển thị của toàn bộ cột (không bỏ qua hidden — isColVisible sẽ lọc khi render)
+  const orderedHeaders = useMemo(() => {
+    const list = [
+      headerByKey["checkbox"],
+      headerByKey["stt"],
+      ...columnOrder.map((k) => headerByKey[k]).filter(Boolean),
+      headerByKey["actions"],
+    ];
+    return list.filter(Boolean);
+  }, [columnOrder, headerByKey]);
 
   const [isCopyingAll, setIsCopyingAll] = useState(false);
   const { user } = useAuth();
@@ -170,6 +223,183 @@ export default function InvoiceTable({
     }
   };
 
+  // Render một ô dữ liệu theo key cột (để có thể đổi thứ tự dễ)
+  const renderCell = (key: string, invoice: InvoiceInfo): React.ReactNode => {
+    switch (key) {
+      case "invoiceNumber":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "6px" }}>
+            {invoice.invoiceNumber || invoice.recordBookCode}
+          </td>
+        );
+      case "currentAmount":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "right" }}>
+            {invoice.currentAmount}
+          </td>
+        );
+      case "previousAmount":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "right" }}>
+            {invoice.previousAmount}
+          </td>
+        );
+      case "totalAmount":
+        return (
+          <td
+            style={{
+              border: "1px solid #ddd",
+              padding: "4px",
+              textAlign: "right",
+              fontWeight: "bold",
+              color: invoice.isPaid
+                ? "#2e7d32"
+                : Number(invoice.previousAmount) > 0
+                ? "#d32f2f"
+                : "#f9a825",
+            }}
+          >
+            {invoice.totalAmount}
+          </td>
+        );
+      case "customerName":
+        return <td style={{ border: "1px solid #ddd", padding: "6px" }}>{invoice.customerName}</td>;
+      case "customerAddress":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word", maxWidth: 240, minWidth: 180 }}>
+            {invoice.customerAddress}
+          </td>
+        );
+      case "recordBookCode":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap" }}>
+            {invoice.recordBookCode}
+          </td>
+        );
+      case "assignedTo":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap", minWidth: 140 }}>
+            {invoice.assignedTo?.fullName}
+          </td>
+        );
+      case "billing_period":
+        return <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.billing_period}</td>;
+      case "print":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
+            <Switch
+              checked={invoice.printStatus === "printed"}
+              onChange={() => onToggleStatus(invoice._id, "printStatus")}
+              size="small"
+              sx={{ transform: "scale(0.8)" }}
+            />
+          </td>
+        );
+      case "collect":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
+            <Switch
+              checked={invoice.collectionStatus === "collected"}
+              onChange={() => onToggleStatus(invoice._id, "collectionStatus")}
+              color="success"
+              size="small"
+              sx={{ transform: "scale(0.8)" }}
+            />
+          </td>
+        );
+      case "isPaid":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
+            <Switch
+              checked={invoice.isPaid ?? false}
+              onChange={() => onToggleIsPaid && onToggleIsPaid(invoice._id)}
+              color="success"
+              size="small"
+              sx={{ transform: "scale(0.8)" }}
+            />
+          </td>
+        );
+      case "collectionDate":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+            {(() => {
+              const adminEdited = invoice.collectionDateAdminEdited === true;
+              const display = invoice.collectionDate
+                ? adminEdited
+                  ? formatDateVN(invoice.collectionDate)
+                  : formatDateTimeVN(invoice.collectionDate)
+                : "-";
+              if (!isAdmin) return display;
+              if (editingDateId === invoice._id) {
+                const defaultVal = invoice.collectionDate
+                  ? new Date(invoice.collectionDate).toISOString().slice(0, 10)
+                  : new Date().toISOString().slice(0, 10);
+                return (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <input
+                      type="date"
+                      defaultValue={defaultVal}
+                      disabled={savingDateId === invoice._id}
+                      style={{ fontSize: "0.75rem", padding: "2px 4px" }}
+                      onBlur={(e) => handleSaveCollectionDate(invoice, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        if (e.key === "Escape") setEditingDateId(null);
+                      }}
+                      autoFocus
+                    />
+                  </span>
+                );
+              }
+              return (
+                <span
+                  role="button"
+                  title={adminEdited ? "Đơn bổ sung (admin chỉnh ngày) — nhấp để sửa" : "Nhấp để chỉnh ngày thu"}
+                  onClick={() => setEditingDateId(invoice._id)}
+                  style={{
+                    cursor: "pointer",
+                    color: adminEdited ? "#2563eb" : undefined,
+                    fontWeight: adminEdited ? 600 : undefined,
+                    textDecoration: "underline dotted",
+                  }}
+                >
+                  {display}
+                </span>
+              );
+            })()}
+          </td>
+        );
+      case "issueDate":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem" }}>
+            {formatDateVN(invoice.issueDate)}
+          </td>
+        );
+      case "customerPhone":
+        return (
+          <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word" }}>
+            {invoice.customerPhone}
+          </td>
+        );
+      case "note":
+        return (
+          <td
+            style={{
+              border: "1px solid #ddd",
+              padding: "4px",
+              wordBreak: "break-word",
+              fontSize: "0.75rem",
+              fontStyle: "italic",
+            }}
+          >
+            {invoice.note}
+          </td>
+        );
+      default:
+        return <td style={{ border: "1px solid #ddd" }}></td>;
+    }
+  };
+
   return (
     <Box sx={{ width: "100%" }}>
       {/* Menu Ẩn/Hiện cột (anchor được set từ header cột Tùy chọn) */}
@@ -180,29 +410,50 @@ export default function InvoiceTable({
         slotProps={{ paper: { style: { maxHeight: 560, width: 230 } } }}
       >
         <Typography variant="subtitle2" sx={{ px: 2, py: 0.5, color: "gray" }}>
-          Chọn cột hiển thị
+          Chọn & sắp xếp cột
         </Typography>
-        {TABLE_HEADERS.map((header) => {
-          if (header.key === "checkbox") return null;
-          if (header.key === "stt") return null;
-          if (header.key === "actions") return null;
-
+        {columnOrder.map((key, idx) => {
+          const header = headerByKey[key];
+          if (!header) return null;
           return (
             <MenuItem
-              key={header.key}
-              onClick={() => handleToggleColumn(header.key)}
+              key={key}
               dense
-              sx={{ py: 0, minHeight: 28 }}
+              sx={{ py: 0, minHeight: 28, gap: 0 }}
+              disableRipple
             >
-              <Checkbox
-                checked={visibleColumns.includes(header.key)}
+              <IconButton
                 size="small"
+                disabled={idx === 0}
+                onClick={(e) => { e.stopPropagation(); moveColumn(key, -1); }}
+                sx={{ p: 0.25 }}
+                title="Lên trên"
+              >
+                <ArrowUpwardIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+              <IconButton
+                size="small"
+                disabled={idx === columnOrder.length - 1}
+                onClick={(e) => { e.stopPropagation(); moveColumn(key, 1); }}
                 sx={{ p: 0.25, mr: 0.5 }}
-              />
-              <ListItemText
-                primary={header.label}
-                primaryTypographyProps={{ fontSize: "0.8rem" }}
-              />
+                title="Xuống dưới"
+              >
+                <ArrowDownwardIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+              <Box
+                onClick={() => handleToggleColumn(key)}
+                sx={{ display: "flex", alignItems: "center", flex: 1, cursor: "pointer" }}
+              >
+                <Checkbox
+                  checked={visibleColumns.includes(key)}
+                  size="small"
+                  sx={{ p: 0.25, mr: 0.5 }}
+                />
+                <ListItemText
+                  primary={header.label}
+                  primaryTypographyProps={{ fontSize: "0.8rem" }}
+                />
+              </Box>
             </MenuItem>
           );
         })}
@@ -227,8 +478,8 @@ export default function InvoiceTable({
       >
         <thead>
           <tr style={{ backgroundColor: "#f9fafb" }}>
-            {/* Lọc header dựa trên visibleColumns */}
-            {TABLE_HEADERS.map((header) => {
+            {/* Lọc & sắp xếp header theo orderedHeaders */}
+            {orderedHeaders.map((header) => {
               if (!isColVisible(header.key)) return null; // ẨN HEADER
 
               return (
@@ -358,213 +609,30 @@ export default function InvoiceTable({
                   {index + 1 + (currentPage - 1) * invoicesPerPage}
                 </td>
 
-                {/* --- CÁC CỘT DỮ LIỆU: KIỂM TRA isColVisible TRƯỚC KHI RENDER --- */}
-
-                {isColVisible("invoiceNumber") && (
-                  <td
-                    style={{ border: "1px solid #ddd", padding: "6px", fontWeight: isMissingRow ? "bold" : "normal" }}
-                  >
-                    {invoice.invoiceNumber || invoice.recordBookCode}
-                  </td>
-                )}
-
-                {/* Missing row: hiển thị tên lỗi trải dài, bỏ qua các cột khác */}
-                {isMissingRow && isColVisible("customerName") && (
-                  <td
-                    style={{
-                      border: "1px solid #ddd",
-                      padding: "6px",
-                      fontStyle: "italic",
-                    }}
-                    colSpan={10}
-                  >
-                    {invoice.customerName}
-                  </td>
-                )}
-
-                {!isMissingRow && (
+                {/* --- CÁC CỘT DỮ LIỆU: render theo thứ tự columnOrder --- */}
+                {isMissingRow ? (
                   <>
-                    {isColVisible("currentAmount") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "right" }}>
-                        {invoice.currentAmount}
+                    {isColVisible("invoiceNumber") && (
+                      <td style={{ border: "1px solid #ddd", padding: "6px", fontWeight: "bold" }}>
+                        {invoice.invoiceNumber || invoice.recordBookCode}
                       </td>
                     )}
-
-                    {isColVisible("previousAmount") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "right" }}>
-                        {invoice.previousAmount}
-                      </td>
-                    )}
-
-                    {isColVisible("totalAmount") && (
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "4px",
-                          textAlign: "right",
-                          fontWeight: "bold",
-                          color: invoice.isPaid
-                            ? "#2e7d32" // Màu Xanh lá (Đã đóng cước)
-                            : Number(invoice.previousAmount) > 0
-                            ? "#d32f2f" // Màu Đỏ (Chưa trả + Có nợ cũ)
-                            : "#f9a825", // Màu Vàng đậm/Cam (Chưa trả + Không nợ cũ)
-                        }}
-                      >
-                        {invoice.totalAmount}
-                      </td>
-                    )}
-
                     {isColVisible("customerName") && (
-                      <td style={{ border: "1px solid #ddd", padding: "6px" }}>
+                      <td
+                        style={{ border: "1px solid #ddd", padding: "6px", fontStyle: "italic" }}
+                        colSpan={Math.max(
+                          1,
+                          columnOrder.filter((k) => isColVisible(k) && k !== "invoiceNumber" && k !== "customerName").length
+                        )}
+                      >
                         {invoice.customerName}
                       </td>
                     )}
-
-                    {isColVisible("customerAddress") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word", maxWidth: 240, minWidth: 180 }}>
-                        {invoice.customerAddress}
-                      </td>
-                    )}
-
-                    {isColVisible("recordBookCode") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap" }}>
-                        {invoice.recordBookCode}
-                      </td>
-                    )}
-
-                    {isColVisible("assignedTo") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap", minWidth: 140 }}>{invoice.assignedTo?.fullName}</td>
-                    )}
-
-                    {isColVisible("billing_period") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.billing_period}</td>
-                    )}
-
-                    {/* Các Switch */}
-                    {isColVisible("print") && (
-                      <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
-                        <Switch
-                          checked={invoice.printStatus === "printed"}
-                          onChange={() => onToggleStatus(invoice._id, "printStatus")}
-                          size="small"
-                          sx={{ transform: "scale(0.8)" }}
-                        />
-                      </td>
-                    )}
-
-                    {isColVisible("collect") && (
-                      <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
-                        <Switch
-                          checked={invoice.collectionStatus === "collected"}
-                          onChange={() => onToggleStatus(invoice._id, "collectionStatus")}
-                          color="success"
-                          size="small"
-                          sx={{ transform: "scale(0.8)" }}
-                        />
-                      </td>
-                    )}
-
-                    {/* isPaid đã được check bên trong hàm isColVisible rồi */}
-                    {isColVisible("isPaid") && (
-                      <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
-                        <Switch
-                          checked={invoice.isPaid ?? false}
-                          onChange={() => onToggleIsPaid && onToggleIsPaid(invoice._id)}
-                          color="success"
-                          size="small"
-                          sx={{ transform: "scale(0.8)" }}
-                        />
-                      </td>
-                    )}
-
-                    {isColVisible("collectionDate") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                        {(() => {
-                          const adminEdited = invoice.collectionDateAdminEdited === true;
-                          const display = invoice.collectionDate
-                            ? adminEdited
-                              ? formatDateVN(invoice.collectionDate)
-                              : formatDateTimeVN(invoice.collectionDate)
-                            : "-";
-
-                          if (!isAdmin) return display;
-
-                          if (editingDateId === invoice._id) {
-                            // giá trị default để input date hiểu (YYYY-MM-DD)
-                            const defaultVal = invoice.collectionDate
-                              ? new Date(invoice.collectionDate).toISOString().slice(0, 10)
-                              : new Date().toISOString().slice(0, 10);
-                            return (
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                <input
-                                  type="date"
-                                  defaultValue={defaultVal}
-                                  disabled={savingDateId === invoice._id}
-                                  style={{ fontSize: "0.75rem", padding: "2px 4px" }}
-                                  onBlur={(e) => handleSaveCollectionDate(invoice, e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                                    if (e.key === "Escape") setEditingDateId(null);
-                                  }}
-                                  autoFocus
-                                />
-                              </span>
-                            );
-                          }
-
-                          return (
-                            <span
-                              role="button"
-                              title={adminEdited ? "Đơn bổ sung (admin chỉnh ngày) — nhấp để sửa" : "Nhấp để chỉnh ngày thu"}
-                              onClick={() => setEditingDateId(invoice._id)}
-                              style={{
-                                cursor: "pointer",
-                                color: adminEdited ? "#2563eb" : undefined,
-                                fontWeight: adminEdited ? 600 : undefined,
-                                textDecoration: "underline dotted",
-                              }}
-                            >
-                              {display}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                    )}
-
-                    {isColVisible("issueDate") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", fontSize: "0.75rem" }}>
-                        {formatDateVN(invoice.issueDate)}
-                      </td>
-                    )}
-
-                    {isColVisible("customerPhone") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word" }}>
-                        {invoice.customerPhone}
-                      </td>
-                    )}
-
-                    {isColVisible("note") && (
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "4px",
-                          wordBreak: "break-word",
-                          fontSize: "0.75rem",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        {invoice.note}
-                      </td>
-                    )}
                   </>
-                )}
-
-                {isMissingRow && (
-                  <>
-                    {isColVisible("issueDate") && <td style={{ border: "1px solid #ddd" }}></td>}
-                    {isColVisible("billing_period") && <td style={{ border: "1px solid #ddd" }}></td>}
-                    {isColVisible("recordBookCode") && <td style={{ border: "1px solid #ddd" }}></td>}
-                  </>
+                ) : (
+                  columnOrder
+                    .filter((k) => isColVisible(k))
+                    .map((k) => <Fragment key={k}>{renderCell(k, invoice)}</Fragment>)
                 )}
 
                 {/* Action 3 chấm: Luôn hiện (hoặc check key action nếu có trong headers) */}
