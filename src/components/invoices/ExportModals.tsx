@@ -214,25 +214,31 @@ export default function ExportModals({
               helperText="Chọn ngày cần xuất báo cáo"
             />
           ) : ( */}
-          <div style={{ display: "flex", gap: "16px", marginBottom: "8px" }}>
-            <TextField
-              label="Từ ngày"
-              type="date"
-              fullWidth
-              margin="dense"
-              value={collectedFromDate}
-              onChange={(e) => setCollectedFromDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Đến ngày"
-              type="date"
-              fullWidth
-              margin="dense"
-              value={collectedToDate}
-              onChange={(e) => setCollectedToDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
+          <div style={{ display: "flex", gap: "16px", marginBottom: "8px", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1 }}>
+              <span style={{ color: "#666", fontSize: "0.85rem", whiteSpace: "nowrap" }}>00:00</span>
+              <TextField
+                label="Từ"
+                type="date"
+                fullWidth
+                margin="dense"
+                value={collectedFromDate}
+                onChange={(e) => setCollectedFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1 }}>
+              <span style={{ color: "#666", fontSize: "0.85rem", whiteSpace: "nowrap" }}>23:59</span>
+              <TextField
+                label="Đến"
+                type="date"
+                fullWidth
+                margin="dense"
+                value={collectedToDate}
+                onChange={(e) => setCollectedToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </div>
           </div>
 
           <div style={{ marginTop: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
@@ -257,8 +263,9 @@ export default function ExportModals({
               </Select>
             </FormControl>
 
-            {/* Chọn nhiều người phụ trách */}
-            <FormControl fullWidth margin="dense">
+            {/* Hàng: Người phụ trách (trái 50%) + Trạng thái bill (phải 50%) */}
+            <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+              <FormControl fullWidth margin="dense" sx={{ flex: 1 }}>
               <InputLabel shrink={openExportCollected || selectedCollectedUsers.length > 0}>
                 Người phụ trách ({filterProvince === "ALL" ? "Toàn quốc" : filterProvince})
               </InputLabel>
@@ -314,7 +321,23 @@ export default function ExportModals({
                   ))
                 )}
               </Select>
-            </FormControl>
+              </FormControl>
+
+              {/* Trạng thái bill */}
+              <FormControl fullWidth margin="dense" sx={{ flex: 1 }}>
+                <InputLabel>Trạng thái bill</InputLabel>
+                <Select
+                  value={collectedStatus}
+                  label="Trạng thái bill"
+                  onChange={(e) => setCollectedStatus(e.target.value)}
+                >
+                  <MenuItem value="paid">Đã thu</MenuItem>
+                  <MenuItem value="unpaid">Chưa thu</MenuItem>
+                  <MenuItem value="closed">Đã đóng cước</MenuItem>
+                  <MenuItem value="all">Tất cả</MenuItem>
+                </Select>
+              </FormControl>
+            </div>
           </div>
 
           {/* 2. Chọn nhiều người phụ trách */}
@@ -346,31 +369,7 @@ export default function ExportModals({
             </Select>
           </FormControl> */}
 
-          {/* 3. Chọn trạng thái (2 ô nằm ngang) */}
-          <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
-            {/* Trạng thái thu */}
-            <FormControl fullWidth margin="dense">
-              <InputLabel>Trạng thái thu</InputLabel>
-              <Select
-                value={collectedStatus}
-                label="Trạng thái thu"
-                onChange={(e) => setCollectedStatus(e.target.value)}
-              >
-                <MenuItem value="paid">Đã thu</MenuItem>
-                <MenuItem value="unpaid">Chưa thu</MenuItem>
-                <MenuItem value="all">Tất cả</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Trạng thái đóng cước */}
-            <FormControl fullWidth margin="dense">
-              <InputLabel>Đóng cước</InputLabel>
-              <Select value={closingStatus} label="Đóng cước" onChange={(e) => setClosingStatus(e.target.value)}>
-                <MenuItem value="true">Đã đóng</MenuItem>
-                <MenuItem value="false">Chưa đóng</MenuItem>
-              </Select>
-            </FormControl>
-          </div>
+          {/* 3. Đã gộp Trạng thái bill vào cụm Người phụ trách ở trên */}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenExportCollected(false)}>Hủy</Button>

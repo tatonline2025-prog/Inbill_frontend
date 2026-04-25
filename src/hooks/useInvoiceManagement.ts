@@ -98,7 +98,7 @@ export const useInvoiceManagement = () => {
   const [collectedToDate, setCollectedToDate] = useState<string>(today);
   const [selectedCollectedUsers, setSelectedCollectedUsers] = useState<string[]>([]);
   const [collectedStatus, setCollectedStatus] = useState<string>("paid");
-  const [closingStatus, setClosingStatus] = useState<string>("false");
+  const [closingStatus, setClosingStatus] = useState<string>("all");
 
   // --- Hằng số ---
   const billingPeriods = useMemo(() => generateBillingPeriods(), []);
