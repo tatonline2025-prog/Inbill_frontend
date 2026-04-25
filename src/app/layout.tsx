@@ -6,7 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "In bill hoá đơn TAT",
+  title: "All Bill - TAT",
   description: "Hệ thống in bill",
 };
 

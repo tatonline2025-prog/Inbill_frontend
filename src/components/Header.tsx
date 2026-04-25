@@ -75,7 +75,7 @@ export default function Header() {
       {isAuthenticated ? (
         <>
           <span className="py-2 px-3 font-medium text-blue-100">
-            👋 Xin chào, <span className="font-semibold">{user?.fullName}</span>
+          👋 Xin chào <span className="font-semibold">{user?.fullName}</span> !
           </span>
 
           {user?.role === "admin" && (
@@ -132,7 +132,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="text-2xl font-bold tracking-wide hover:text-blue-200 transition duration-300">
-          In Bill Hoá Đơn TAT
+          All Bill - TAT
         </Link>
 
         {/* Nút menu (mobile) */}
