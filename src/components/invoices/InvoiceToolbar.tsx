@@ -20,6 +20,7 @@ import ListIcon from "@mui/icons-material/List";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { useState } from "react";
+import { IUser } from "@/types/user";
 
 type SearchType = "customerCode" | "stationCode";
 
@@ -42,6 +43,14 @@ interface InvoiceToolbarProps {
   searchType: SearchType; // Loại tìm kiếm hiện tại
   onSearchTypeChange: (type: SearchType) => void;
   onBulkSearch?: (codes: string[]) => void;
+  // === Inline filters ===
+  filterPrint?: string;
+  onFilterPrintChange?: (value: string) => void;
+  filterCollection?: string;
+  onFilterCollectionChange?: (value: string) => void;
+  filterAssignedUser?: string;
+  onFilterAssignedUserChange?: (value: string) => void;
+  userData?: IUser[];
 }
 
 export default function InvoiceToolbar({
@@ -63,6 +72,13 @@ export default function InvoiceToolbar({
   searchType,
   onSearchTypeChange,
   onBulkSearch,
+  filterPrint,
+  onFilterPrintChange,
+  filterCollection,
+  onFilterCollectionChange,
+  filterAssignedUser,
+  onFilterAssignedUserChange,
+  userData = [],
 }: InvoiceToolbarProps) {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkValue, setBulkValue] = useState("");
@@ -139,7 +155,24 @@ export default function InvoiceToolbar({
             </Button>
           )}
 
-          {/* 3. Xóa HĐ (xám, menu) */}
+          {/* 3. Thêm HĐ mới (vàng) */}
+          {onOpenAddDialog && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={onOpenAddDialog}
+              sx={{
+                ...commonButtonSx,
+                backgroundColor: "#facc15",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#eab308" },
+              }}
+            >
+              Thêm HĐ mới
+            </Button>
+          )}
+
+          {/* 4. Xóa HĐ (xám, menu) */}
           {(onDeleteSelected || onOpenDeleteAllModal) && (
             <>
               <Button
@@ -228,11 +261,11 @@ export default function InvoiceToolbar({
         )}
       </Box>
 
-      {/* --- Hàng 2: Tìm theo + input + Tìm hàng loạt + Thêm hóa đơn mới --- */}
+      {/* --- Hàng 2: Tìm theo + input + Tìm hàng loạt + Filters --- */}
       <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 3 }}>
         {onSearchChange && (
           <>
-            <FormControl size="small" sx={{ minWidth: { xs: 120, sm: 150 } }}>
+            <FormControl size="small" sx={{ minWidth: { xs: 110, sm: 130 } }}>
               <InputLabel id="search-type-label">Tìm theo</InputLabel>
               <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeChange}>
                 <MenuItem value="customerCode">Mã KH</MenuItem>
@@ -245,7 +278,8 @@ export default function InvoiceToolbar({
               size="small"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              sx={{ minWidth: { xs: 150, sm: 250 } }}
+              inputProps={{ maxLength: 10 }}
+              sx={{ width: { xs: 140, sm: 170 } }}
             />
           </>
         )}
@@ -263,22 +297,58 @@ export default function InvoiceToolbar({
           </Button>
         )}
 
-        {/* Nút Thêm HĐ mới (vàng) */}
-        {onOpenAddDialog && (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={onOpenAddDialog}
-            sx={{
-              ...commonButtonSx,
-              height: "40px",
-              backgroundColor: "#facc15",
-              color: "#fff",
-              "&:hover": { backgroundColor: "#eab308" },
-            }}
-          >
-            Thêm HĐ mới
-          </Button>
+        {/* Filters: Trạng thái in bill / Trạng thái hóa đơn / Người phụ trách */}
+        {onFilterPrintChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 160 } }}>
+            <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
+            <Select
+              labelId="filter-print-label"
+              value={filterPrint ?? "all"}
+              label="Trạng thái in bill"
+              onChange={(e: SelectChangeEvent) => onFilterPrintChange(e.target.value)}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="printed">Đã in</MenuItem>
+              <MenuItem value="notPrinted">Chưa in</MenuItem>
+            </Select>
+          </FormControl>
+        )}
+
+        {onFilterCollectionChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 160 } }}>
+            <InputLabel id="filter-collection-label">Trạng thái hóa đơn</InputLabel>
+            <Select
+              labelId="filter-collection-label"
+              value={filterCollection ?? "all"}
+              label="Trạng thái hóa đơn"
+              onChange={(e: SelectChangeEvent) => onFilterCollectionChange(e.target.value)}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="collected">Đã thu</MenuItem>
+              <MenuItem value="not_collected">Chưa thu</MenuItem>
+              <MenuItem value="is_paid">Đã đóng cước</MenuItem>
+            </Select>
+          </FormControl>
+        )}
+
+        {onFilterAssignedUserChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 160 } }}>
+            <InputLabel id="assigned-user-label">Người phụ trách</InputLabel>
+            <Select
+              labelId="assigned-user-label"
+              value={filterAssignedUser ?? "all"}
+              label="Người phụ trách"
+              onChange={(e: SelectChangeEvent) => onFilterAssignedUserChange(e.target.value)}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              {userData.map((user) => (
+                <MenuItem key={user._id} value={user._id}>
+                  {user.fullName || user.email}
+                </MenuItem>
+              ))}
+              <MenuItem value="no_one">Chưa phụ trách</MenuItem>
+            </Select>
+          </FormControl>
         )}
       </Box>
 

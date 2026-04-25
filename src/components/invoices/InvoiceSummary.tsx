@@ -20,7 +20,7 @@ interface InvoiceSummaryProps {
 
 const DEFAULT_DATA: StatusDetail = { count: 0, amount: 0 };
 
-const formatVnd = (n: number) => `${n.toLocaleString("vi-VN")} đ`;
+const formatVnd = (n: number) => `${n.toLocaleString("vi-VN")}`;
 const formatCount = (n: number) => n.toLocaleString("vi-VN");
 
 interface Segment {
@@ -65,7 +65,7 @@ export default function InvoiceSummary({
     },
     {
       label: "Tổng tiền",
-      value: `${(totalAmountInfo ?? 0).toLocaleString("vi-VN")} đ`,
+      value: `${(totalAmountInfo ?? 0).toLocaleString("vi-VN")}`,
       color: "#dc2626",
     },
   ];

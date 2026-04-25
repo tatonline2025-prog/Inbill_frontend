@@ -14,7 +14,6 @@ import { useInvoiceManagement } from "@/hooks/useInvoiceManagement";
 
 // Import các component con
 import InvoiceToolbar from "@/components/invoices/InvoiceToolbar";
-import InvoiceFilterBar from "@/components/invoices/InvoiceFilterBar";
 import InvoiceSummary from "@/components/invoices/InvoiceSummary";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
 import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
@@ -153,10 +152,6 @@ export default function InvoicesPage() {
           onSearchChange={handleSearchChange}
           onOpenExportByUser={() => setOpenExportByUser(true)}
           onBulkSearch={handleBulkSearch}
-        />
-
-        {/* === FILTER BAR === */}
-        <InvoiceFilterBar
           filterPrint={filterPrint}
           onFilterPrintChange={createFilterChangeHandler(setFilterPrint)}
           filterCollection={isPaidFilter ? "is_paid" : filterCollection}
