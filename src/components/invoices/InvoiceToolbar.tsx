@@ -250,8 +250,7 @@ export default function InvoiceToolbar({
               label="Hiển thị"
               onChange={(e: SelectChangeEvent<number>) => onInvoicesPerPageChange(Number(e.target.value))}
             >
-              <MenuItem value={15}>15</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={30}>30</MenuItem>
               <MenuItem value={50}>50</MenuItem>
               <MenuItem value={100}>100</MenuItem>
               <MenuItem value={200}>200</MenuItem>
