@@ -24,7 +24,7 @@ import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { isAxiosError } from "axios";
 import { IUser } from "@/types/user";
 
-const MAX_INVOICES = 5;
+const MAX_INVOICES = 10;
 
 // Định nghĩa kiểu dữ liệu cho từng dòng hóa đơn
 interface InvoiceItem {
@@ -334,13 +334,13 @@ export default function AddInvoiceDialog({
         sx={{ borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
         <Typography variant="h6" fontWeight="bold">
-          Thêm 1-5 hoá đơn
+          Thêm 1-10 hoá đơn
         </Typography>
 
         <Box sx={{ display: "flex", gap: 2 }}>
           <TextField
             select
-            label="Tháng nợ"
+            label="Kỳ TT"
             value={commonInfo.billing_period}
             onChange={(e) => handleCommonChange("billing_period", e.target.value)}
             size="small"
