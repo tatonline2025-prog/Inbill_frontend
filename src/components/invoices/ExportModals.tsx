@@ -358,6 +358,7 @@ export default function ExportModals({
               >
                 <MenuItem value="paid">Đã thu</MenuItem>
                 <MenuItem value="unpaid">Chưa thu</MenuItem>
+                <MenuItem value="all">Tất cả</MenuItem>
               </Select>
             </FormControl>
 
