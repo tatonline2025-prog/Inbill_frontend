@@ -6,7 +6,6 @@ import {
   Switch,
   Typography,
   IconButton,
-  Button,
   Menu,
   MenuItem,
   Checkbox,
@@ -173,40 +172,41 @@ export default function InvoiceTable({
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* THANH CÔNG CỤ: NÚT ẨN/HIỆN CỘT */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, px: 1 }}>
-        <Button
-          startIcon={<ViewColumnIcon />}
-          variant="outlined"
-          size="small"
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-        >
-          Ẩn/Hiện cột
-        </Button>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={() => setAnchorEl(null)}
-          PaperProps={{ style: { maxHeight: 300, width: 250 } }}
-        >
-          <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: "gray" }}>
-            Chọn cột hiển thị
-          </Typography>
-          {TABLE_HEADERS.map((header) => {
-            // Không cho ẩn checkbox
-            if (header.key === "checkbox") return null;
-            if (header.key === "stt") return null;
-            if (header.key === "actions") return null;
+      {/* Menu Ẩn/Hiện cột (anchor được set từ header cột Tùy chọn) */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        slotProps={{ paper: { style: { maxHeight: 560, width: 230 } } }}
+      >
+        <Typography variant="subtitle2" sx={{ px: 2, py: 0.5, color: "gray" }}>
+          Chọn cột hiển thị
+        </Typography>
+        {TABLE_HEADERS.map((header) => {
+          if (header.key === "checkbox") return null;
+          if (header.key === "stt") return null;
+          if (header.key === "actions") return null;
 
-            return (
-              <MenuItem key={header.key} onClick={() => handleToggleColumn(header.key)} dense>
-                <Checkbox checked={visibleColumns.includes(header.key)} size="small" />
-                <ListItemText primary={header.label} />
-              </MenuItem>
-            );
-          })}
-        </Menu>
-      </Box>
+          return (
+            <MenuItem
+              key={header.key}
+              onClick={() => handleToggleColumn(header.key)}
+              dense
+              sx={{ py: 0, minHeight: 28 }}
+            >
+              <Checkbox
+                checked={visibleColumns.includes(header.key)}
+                size="small"
+                sx={{ p: 0.25, mr: 0.5 }}
+              />
+              <ListItemText
+                primary={header.label}
+                primaryTypographyProps={{ fontSize: "0.8rem" }}
+              />
+            </MenuItem>
+          );
+        })}
+      </Menu>
 
       {/* THÔNG BÁO LOADING / EMPTY */}
       {loading ? (
@@ -215,11 +215,14 @@ export default function InvoiceTable({
         <Typography sx={{ p: 4, textAlign: "center" }}>Không có hóa đơn nào được tìm thấy.</Typography>
       ) : null}
 
+      <Box sx={{ width: "100%", overflowX: "auto" }}>
       <table
         style={{
           width: "100%",
+          minWidth: 1400,
           borderCollapse: "collapse",
           fontSize: "0.8rem",
+          tableLayout: "auto",
         }}
       >
         <thead>
@@ -264,6 +267,20 @@ export default function InvoiceTable({
                         header.label
                       )}
                     </span>
+
+                    {header.key === "actions" && (
+                      <IconButton
+                        size="small"
+                        title="Ẩn/Hiện cột"
+                        sx={{ p: 0.25 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAnchorEl(e.currentTarget);
+                        }}
+                      >
+                        <ViewColumnIcon style={{ fontSize: "16px", color: "#1976d2" }} />
+                      </IconButton>
+                    )}
 
                     {header.key === "collectionDate" && (
                       <span style={{ fontSize: "0.7rem", color: "#666" }}>
@@ -404,7 +421,7 @@ export default function InvoiceTable({
                     )}
 
                     {isColVisible("customerAddress") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word" }}>
+                      <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word", maxWidth: 240, minWidth: 180 }}>
                         {invoice.customerAddress}
                       </td>
                     )}
@@ -416,7 +433,7 @@ export default function InvoiceTable({
                     )}
 
                     {isColVisible("assignedTo") && (
-                      <td style={{ border: "1px solid #ddd", padding: "4px" }}>{invoice.assignedTo?.fullName}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "4px", whiteSpace: "nowrap", minWidth: 140 }}>{invoice.assignedTo?.fullName}</td>
                     )}
 
                     {isColVisible("billing_period") && (
@@ -563,6 +580,7 @@ export default function InvoiceTable({
           })}
         </tbody>
       </table>
+      </Box>
     </Box>
   );
 }

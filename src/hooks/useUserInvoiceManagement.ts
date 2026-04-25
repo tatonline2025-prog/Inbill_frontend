@@ -50,7 +50,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [selectedProvince, setSelectedProvince] = useState("all"); // --- Pagination States ---
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [invoicesPerPage, setInvoicesPerPage] = useState(15);
+  const [invoicesPerPage, setInvoicesPerPage] = useState(30);
   const [totalPages, setTotalPages] = useState(1); // --- Summary States ---
 
   const [assignedCustomerCodes, setAssignedCustomerCodes] = useState(0);
