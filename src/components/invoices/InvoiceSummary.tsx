@@ -161,7 +161,7 @@ export default function InvoiceSummary({
                 <Typography sx={{ fontSize: "1rem", fontWeight: 700, lineHeight: 1.2 }}>
                   {formatCount(s.data.count)} HĐ ({pct.toFixed(1)}%)
                 </Typography>
-                <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, opacity: 0.95 }}>
+                <Typography sx={{ fontSize: "1rem", fontWeight: 700, lineHeight: 1.2 }}>
                   {formatVnd(s.data.amount)}
                 </Typography>
               </Box>
