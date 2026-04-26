@@ -344,6 +344,17 @@ export const syncDuplicateInvoices_API = async () => {
   return res;
 };
 
+export const cleanupRedundantDuplicates_API = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+  const res = await axios.post(
+    `${getApiBaseUrl()}/api/invoices/cleanup-duplicates`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res;
+};
+
 export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[] }) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");

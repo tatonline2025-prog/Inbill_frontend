@@ -21,7 +21,7 @@ import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
 import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
-import { fetchInvoicesForCopyAPI, syncDuplicateInvoices_API } from "@/services/invoice.api";
+import { fetchInvoicesForCopyAPI, syncDuplicateInvoices_API, cleanupRedundantDuplicates_API } from "@/services/invoice.api";
 
 export default function InvoicesPage() {
   const {
@@ -175,9 +175,9 @@ export default function InvoicesPage() {
           billingPeriods={billingPeriods}
         />
 
-        {/* Nút đồng bộ thông tin giữa các mã trùng */}
+        {/* Nút đồng bộ + dọn mã trùng */}
         {filterCollection === "duplicates" && (
-          <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+          <Box sx={{ mt: 1, display: "flex", gap: 1, justifyContent: "flex-end" }}>
             <Button
               size="small"
               variant="outlined"
@@ -198,6 +198,26 @@ export default function InvoicesPage() {
               }}
             >
               Đồng bộ thông tin mã trùng
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={async () => {
+                if (!confirm("Xóa bớt hóa đơn trùng đã đồng bộ giống hệt nhau và CHƯA tương tác (chưa thu, chưa in, chưa đóng cước). Hành động này không hoàn tác được. Tiếp tục?")) return;
+                const t = toast.loading("Đang dọn mã trùng...");
+                try {
+                  const res = await cleanupRedundantDuplicates_API();
+                  toast.dismiss(t);
+                  toast.success(res.data?.message || "Đã dọn.");
+                  reloadInvoices();
+                } catch (e: any) {
+                  toast.dismiss(t);
+                  toast.error(e?.response?.data?.message || "Dọn thất bại.");
+                }
+              }}
+            >
+              Xóa mã trùng chưa tương tác
             </Button>
           </Box>
         )}
