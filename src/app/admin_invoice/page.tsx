@@ -97,6 +97,7 @@ export default function InvoicesPage() {
     handleEditInvoice,
     handleEditSuccess,
     handleDeleteSelected,
+    handleBulkUpdate,
     handleSelectAll,
     handleSelectOne,
     handleToggle,
@@ -168,6 +169,8 @@ export default function InvoicesPage() {
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
           userData={userData}
+          onBulkUpdate={handleBulkUpdate}
+          billingPeriods={billingPeriods}
         />
 
         {/* === SUMMARY === */}

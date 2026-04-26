@@ -51,6 +51,13 @@ interface InvoiceToolbarProps {
   filterAssignedUser?: string;
   onFilterAssignedUserChange?: (value: string) => void;
   userData?: IUser[];
+  onBulkUpdate?: (updates: {
+    recordBookCode?: string;
+    assignedTo?: string | null;
+    billing_period?: string;
+    collectionStatus?: "collected" | "not_collected";
+  }) => void;
+  billingPeriods?: string[];
 }
 
 export default function InvoiceToolbar({
@@ -79,11 +86,42 @@ export default function InvoiceToolbar({
   filterAssignedUser,
   onFilterAssignedUserChange,
   userData = [],
+  onBulkUpdate,
+  billingPeriods = [],
 }: InvoiceToolbarProps) {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkValue, setBulkValue] = useState("");
   const [deleteMenuAnchor, setDeleteMenuAnchor] = useState<null | HTMLElement>(null);
   const isDeleteMenuOpen = Boolean(deleteMenuAnchor);
+
+  // === State cho dialog cập nhật hàng loạt ===
+  const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+  const [buField, setBuField] = useState<"recordBookCode" | "assignedTo" | "billing_period" | "collectionStatus" | "">("");
+  const [buValue, setBuValue] = useState<string>("");
+
+  const handleOpenBulkUpdate = () => {
+    setBuField("");
+    setBuValue("");
+    setIsBulkUpdateOpen(true);
+  };
+  const handleApplyBulkUpdate = () => {
+    if (!onBulkUpdate || !buField) return;
+    const updates: Record<string, unknown> = {};
+    if (buField === "recordBookCode") {
+      if (!buValue.trim()) return;
+      updates.recordBookCode = buValue.trim();
+    } else if (buField === "billing_period") {
+      if (!buValue) return;
+      updates.billing_period = buValue;
+    } else if (buField === "assignedTo") {
+      updates.assignedTo = buValue || null;
+    } else if (buField === "collectionStatus") {
+      if (buValue !== "collected" && buValue !== "not_collected") return;
+      updates.collectionStatus = buValue;
+    }
+    onBulkUpdate(updates as Parameters<NonNullable<typeof onBulkUpdate>>[0]);
+    setIsBulkUpdateOpen(false);
+  };
 
   // Kiểu 'sx' chung cho các nút để tránh lặp code
   const commonButtonSx = {
@@ -212,6 +250,24 @@ export default function InvoiceToolbar({
                 )}
               </Menu>
             </>
+          )}
+
+          {/* Cập nhật hàng loạt (xanh dương) */}
+          {onBulkUpdate && (
+            <Button
+              variant="contained"
+              size="small"
+              disabled={selectedInvoicesCount === 0}
+              onClick={handleOpenBulkUpdate}
+              sx={{
+                ...commonButtonSx,
+                backgroundColor: "#2563eb",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#1d4ed8" },
+              }}
+            >
+              Cập nhật hàng loạt ({selectedInvoicesCount})
+            </Button>
           )}
 
           {/* 4. Xuất Excel chọn lọc (xanh lá) */}
@@ -373,6 +429,111 @@ export default function InvoiceToolbar({
           </Button>
           <Button onClick={handleProcessBulkSearch} variant="contained" color="primary" disabled={!bulkValue.trim()}>
             Tìm kiếm ngay
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* --- DIALOG CẬP NHẬT HÀNG LOẠT --- */}
+      <Dialog open={isBulkUpdateOpen} onClose={() => setIsBulkUpdateOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          Cập nhật hàng loạt ({selectedInvoicesCount} hoá đơn)
+        </DialogTitle>
+        <DialogContent dividers>
+          <FormControl fullWidth size="small" sx={{ mt: 1, mb: 2 }}>
+            <InputLabel id="bu-field-label">Trường cần cập nhật</InputLabel>
+            <Select
+              labelId="bu-field-label"
+              label="Trường cần cập nhật"
+              value={buField}
+              onChange={(e) => {
+                setBuField(e.target.value as typeof buField);
+                setBuValue("");
+              }}
+            >
+              <MenuItem value="recordBookCode">Mã trạm</MenuItem>
+              <MenuItem value="assignedTo">Người phụ trách</MenuItem>
+              <MenuItem value="billing_period">Kỳ TT</MenuItem>
+              <MenuItem value="collectionStatus">Trạng thái thu</MenuItem>
+            </Select>
+          </FormControl>
+
+          {buField === "recordBookCode" && (
+            <TextField
+              fullWidth
+              size="small"
+              label="Mã trạm mới"
+              value={buValue}
+              onChange={(e) => setBuValue(e.target.value)}
+            />
+          )}
+
+          {buField === "billing_period" && (
+            <FormControl fullWidth size="small">
+              <InputLabel id="bu-bp-label">Kỳ TT</InputLabel>
+              <Select
+                labelId="bu-bp-label"
+                label="Kỳ TT"
+                value={buValue}
+                onChange={(e) => setBuValue(String(e.target.value))}
+              >
+                {billingPeriods.map((p) => (
+                  <MenuItem key={p} value={p}>
+                    {p}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {buField === "assignedTo" && (
+            <FormControl fullWidth size="small">
+              <InputLabel id="bu-au-label">Người phụ trách</InputLabel>
+              <Select
+                labelId="bu-au-label"
+                label="Người phụ trách"
+                value={buValue}
+                onChange={(e) => setBuValue(String(e.target.value))}
+              >
+                <MenuItem value="">(Bỏ trống / Chưa gán)</MenuItem>
+                {userData.map((u) => (
+                  <MenuItem key={u._id} value={u._id}>
+                    {u.fullName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {buField === "collectionStatus" && (
+            <FormControl fullWidth size="small">
+              <InputLabel id="bu-cs-label">Trạng thái thu</InputLabel>
+              <Select
+                labelId="bu-cs-label"
+                label="Trạng thái thu"
+                value={buValue}
+                onChange={(e) => setBuValue(String(e.target.value))}
+              >
+                <MenuItem value="collected">Đã thu</MenuItem>
+                <MenuItem value="not_collected">Chưa thu</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setIsBulkUpdateOpen(false)} color="inherit">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleApplyBulkUpdate}
+            variant="contained"
+            color="primary"
+            disabled={
+              !buField ||
+              ((buField === "recordBookCode" || buField === "billing_period" || buField === "collectionStatus") &&
+                !buValue)
+            }
+          >
+            Áp dụng
           </Button>
         </DialogActions>
       </Dialog>

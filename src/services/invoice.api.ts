@@ -301,6 +301,25 @@ export const handleToggleIsPaid_API = async (invoiceId: string) => {
   }
 };
 
+export const bulkUpdateInvoices_API = async (
+  ids: string[],
+  updates: {
+    recordBookCode?: string;
+    assignedTo?: string | null;
+    billing_period?: string;
+    collectionStatus?: "collected" | "not_collected";
+  }
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+  const res = await axios.patch(
+    `${getApiBaseUrl()}/api/invoices/bulk-update`,
+    { ids, updates },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res;
+};
+
 export const updateCollectionDate_API = async (invoiceId: string, date: string | null) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");

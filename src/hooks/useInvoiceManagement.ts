@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   collectSummaryAPI,
   deleteInvoice_API,
+  bulkUpdateInvoices_API,
   fetchallInvoice,
   fetchInvoiceBylist,
   handleToggle_API,
@@ -355,8 +356,7 @@ export const useInvoiceManagement = () => {
   };
 
   // Tác vụ Xóa
-  const handleDeleteSelected = async () => {
-    if (selectedInvoices.length === 0) {
+  const handleDeleteSelected = async () => {    if (selectedInvoices.length === 0) {
       toast.error("Vui lòng chọn ít nhất một hoá đơn để xoá!");
       return;
     }
@@ -371,6 +371,32 @@ export const useInvoiceManagement = () => {
     } catch (error) {
       console.error(error);
       toast.error("Lỗi khi xoá hoá đơn!");
+    }
+  };
+
+  // Tác vụ cập nhật hàng loạt cho các hóa đơn được chọn
+  const handleBulkUpdate = async (updates: {
+    recordBookCode?: string;
+    assignedTo?: string | null;
+    billing_period?: string;
+    collectionStatus?: "collected" | "not_collected";
+  }) => {
+    if (selectedInvoices.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một hoá đơn!");
+      return;
+    }
+    if (!updates || Object.keys(updates).length === 0) {
+      toast.error("Chưa chọn trường cần cập nhật.");
+      return;
+    }
+    try {
+      const res = await bulkUpdateInvoices_API(selectedInvoices, updates);
+      toast.success(`Đã cập nhật ${res.data?.modifiedCount ?? selectedInvoices.length} hoá đơn.`);
+      setSelectedInvoices([]);
+      await reloadInvoices();
+    } catch (error) {
+      console.error(error);
+      toast.error("Lỗi khi cập nhật hàng loạt.");
     }
   };
 
@@ -749,6 +775,7 @@ export const useInvoiceManagement = () => {
     handleEditInvoice,
     handleEditSuccess,
     handleDeleteSelected,
+    handleBulkUpdate,
     handleSelectAll,
     handleSelectOne,
     handleToggle,
