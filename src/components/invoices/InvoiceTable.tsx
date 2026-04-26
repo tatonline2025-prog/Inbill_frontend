@@ -518,17 +518,19 @@ export default function InvoiceTable({
             {orderedHeaders.map((header) => {
               if (!isColVisible(header.key)) return null; // ẨN HEADER
 
+              const isDataCol = header.key !== "checkbox" && header.key !== "stt" && header.key !== "actions";
+
               return (
                 <th
                   key={header.key}
-                  onClick={header.key === "collectionDate" ? () => handleSortClick("collectionDate") : undefined}
+                  onClick={isDataCol ? () => handleSortClick(header.key) : undefined}
                   style={{
                     border: "1px solid #e0e0e0",
                     padding: "8px 4px",
                     textAlign: "center",
                     backgroundColor: "#f5f5f5",
                     fontWeight: 600,
-                    cursor: header.sortable ? "pointer" : "default",
+                    cursor: isDataCol ? "pointer" : "default",
                     userSelect: "none",
                     verticalAlign: "middle",
                     whiteSpace: "nowrap",
@@ -581,6 +583,19 @@ export default function InvoiceTable({
                       </span>
                     )}
 
+                    {/* Indicator sắp xếp cho các cột dữ liệu khác */}
+                    {isDataCol && header.key !== "collectionDate" && (
+                      <span style={{ fontSize: "0.7rem", color: sortField === header.key ? "#1976d2" : "#bbb" }}>
+                        {sortField === header.key
+                          ? sortDirection === "desc"
+                            ? "↓"
+                            : sortDirection === "asc"
+                            ? "↑"
+                            : "↕"
+                          : "↕"}
+                      </span>
+                    )}
+
                     {(header.key === "invoiceNumber" || header.key === "totalAmount") && (
                       <IconButton
                         className="copy-btn"
@@ -599,7 +614,10 @@ export default function InvoiceTable({
                       <IconButton
                         size="small"
                         sx={{ padding: "2px" }}
-                        onClick={() => handleCopyAllData(header.key, header.label)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyAllData(header.key, header.label);
+                        }}
                         disabled={isCopyingAll}
                       >
                         {isCopyingAll ? (
