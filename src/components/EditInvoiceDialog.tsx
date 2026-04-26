@@ -184,20 +184,6 @@ export default function EditInvoiceDialog({
             fullWidth
           />
 
-          <TextField
-            label="Ghi chú"
-            value={formData.note}
-            onChange={(e) => handleChange("note", e.target.value)}
-            fullWidth
-          />
-
-          <TextField
-            label="Số điện thoại"
-            value={formData.customerPhone}
-            onChange={(e) => handleChange("customerPhone", e.target.value)}
-            fullWidth
-          />
-
           {assignedUsers.length > 1 && (
             <FormControl fullWidth>
               <InputLabel id="assigned-user-label">Nhân viên phụ trách</InputLabel>
