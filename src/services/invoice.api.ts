@@ -104,7 +104,8 @@ export const fetchallInvoice = async (
   userprovince?: string,
   sortField?: string | null,
   sortDirection?: "asc" | "desc",
-  isPaid?: boolean
+  isPaid?: boolean,
+  onlyDuplicates?: boolean
 ) => {
   const token = localStorage.getItem("token");
 
@@ -122,6 +123,7 @@ export const fetchallInvoice = async (
       sortField,
       sortDirection,
       isPaid,
+      onlyDuplicates: onlyDuplicates ? "true" : undefined,
     },
     headers: {
       Authorization: `Bearer ${token}`,

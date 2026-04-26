@@ -130,7 +130,9 @@ export const useInvoiceManagement = () => {
         page,
         perPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
-        filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
+        filterCollection === "collected" || filterCollection === "not_collected"
+          ? filterCollection
+          : undefined,
         filterAssignedUser !== "all" ? filterAssignedUser : undefined,
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
@@ -138,7 +140,8 @@ export const useInvoiceManagement = () => {
         undefined, // userprovince
         sortFieldToSend,
         sortDirectionToSend,
-        isPaidFilter
+        isPaidFilter,
+        filterCollection === "duplicates"
       );
 
       setTotalPages(res.data.pagination.totalPages);

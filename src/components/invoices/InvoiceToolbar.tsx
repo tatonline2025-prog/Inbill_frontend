@@ -382,6 +382,7 @@ export default function InvoiceToolbar({
               <MenuItem value="collected">Đã thu</MenuItem>
               <MenuItem value="not_collected">Chưa thu</MenuItem>
               <MenuItem value="is_paid">Đã đóng cước</MenuItem>
+              <MenuItem value="duplicates" sx={{ color: "#ef4444", fontWeight: 600 }}>Mã trùng</MenuItem>
             </Select>
           </FormControl>
         )}
