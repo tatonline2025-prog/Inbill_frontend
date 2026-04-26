@@ -2,7 +2,8 @@
 
 "use client";
 
-import { Box, Pagination } from "@mui/material";
+import { Box, Button, Pagination } from "@mui/material";
+import SyncIcon from "@mui/icons-material/Sync";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
@@ -20,7 +21,7 @@ import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
 import ExportModals from "@/components/invoices/ExportModals"; // Component mới
 import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
-import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
+import { fetchInvoicesForCopyAPI, syncDuplicateInvoices_API } from "@/services/invoice.api";
 
 export default function InvoicesPage() {
   const {
@@ -173,6 +174,33 @@ export default function InvoicesPage() {
           onBulkUpdate={handleBulkUpdate}
           billingPeriods={billingPeriods}
         />
+
+        {/* Nút đồng bộ thông tin giữa các mã trùng */}
+        {filterCollection === "duplicates" && (
+          <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              size="small"
+              variant="outlined"
+              color="warning"
+              startIcon={<SyncIcon />}
+              onClick={async () => {
+                if (!confirm("Đồng bộ thông tin (tên KH, địa chỉ, mã trạm, SĐT, tỉnh) giữa các hóa đơn cùng mã KH — copy field trống từ 'anh em' có dữ liệu. Tiếp tục?")) return;
+                const t = toast.loading("Đang đồng bộ mã trùng...");
+                try {
+                  const res = await syncDuplicateInvoices_API();
+                  toast.dismiss(t);
+                  toast.success(res.data?.message || "Đã đồng bộ.");
+                  reloadInvoices();
+                } catch (e: any) {
+                  toast.dismiss(t);
+                  toast.error(e?.response?.data?.message || "Đồng bộ thất bại.");
+                }
+              }}
+            >
+              Đồng bộ thông tin mã trùng
+            </Button>
+          </Box>
+        )}
 
         {/* === SUMMARY === */}
         <InvoiceSummary

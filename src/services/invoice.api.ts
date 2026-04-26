@@ -333,6 +333,17 @@ export const updateCollectionDate_API = async (invoiceId: string, date: string |
   return res;
 };
 
+export const syncDuplicateInvoices_API = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chưa đăng nhập");
+  const res = await axios.post(
+    `${getApiBaseUrl()}/api/invoices/sync-duplicates`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res;
+};
+
 export const handleToggleIsPaidList_API = async (data: { invoiceNumbers: string[] }) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");
