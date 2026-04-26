@@ -25,6 +25,7 @@ import { fetchInvoicesForCopyAPI } from "@/services/invoice.api";
 export default function InvoicesPage() {
   const {
     invoices,
+    duplicateInvoiceNumbers,
     collectSummary,
     userData,
     loading,
@@ -190,6 +191,7 @@ export default function InvoicesPage() {
           <InvoiceTable
             loading={loading}
             invoices={invoices}
+            duplicateInvoiceNumbers={duplicateInvoiceNumbers}
             selectedInvoices={selectedInvoices}
             onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}

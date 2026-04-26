@@ -28,6 +28,7 @@ import { updateCollectionDate_API } from "@/services/invoice.api";
 interface InvoiceTableProps {
   loading: boolean;
   invoices: InvoiceInfo[];
+  duplicateInvoiceNumbers?: string[];
   selectedInvoices: string[];
   onSelectAll: (checked: boolean) => void;
   onSelectOne: (checked: boolean, id: string) => void;
@@ -46,6 +47,7 @@ interface InvoiceTableProps {
 export default function InvoiceTable({
   loading,
   invoices,
+  duplicateInvoiceNumbers,
   selectedInvoices,
   onSelectAll,
   onSelectOne,
@@ -176,6 +178,30 @@ export default function InvoiceTable({
 
   const isAllSelected = selectedInvoices.length === invoices.length && invoices.length > 0;
 
+  // ✅ Phát hiện các mã hóa đơn trùng (tồn tại song song nhiều bản ghi)
+  // Ưu tiên dữ liệu từ BE (toàn DB), fallback đếm trên trang hiện tại.
+  const duplicateInvoiceNumbersSet = useMemo(() => {
+    if (duplicateInvoiceNumbers && duplicateInvoiceNumbers.length > 0) {
+      return new Set(duplicateInvoiceNumbers.map((s) => s.toString().trim()));
+    }
+    const counter = new Map<string, number>();
+    invoices.forEach((inv) => {
+      const key = (inv.invoiceNumber || inv.recordBookCode || "").toString().trim();
+      if (!key) return;
+      counter.set(key, (counter.get(key) || 0) + 1);
+    });
+    const dup = new Set<string>();
+    counter.forEach((v, k) => {
+      if (v > 1) dup.add(k);
+    });
+    return dup;
+  }, [invoices, duplicateInvoiceNumbers]);
+
+  const isDuplicateInvoice = (invoice: InvoiceInfo) => {
+    const key = (invoice.invoiceNumber || invoice.recordBookCode || "").toString().trim();
+    return key ? duplicateInvoiceNumbersSet.has(key) : false;
+  };
+
   interface CopyableKey {
     key: Extract<keyof InvoiceInfo, "invoiceNumber" | "totalAmount">;
     label: string;
@@ -226,12 +252,22 @@ export default function InvoiceTable({
   // Render một ô dữ liệu theo key cột (để có thể đổi thứ tự dễ)
   const renderCell = (key: string, invoice: InvoiceInfo): React.ReactNode => {
     switch (key) {
-      case "invoiceNumber":
+      case "invoiceNumber": {
+        const dup = isDuplicateInvoice(invoice);
         return (
-          <td style={{ border: "1px solid #ddd", padding: "6px" }}>
+          <td
+            style={{
+              border: "1px solid #ddd",
+              padding: "6px",
+              color: dup ? "#ef4444" : undefined,
+              fontWeight: dup ? 600 : undefined,
+            }}
+            title={dup ? "Mã KH này tồn tại nhiều hóa đơn song song (khác kỳ TT hoặc khác người phụ trách) — cần xử lý đặc biệt." : undefined}
+          >
             {invoice.invoiceNumber || invoice.recordBookCode}
           </td>
         );
+      }
       case "currentAmount":
         return (
           <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "right" }}>
@@ -613,7 +649,15 @@ export default function InvoiceTable({
                 {isMissingRow ? (
                   <>
                     {isColVisible("invoiceNumber") && (
-                      <td style={{ border: "1px solid #ddd", padding: "6px", fontWeight: "bold" }}>
+                      <td
+                        style={{
+                          border: "1px solid #ddd",
+                          padding: "6px",
+                          fontWeight: "bold",
+                          color: isDuplicateInvoice(invoice) ? "#ef4444" : undefined,
+                        }}
+                        title={isDuplicateInvoice(invoice) ? "Mã KH này tồn tại nhiều hóa đơn song song." : undefined}
+                      >
                         {invoice.invoiceNumber || invoice.recordBookCode}
                       </td>
                     )}

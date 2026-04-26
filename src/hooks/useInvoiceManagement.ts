@@ -37,6 +37,7 @@ const useDebounce = (value: string, delay: number) => {
 export const useInvoiceManagement = () => {
   // --- State Dữ liệu chính ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
+  const [duplicateInvoiceNumbers, setDuplicateInvoiceNumbers] = useState<string[]>([]);
   const [userData, setUserData] = useState<IUser[]>([]);
   const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
   const [loading, setLoading] = useState(true);
@@ -145,6 +146,7 @@ export const useInvoiceManagement = () => {
       setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
+      setDuplicateInvoiceNumbers(res.data.duplicateInvoiceNumbers || []);
     } catch (err) {
       console.error("Lỗi khi tải hóa đơn:", err);
       setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
@@ -700,6 +702,7 @@ export const useInvoiceManagement = () => {
   return {
     // State
     invoices,
+    duplicateInvoiceNumbers,
     collectSummary,
     userData,
     loading,
