@@ -99,7 +99,7 @@ export default function Header() {
                 Quản lý hoá đơn
               </Link>
 
-              <Link href="/admin_customers" className="nav-item" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/all-invoices" className="nav-item" onClick={() => setIsMenuOpen(false)}>
                 Danh sách tổng
               </Link>
             </>

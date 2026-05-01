@@ -105,7 +105,8 @@ export const fetchallInvoice = async (
   sortField?: string | null,
   sortDirection?: "asc" | "desc",
   isPaid?: boolean,
-  onlyDuplicates?: boolean
+  onlyDuplicates?: boolean,
+  customerName?: string
 ) => {
   const token = localStorage.getItem("token");
 
@@ -118,6 +119,7 @@ export const fetchallInvoice = async (
       assignedUserId,
       province,
       customerCode,
+      customerName,
       stationCode,
       userprovince,
       sortField,
