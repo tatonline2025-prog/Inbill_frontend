@@ -20,8 +20,22 @@ export default function UsersPage() {
   const [summaryData, setSummaryData] = useState<IInvoiceSummaryByUser[]>([]);
 
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
-  const [formData, setFormData] = useState<Partial<IUser>>();
+  const [formData, setFormData] = useState<Partial<IUser> & { areaPrefixes?: { area: string; prefix: string }[] }>();
   const [selectedProvince, setSelectedProvince] = useState("");
+  const [areaInput, setAreaInput] = useState("");
+  const [prefixInput, setPrefixInput] = useState("");
+
+  // Bản đồ mã vùng theo Tỉnh/Thành phố (cập nhật khi có khu vực mới)
+  const AREA_PREFIX_MAP: Record<string, { area: string; prefix: string }[]> = {
+    "Đồng Tháp": [
+      { area: "Lấp Vò", prefix: "PB070900" },
+      { area: "ĐT Mười", prefix: "PB070900" },
+    ],
+    "Tây Ninh": [
+      { area: "Bến Cầu", prefix: "PB050900" },
+      { area: "Trảng Bàng", prefix: "PB050300" },
+    ],
+  };
 
   const [selectedUserForUpload, setSelectedUserForUpload] = useState<IUser | null>(null);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
@@ -122,6 +136,8 @@ export default function UsersPage() {
 
   const handleEditClick = (user: IUser) => {
     setEditingUser(user);
+    const existingAreaPrefixes = (user as unknown as { areaPrefixes?: { area: string; prefix: string }[] })
+      .areaPrefixes;
     setFormData({
       fullName: user.fullName,
       email: user.email,
@@ -131,7 +147,10 @@ export default function UsersPage() {
       phone: user.phone || "",
       stt: user.stt || "",
       usertype: user.usertype || "",
+      areaPrefixes: Array.isArray(existingAreaPrefixes) ? existingAreaPrefixes : [],
     });
+    setAreaInput("");
+    setPrefixInput("");
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -385,7 +404,7 @@ export default function UsersPage() {
 
         {editingUser && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
               {/* HEADER */}
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-800">Chỉnh sửa thông tin</h2>
@@ -425,6 +444,17 @@ export default function UsersPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Số điện thoại</label>
+                    <input
+                      type="text"
+                      value={formData?.phone || ""}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="09xxx..."
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Loại tài khoản</label>
                     <select
                       value={formData?.usertype}
@@ -438,8 +468,10 @@ export default function UsersPage() {
                       <option value="internal">Nhân viên nội bộ</option>
                     </select>
                   </div>
+                </div>
 
-                  <div>
+                <div className="flex gap-4">
+                  <div style={{ flex: "0 0 40%" }}>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Tỉnh / Thành phố</label>
                     <select
                       value={formData?.province || ""}
@@ -454,17 +486,89 @@ export default function UsersPage() {
                       ))}
                     </select>
                   </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Số điện thoại</label>
-                    <input
-                      type="text"
-                      value={formData?.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
+                  <div style={{ flex: "1 1 60%" }}>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Xã/Phường &amp; Prefix mã hóa đơn
+                    </label>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        className="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none flex-1 min-w-0"
+                        value=""
+                        onChange={(e) => {
+                          const province = formData?.province || "";
+                          const sel = (AREA_PREFIX_MAP[province] || []).find((x) => x.area === e.target.value);
+                          if (sel) {
+                            setAreaInput(sel.area);
+                            setPrefixInput(sel.prefix);
+                          }
+                        }}
+                      >
+                        <option value="">-- Chọn xã/phường --</option>
+                        {(AREA_PREFIX_MAP[formData?.province || ""] || []).map((opt) => (
+                          <option key={opt.area + opt.prefix} value={opt.area}>
+                            {opt.area} - {opt.prefix}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        className="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-24"
+                        placeholder="Xã/Phường"
+                        value={areaInput}
+                        onChange={(e) => setAreaInput(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        className="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-28"
+                        placeholder="Prefix"
+                        value={prefixInput}
+                        onChange={(e) => setPrefixInput(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="bg-blue-600 text-white font-bold rounded-lg w-9 h-9 flex items-center justify-center hover:bg-blue-700 shrink-0"
+                        title="Thêm khu vực + prefix"
+                        onClick={() => {
+                          const a = areaInput.trim();
+                          const p = prefixInput.trim();
+                          if (!a || !p) return;
+                          setFormData((prev) => {
+                            const list = prev?.areaPrefixes || [];
+                            if (list.some((x) => x.area === a && x.prefix === p)) return prev;
+                            return { ...prev, areaPrefixes: [...list, { area: a, prefix: p }] };
+                          });
+                          setAreaInput("");
+                          setPrefixInput("");
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {formData?.areaPrefixes && formData.areaPrefixes.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {formData.areaPrefixes.map((it, idx) => (
+                          <span
+                            key={`${it.area}-${it.prefix}-${idx}`}
+                            className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-full px-3 py-1"
+                          >
+                            {it.area} - {it.prefix}
+                            <button
+                              type="button"
+                              className="ml-1 text-blue-600 hover:text-red-600 font-bold"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  areaPrefixes: (prev?.areaPrefixes || []).filter((_, i) => i !== idx),
+                                }))
+                              }
+                              title="Xóa"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

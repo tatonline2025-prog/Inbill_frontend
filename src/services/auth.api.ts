@@ -25,7 +25,8 @@ export const register = async (
   province: string,
   usertype: string,
   phone: string,
-  stt: string
+  stt: string,
+  areaPrefixes?: { area: string; prefix: string }[]
 ) => {
   const token = localStorage.getItem("token");
 
@@ -39,6 +40,7 @@ export const register = async (
       usertype,
       phone,
       stt,
+      areaPrefixes: areaPrefixes ?? [],
     },
     {
       headers: {

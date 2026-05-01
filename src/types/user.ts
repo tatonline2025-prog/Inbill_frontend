@@ -12,6 +12,7 @@ export interface IUser {
   usertype: string;
   bankAccount: string;
   bankName: string;
+  areaPrefixes: { area: string; prefix: string }[];
   createdAt: string; // Hoặc Date nếu bạn parse nó
   updatedAt: string; // Hoặc Date
 }

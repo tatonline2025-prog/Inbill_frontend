@@ -18,6 +18,21 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [userType, setUserType] = useState<"internal" | "">("internal");
+  const [areaPrefixes, setAreaPrefixes] = useState<{ area: string; prefix: string }[]>([]);
+  const [areaInput, setAreaInput] = useState("");
+  const [prefixInput, setPrefixInput] = useState("");
+
+  // Bản đồ mã vùng theo Tỉnh/Thành phố (cập nhật khi có khu vực mới)
+  const AREA_PREFIX_MAP: Record<string, { area: string; prefix: string }[]> = {
+    "Đồng Tháp": [
+      { area: "Lấp Vò", prefix: "PB070900" },
+      { area: "ĐT Mười", prefix: "PB070900" },
+    ],
+    "Tây Ninh": [
+      { area: "Bến Cầu", prefix: "PB050900" },
+      { area: "Trảng Bàng", prefix: "PB050300" },
+    ],
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,7 +40,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(name, password, fullName, province, userType, phone, order);
+      await register(name, password, fullName, province, userType, phone, order, areaPrefixes);
 
       setMessage({ type: "success", text: "Đăng ký thành công! Đang chuyển hướng..." });
 
@@ -130,6 +145,19 @@ export default function RegisterPage() {
 
             <div className="flex gap-4">
               <div className="flex-1">
+                <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
+                  Số điện thoại
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="09xxx..."
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
                 <label htmlFor="userType" className="block text-gray-700 text-sm font-bold mb-2">
                   Loại Người dùng
                 </label>
@@ -143,7 +171,10 @@ export default function RegisterPage() {
                   <option value="internal">Nhân viên Nội bộ</option>
                 </select>
               </div>
-              <div className="flex-1">
+            </div>
+
+            <div className="flex gap-4">
+              <div style={{ flex: "0 0 40%" }}>
                 <label htmlFor="province" className="block text-gray-700 text-sm font-bold mb-2">
                   Tỉnh / Thành phố
                 </label>
@@ -162,21 +193,81 @@ export default function RegisterPage() {
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
-                  Số điện thoại
+              <div style={{ flex: "1 1 60%" }}>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Xã/Phường &amp; Prefix mã hóa đơn
                 </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="09xxx..."
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
+                <div className="flex gap-2 items-center">
+                  <select
+                    className="shadow border rounded py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-0"
+                    value=""
+                    onChange={(e) => {
+                      const sel = (AREA_PREFIX_MAP[province] || []).find((x) => x.area === e.target.value);
+                      if (sel) {
+                        setAreaInput(sel.area);
+                        setPrefixInput(sel.prefix);
+                      }
+                    }}
+                  >
+                    <option value="">-- Chọn xã/phường --</option>
+                    {(AREA_PREFIX_MAP[province] || []).map((opt) => (
+                      <option key={opt.area + opt.prefix} value={opt.area}>
+                        {opt.area} - {opt.prefix}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    className="shadow border rounded py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
+                    placeholder="Xã/Phường"
+                    value={areaInput}
+                    onChange={(e) => setAreaInput(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="shadow border rounded py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-28"
+                    placeholder="Prefix"
+                    value={prefixInput}
+                    onChange={(e) => setPrefixInput(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="bg-blue-600 text-white font-bold rounded w-9 h-9 flex items-center justify-center hover:bg-blue-700 shrink-0"
+                    title="Thêm khu vực + prefix"
+                    onClick={() => {
+                      const a = areaInput.trim();
+                      const p = prefixInput.trim();
+                      if (!a || !p) return;
+                      setAreaPrefixes((prev) =>
+                        prev.some((x) => x.area === a && x.prefix === p) ? prev : [...prev, { area: a, prefix: p }]
+                      );
+                      setAreaInput("");
+                      setPrefixInput("");
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                {areaPrefixes.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {areaPrefixes.map((it, idx) => (
+                      <span
+                        key={`${it.area}-${it.prefix}-${idx}`}
+                        className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-full px-3 py-1"
+                      >
+                        {it.area} - {it.prefix}
+                        <button
+                          type="button"
+                          className="ml-1 text-blue-600 hover:text-red-600 font-bold"
+                          onClick={() => setAreaPrefixes((prev) => prev.filter((_, i) => i !== idx))}
+                          title="Xóa"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
