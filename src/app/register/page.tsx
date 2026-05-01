@@ -28,6 +28,8 @@ export default function RegisterPage() {
   const { map: AREA_PREFIX_MAP } = useAreaPrefixMap();
 
   const provinces = PROVINCES;
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMessage(null);
     setIsLoading(true);
@@ -58,8 +60,6 @@ export default function RegisterPage() {
       ? "bg-green-100 border-green-400 text-green-700"
       : "bg-red-100 border-red-400 text-red-700";
   };
-
-  const provinces = PROVINCES;
 
   return (
     <ProtectedRoute fallback={<p>Redirecting...</p>}>
