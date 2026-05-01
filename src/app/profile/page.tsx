@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiUpdateUser } from "@/services/user.api";
+import { PROVINCES } from "@/constants/invoice.constants";
 import axios from "axios";
 
 type Message = {
@@ -29,8 +30,9 @@ export default function ProfilePage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
-  const [areaInput, setAreaInput] = useState("");
-  const [prefixInput, setPrefixInput] = useState("");
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editArea, setEditArea] = useState("");
+  const [editPrefix, setEditPrefix] = useState("");
 
   // Bản đồ mã vùng theo Tỉnh/Thành phố (cập nhật khi có khu vực mới)
   const AREA_PREFIX_MAP: Record<string, { area: string; prefix: string }[]> = {
@@ -44,42 +46,7 @@ export default function ProfilePage() {
     ],
   };
 
-  const provinces = [
-    "TP Hà Nội",
-    "TP Huế",
-    "Quảng Ninh",
-    "Cao Bằng",
-    "Lạng Sơn",
-    "Lai Châu",
-    "Điện Biên",
-    "Sơn La",
-    "Thanh Hóa",
-    "Nghệ An",
-    "Hà Tĩnh",
-    "Tuyên Quang",
-    "Lào Cai",
-    "Thái Nguyên",
-    "Phú Thọ",
-    "Bắc Ninh",
-    "Hưng Yên",
-    "TP Hải Phòng",
-    "Ninh Bình",
-    "Quảng Trị",
-    "TP Đà Nẵng",
-    "Quảng Ngãi",
-    "Gia Lai",
-    "Khánh Hòa",
-    "Lâm Đồng",
-    "Đắk Lắk",
-    "TP Hồ Chí Minh",
-    "Đồng Nai",
-    "Tây Ninh",
-    "TP Cần Thơ",
-    "Vĩnh Long",
-    "Đồng Tháp",
-    "Cà Mau",
-    "An Giang",
-  ];
+  const provinces = PROVINCES;
 
   useEffect(() => {
     if (user) {
@@ -247,84 +214,134 @@ export default function ProfilePage() {
               <label className="block text-gray-700 text-sm font-bold mb-2">
                 Xã/Phường &amp; Prefix mã hóa đơn
               </label>
-              <div className="flex gap-2 items-center">
-                <select
-                  className="shadow border rounded py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-0"
-                  value=""
-                  onChange={(e) => {
-                    const sel = (AREA_PREFIX_MAP[formData.province] || []).find((x) => x.area === e.target.value);
-                    if (sel) {
-                      setAreaInput(sel.area);
-                      setPrefixInput(sel.prefix);
-                    }
-                  }}
-                >
-                  <option value="">-- Chọn xã/phường --</option>
-                  {(AREA_PREFIX_MAP[formData.province] || []).map((opt) => (
-                    <option key={opt.area + opt.prefix} value={opt.area}>
-                      {opt.area} - {opt.prefix}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  className="shadow border rounded py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
-                  placeholder="Xã/Phường"
-                  value={areaInput}
-                  onChange={(e) => setAreaInput(e.target.value)}
-                />
-                <input
-                  type="text"
-                  className="shadow border rounded py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-28"
-                  placeholder="Prefix"
-                  value={prefixInput}
-                  onChange={(e) => setPrefixInput(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="bg-blue-600 text-white font-bold rounded w-9 h-9 flex items-center justify-center hover:bg-blue-700 shrink-0"
-                  title="Thêm khu vực + prefix"
-                  onClick={() => {
-                    const a = areaInput.trim();
-                    const p = prefixInput.trim();
-                    if (!a || !p) return;
-                    setFormData((prev) =>
-                      prev.areaPrefixes.some((x) => x.area === a && x.prefix === p)
-                        ? prev
-                        : { ...prev, areaPrefixes: [...prev.areaPrefixes, { area: a, prefix: p }] }
-                    );
-                    setAreaInput("");
-                    setPrefixInput("");
-                  }}
-                >
-                  +
-                </button>
-              </div>
-              {formData.areaPrefixes.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.areaPrefixes.map((it, idx) => (
-                    <span
-                      key={`${it.area}-${it.prefix}-${idx}`}
-                      className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-full px-3 py-1"
-                    >
-                      {it.area} - {it.prefix}
+              <div className="border rounded overflow-hidden text-sm">
+                {/* Quick-pick dropdown + nút thêm mới */}
+                <div className="flex items-center border-b bg-gray-50">
+                  <select
+                    className="flex-1 py-2 px-2 text-gray-700 bg-transparent focus:outline-none"
+                    value=""
+                    onChange={(e) => {
+                      const opt = (AREA_PREFIX_MAP[formData.province] || []).find((x) => x.area === e.target.value);
+                      if (!opt) return;
+                      setFormData((prev) => ({
+                        ...prev,
+                        areaPrefixes: prev.areaPrefixes.some((x) => x.area === opt.area && x.prefix === opt.prefix)
+                          ? prev.areaPrefixes
+                          : [...prev.areaPrefixes, opt],
+                      }));
+                    }}
+                  >
+                    <option value="">-- Chọn xã/phường --</option>
+                    {(AREA_PREFIX_MAP[formData.province] || []).map((opt) => (
+                      <option key={opt.area + opt.prefix} value={opt.area}>
+                        {opt.area} – {opt.prefix}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="bg-blue-600 text-white font-bold w-9 h-9 flex items-center justify-center hover:bg-blue-700 shrink-0"
+                    title="Thêm mới"
+                    onClick={() => { setEditingIdx(-1); setEditArea(""); setEditPrefix(""); }}
+                  >
+                    +
+                  </button>
+                </div>
+                {/* Danh sách đã thêm */}
+                {formData.areaPrefixes.map((it, idx) =>
+                  editingIdx === idx ? (
+                    <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-blue-50 border-b">
+                      <input
+                        className="flex-1 border rounded px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        value={editArea}
+                        onChange={(e) => setEditArea(e.target.value)}
+                        placeholder="Xã/Phường"
+                        autoFocus
+                      />
+                      <input
+                        className="w-28 border rounded px-1 py-0.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        value={editPrefix}
+                        onChange={(e) => setEditPrefix(e.target.value)}
+                        placeholder="Prefix"
+                      />
                       <button
                         type="button"
-                        className="ml-1 text-blue-600 hover:text-red-600 font-bold"
-                        onClick={() =>
+                        className="text-blue-600 hover:text-green-700 font-bold px-1"
+                        title="Xác nhận (để trống = xóa)"
+                        onClick={() => {
+                          const a = editArea.trim();
+                          const p = editPrefix.trim();
+                          if (!a || !p) {
+                            setFormData((prev) => ({ ...prev, areaPrefixes: prev.areaPrefixes.filter((_, i) => i !== idx) }));
+                          } else {
+                            setFormData((prev) => ({ ...prev, areaPrefixes: prev.areaPrefixes.map((x, i) => (i === idx ? { area: a, prefix: p } : x)) }));
+                          }
+                          setEditingIdx(null);
+                        }}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ) : (
+                    <div key={idx} className="flex items-center px-2 py-1.5 border-b hover:bg-gray-50">
+                      <span className="flex-1 text-gray-800">{it.area}</span>
+                      <span className="font-mono text-gray-500 text-right mr-2">{it.prefix}</span>
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-blue-600"
+                        title="Chỉnh sửa"
+                        onClick={() => { setEditingIdx(idx); setEditArea(it.area); setEditPrefix(it.prefix); }}
+                      >
+                        ✏
+                      </button>
+                    </div>
+                  )
+                )}
+                {/* Hàng thêm mới */}
+                {editingIdx === -1 && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border-b">
+                    <input
+                      className="flex-1 border rounded px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-green-400"
+                      value={editArea}
+                      onChange={(e) => setEditArea(e.target.value)}
+                      placeholder="Xã/Phường mới"
+                      autoFocus
+                    />
+                    <input
+                      className="w-28 border rounded px-1 py-0.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-green-400"
+                      value={editPrefix}
+                      onChange={(e) => setEditPrefix(e.target.value)}
+                      placeholder="Prefix"
+                    />
+                    <button
+                      type="button"
+                      className="text-green-600 hover:text-green-800 font-bold px-1"
+                      title="Thêm"
+                      onClick={() => {
+                        const a = editArea.trim();
+                        const p = editPrefix.trim();
+                        if (a && p) {
                           setFormData((prev) => ({
                             ...prev,
-                            areaPrefixes: prev.areaPrefixes.filter((_, i) => i !== idx),
-                          }))
+                            areaPrefixes: prev.areaPrefixes.some((x) => x.area === a && x.prefix === p)
+                              ? prev.areaPrefixes
+                              : [...prev.areaPrefixes, { area: a, prefix: p }],
+                          }));
                         }
-                        title="Xóa"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+                        setEditingIdx(null);
+                        setEditArea("");
+                        setEditPrefix("");
+                      }}
+                    >
+                      ✓
+                    </button>
+                  </div>
+                )}
+                {/* Trạng thái rỗng */}
+                {formData.areaPrefixes.length === 0 && editingIdx !== -1 && (
+                  <div className="px-2 py-2 text-gray-400 italic">Chưa có khu vực nào</div>
+                )}
+              </div>
             </div>
           </div>
 
