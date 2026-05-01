@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiUpdateUser } from "@/services/user.api";
 import { PROVINCES } from "@/constants/invoice.constants";
+import { useAreaPrefixMap } from "@/hooks/useAreaPrefixMap";
 import axios from "axios";
 
 type Message = {
@@ -34,18 +35,7 @@ export default function ProfilePage() {
   const [editArea, setEditArea] = useState("");
   const [editPrefix, setEditPrefix] = useState("");
 
-  // Bản đồ mã vùng theo Tỉnh/Thành phố (cập nhật khi có khu vực mới)
-  const AREA_PREFIX_MAP: Record<string, { area: string; prefix: string }[]> = {
-    "Đồng Tháp": [
-      { area: "Lấp Vò", prefix: "PB070900" },
-      { area: "ĐT Mười", prefix: "PB070900" },
-    ],
-    "Tây Ninh": [
-      { area: "Bến Cầu", prefix: "PB050900" },
-      { area: "Trảng Bàng", prefix: "PB050300" },
-    ],
-  };
-
+  const { map: AREA_PREFIX_MAP } = useAreaPrefixMap();
   const provinces = PROVINCES;
 
   useEffect(() => {

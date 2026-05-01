@@ -6,6 +6,7 @@ import { excelUp } from "@/services/excel.api";
 import { invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
 import { formatDateVN } from "@/lib/date-vn";
+import { useAreaPrefixMap } from "@/hooks/useAreaPrefixMap";
 import { IInvoiceSummaryByUser } from "@/types/invoice";
 import { IUser } from "@/types/user";
 import Image from "next/image";
@@ -26,17 +27,7 @@ export default function UsersPage() {
   const [editArea, setEditArea] = useState("");
   const [editPrefix, setEditPrefix] = useState("");
 
-  // Bản đồ mã vùng theo Tỉnh/Thành phố (cập nhật khi có khu vực mới)
-  const AREA_PREFIX_MAP: Record<string, { area: string; prefix: string }[]> = {
-    "Đồng Tháp": [
-      { area: "Lấp Vò", prefix: "PB070900" },
-      { area: "ĐT Mười", prefix: "PB070900" },
-    ],
-    "Tây Ninh": [
-      { area: "Bến Cầu", prefix: "PB050900" },
-      { area: "Trảng Bàng", prefix: "PB050300" },
-    ],
-  };
+  const { map: AREA_PREFIX_MAP } = useAreaPrefixMap();
 
   const [selectedUserForUpload, setSelectedUserForUpload] = useState<IUser | null>(null);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
