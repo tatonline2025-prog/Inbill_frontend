@@ -217,14 +217,32 @@ export interface IDailyCollectionSummary {
   assignedUsers: string[];
 }
 
-export const dailyCollectionSummaryAPI = async (days = 31) => {
+export interface IDailyCollectionParams {
+  days?: number;
+  assignedUserId?: string;
+  dateFrom?: string; // "YYYY-MM-DD"
+  dateTo?: string;   // "YYYY-MM-DD"
+}
+
+export const dailyCollectionSummaryAPI = async (params: IDailyCollectionParams = {}) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chua dang nhap");
+
+  const query: Record<string, string | number> = {};
+  if (params.dateFrom && params.dateTo) {
+    query.dateFrom = params.dateFrom;
+    query.dateTo = params.dateTo;
+  } else {
+    query.days = params.days ?? 31;
+  }
+  if (params.assignedUserId && params.assignedUserId !== "all") {
+    query.assignedUserId = params.assignedUserId;
+  }
 
   const res = await axios.get<IDailyCollectionSummary[]>(
     `${getApiBaseUrl()}/api/invoices/daily-summary`,
     {
-      params: { days },
+      params: query,
       headers: { Authorization: `Bearer ${token}` },
     }
   );
