@@ -41,13 +41,22 @@ export default function Header() {
       >
         <div className="md:bg-white md:rounded-md md:shadow-2xl md:border md:border-gray-200 md:py-1 md:overflow-hidden">
           {user?.role === "admin" && (
-            <Link
-              href="/users"
-              className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-gray-100"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Quản lý người dùng
-            </Link>
+            <>
+              <Link
+                href="/users"
+                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-gray-100"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Quản lý người dùng
+              </Link>
+              <Link
+                href="/area-config"
+                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-gray-100"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Quản lý mã vùng
+              </Link>
+            </>
           )}
 
           <Link
