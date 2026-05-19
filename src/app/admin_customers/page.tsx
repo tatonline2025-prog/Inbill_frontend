@@ -143,33 +143,34 @@ export default function AdminCustomersPage() {
 
   return (
     <ProtectedRoute>
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Box sx={{ p: { xs: 0.5, sm: 1.5 } }}>
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", md: "center" }} spacing={1.5} sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Danh sách tổng (Khách hàng cố định) — {total.toLocaleString("vi-VN")}
           </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button size="small" variant="outlined" color="warning" startIcon={<SyncIcon />} onClick={handleSyncFromInvoices}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ width: { xs: "100%", md: "auto" } }}>
+            <Button size="small" variant="outlined" color="warning" startIcon={<SyncIcon />} onClick={handleSyncFromInvoices} fullWidth>
               Đồng bộ từ kho hóa đơn
             </Button>
           </Stack>
         </Stack>
 
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 2 }}>
           <TextField
             size="small"
             label="Tìm theo Mã KH / Tên / Địa chỉ / Trạm"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
-            sx={{ minWidth: 380 }}
+            fullWidth
+            sx={{ minWidth: { sm: 280, md: 380 } }}
           />
-          <Button size="small" variant="contained" onClick={handleSearch}>Tìm</Button>
-          {search && <Button size="small" onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }}>Xóa lọc</Button>}
+          <Button size="small" variant="contained" onClick={handleSearch} sx={{ width: { xs: "100%", sm: "auto" } }}>Tìm</Button>
+          {search && <Button size="small" onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }} sx={{ width: { xs: "100%", sm: "auto" } }}>Xóa lọc</Button>}
         </Stack>
 
-        <TableContainer component={Paper} sx={{ maxHeight: "70vh" }}>
-          <Table size="small" stickyHeader>
+        <TableContainer component={Paper} sx={{ maxHeight: "70vh", overflowX: "auto" }}>
+          <Table size="small" stickyHeader sx={{ minWidth: 980 }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Mã KH</TableCell>

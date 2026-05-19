@@ -83,8 +83,8 @@ export default function Header() {
     <>
       {isAuthenticated ? (
         <>
-          <span className="py-2 px-3 font-medium text-blue-100">
-          👋 Xin chào <span className="font-semibold">{user?.fullName}</span> !
+          <span className="max-w-full break-words py-2 px-3 text-sm font-medium text-blue-100 md:max-w-56 md:text-base">
+            👋 Xin chào <span className="font-semibold">{user?.fullName}</span>!
           </span>
 
           {user?.role === "admin" && (
@@ -142,9 +142,12 @@ export default function Header() {
 
   return (
     <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-bold tracking-wide hover:text-blue-200 transition duration-300">
+        <Link
+          href="/"
+          className="max-w-[calc(100%-3.5rem)] text-lg font-bold leading-tight tracking-wide transition duration-300 hover:text-blue-200 sm:text-xl lg:text-2xl"
+        >
           All Bill - TAT
         </Link>
 
@@ -174,7 +177,7 @@ export default function Header() {
         </button>
 
         {/* Menu desktop */}
-        <nav className="hidden md:flex items-center space-x-4">
+        <nav className="hidden md:flex md:flex-wrap md:items-center md:justify-end md:gap-3">
           <NavLinks />
         </nav>
       </div>
@@ -185,7 +188,7 @@ export default function Header() {
           isMenuOpen ? "max-h-screen opacity-100 overflow-y-auto" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="flex flex-col px-4 py-3 space-y-2">
+        <div className="flex flex-col px-3 py-3 space-y-2 sm:px-4">
           <NavLinks />
         </div>
       </div>

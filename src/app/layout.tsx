@@ -13,12 +13,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen bg-slate-50 text-slate-900">
         {/* Nếu bạn dùng context thì bọc Header + main */}
 
         <AuthProvider>
           <Header />
-          <main className="container mx-auto p-4">{children}</main>
+          <main className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-4 lg:px-6">{children}</main>
           <Toaster position="top-center" reverseOrder={false} />
         </AuthProvider>
       </body>

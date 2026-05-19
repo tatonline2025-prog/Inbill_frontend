@@ -71,9 +71,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center pt-10">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-6 text-center text-green-600">Đăng Nhập</h1>
+    <div className="flex min-h-[calc(100vh-5rem)] items-start justify-center px-4 pb-8 pt-8 sm:items-center sm:px-6 sm:pt-10">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg ring-1 ring-slate-200 sm:p-8">
+        <h1 className="mb-2 text-center text-2xl font-bold text-green-600 sm:text-3xl">Đăng Nhập</h1>
+        <p className="mb-6 text-center text-sm text-slate-500">Đăng nhập để quản lý hóa đơn và dữ liệu khách hàng.</p>
 
         {message && <div className={`p-3 border rounded-lg mb-4 ${getMessageClass()}`}>{message.text}</div>}
 
@@ -85,7 +86,7 @@ export default function LoginPage() {
             <input
               type="text"
               id="userName"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full rounded-lg border px-3 py-3 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="Nhập tên đăng nhập"
               required
               value={userName}
@@ -100,7 +101,7 @@ export default function LoginPage() {
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
-                className="shadow appearance-none border rounded w-full py-2 pl-3 pr-12 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full rounded-lg border py-3 pl-3 pr-12 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 placeholder="Nhập mật khẩu"
                 required
                 value={password}
@@ -119,7 +120,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
+            className={`w-full rounded-lg bg-green-600 px-4 py-3 font-bold text-white transition duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 ${
               isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
             }`}
           >
