@@ -55,7 +55,7 @@ export default function InvoiceSummary({
   const rows = [
     {
       label: "Mã KH có pt",
-      value: formatCount(assignedCustomerCodes - unassignedCustomerCodes),
+      value: formatCount(assignedCustomerCodes),
       color: "#16a34a",
     },
     {
