@@ -145,8 +145,8 @@ export const useInvoiceManagement = () => {
       );
 
       setTotalPages(res.data.pagination.totalPages);
-      setAssignedCustomerCodes(res.data.summary.totalInvoices);
-      setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
+      setAssignedCustomerCodes(res.data.summary.assignedCustomerCodes ?? res.data.summary.totalInvoices);
+      setUnAssignedCustomerCodes(res.data.summary.unassignedCustomerCodes ?? res.data.summary.unassignedInvoices);
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
       setDuplicateInvoiceNumbers(res.data.duplicateInvoiceNumbers || []);

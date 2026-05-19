@@ -115,8 +115,8 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       );
 
       setTotalPages(res.data.pagination.totalPages);
-      setAssignedCustomerCodes(res.data.summary.totalInvoices);
-      setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices || 0);
+      setAssignedCustomerCodes(res.data.summary.assignedCustomerCodes ?? res.data.summary.totalInvoices);
+      setUnAssignedCustomerCodes(res.data.summary.unassignedCustomerCodes || 0);
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
     } catch (err) {
