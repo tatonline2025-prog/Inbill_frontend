@@ -63,7 +63,6 @@ interface InvoiceToolbarProps {
 export default function InvoiceToolbar({
   // Gán giá trị mặc định cho các prop có thể ảnh hưởng đến logic
   invoicesCount = 0,
-  onExport,
   onExportPrinted,
   invoicesPerPage = 15,
   onInvoicesPerPageChange,
@@ -75,7 +74,6 @@ export default function InvoiceToolbar({
   onOpenUploadPaidInvoices,
   searchValue = "",
   onSearchChange,
-  onOpenExportByUser,
   searchType,
   onSearchTypeChange,
   onBulkSearch,

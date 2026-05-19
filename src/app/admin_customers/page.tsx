@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box, Button, IconButton, Pagination, Paper, Stack, TextField, Tooltip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -27,6 +27,15 @@ type EditableRow = CustomerMasterItem & {
   _draftPeriod?: string;
 };
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error === "object" && error !== null) {
+    const maybeResponse = error as { response?: { data?: { message?: unknown } }; message?: unknown };
+    if (typeof maybeResponse.response?.data?.message === "string") return maybeResponse.response.data.message;
+    if (typeof maybeResponse.message === "string") return maybeResponse.message;
+  }
+  return fallback;
+};
+
 export default function AdminCustomersPage() {
   const [items, setItems] = useState<EditableRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -40,20 +49,22 @@ export default function AdminCustomersPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchCustomerMaster_API({ page, limit, search });
       setItems(data.items as EditableRow[]);
       setTotal(data.total);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.message || "Lỗi tải danh sách tổng");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Lỗi tải danh sách tổng"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit, page, search]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, search]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleSearch = () => {
     setPage(1);
@@ -82,9 +93,9 @@ export default function AdminCustomersPage() {
       toast.dismiss(t);
       toast.success(`Đã tạo HĐ ${row.invoiceNumber} kỳ ${billing_period}`);
       setItems((rows) => rows.map((r) => (r._id === row._id ? { ...r, _draftTotal: "", _draftPrev: "", _draftPeriod: "" } : r)));
-    } catch (e: any) {
+    } catch (error: unknown) {
       toast.dismiss(t);
-      toast.error(e?.response?.data?.message || "Tạo hóa đơn thất bại");
+      toast.error(getErrorMessage(error, "Tạo hóa đơn thất bại"));
     }
   };
 
@@ -109,9 +120,9 @@ export default function AdminCustomersPage() {
       toast.success("Đã lưu");
       setItems((rows) => rows.map((r) => (r._id === updated._id ? { ...r, ...updated } : r)));
       setEditing(null);
-    } catch (e: any) {
+    } catch (error: unknown) {
       toast.dismiss(t);
-      toast.error(e?.response?.data?.message || "Lưu thất bại");
+      toast.error(getErrorMessage(error, "Lưu thất bại"));
     }
   };
 
@@ -122,8 +133,8 @@ export default function AdminCustomersPage() {
       toast.success("Đã xóa");
       setItems((rows) => rows.filter((r) => r._id !== row._id));
       setTotal((t) => Math.max(0, t - 1));
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xóa thất bại");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Xóa thất bại"));
     }
   };
 
@@ -134,10 +145,10 @@ export default function AdminCustomersPage() {
       const r = await syncCustomerMasterFromInvoices_API();
       toast.dismiss(t);
       toast.success(r?.message || "Đã đồng bộ");
-      load();
-    } catch (e: any) {
+      void load();
+    } catch (error: unknown) {
       toast.dismiss(t);
-      toast.error(e?.response?.data?.message || "Đồng bộ thất bại");
+      toast.error(getErrorMessage(error, "Đồng bộ thất bại"));
     }
   };
 
@@ -192,7 +203,8 @@ export default function AdminCustomersPage() {
                 <TableRow><TableCell colSpan={9} align="center">Chưa có dữ liệu.</TableCell></TableRow>
               )}
               {items.map((r) => {
-                const npt = typeof r.assignedTo === "object" && r.assignedTo ? (r.assignedTo as any).fullName || (r.assignedTo as any).username : "";
+                const assignedUser = typeof r.assignedTo === "object" && r.assignedTo ? r.assignedTo : null;
+                const npt = assignedUser?.fullName || assignedUser?.username || "";
                 return (
                   <TableRow key={r._id} hover>
                     <TableCell sx={{ color: "#dc2626", fontWeight: 600 }}>{r.invoiceNumber}</TableCell>

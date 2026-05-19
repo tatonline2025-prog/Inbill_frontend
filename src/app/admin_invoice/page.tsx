@@ -23,6 +23,15 @@ import toast from "react-hot-toast";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
 import { fetchInvoicesForCopyAPI, syncDuplicateInvoices_API, cleanupRedundantDuplicates_API } from "@/services/invoice.api";
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error === "object" && error !== null) {
+    const maybeResponse = error as { response?: { data?: { message?: unknown } }; message?: unknown };
+    if (typeof maybeResponse.response?.data?.message === "string") return maybeResponse.response.data.message;
+    if (typeof maybeResponse.message === "string") return maybeResponse.message;
+  }
+  return fallback;
+};
+
 export default function InvoicesPage() {
   const {
     invoices,
@@ -65,13 +74,11 @@ export default function InvoicesPage() {
     closingStatus,
 
     billingPeriods,
-    provinces,
 
     setFilterPrint,
     setFilterCollection,
     setFilterAssignedUser,
     setIsPaidFilter,
-    setSelectedProvince,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,
@@ -191,9 +198,9 @@ export default function InvoicesPage() {
                   toast.dismiss(t);
                   toast.success(res.data?.message || "Đã đồng bộ.");
                   reloadInvoices();
-                } catch (e: any) {
+                } catch (error: unknown) {
                   toast.dismiss(t);
-                  toast.error(e?.response?.data?.message || "Đồng bộ thất bại.");
+                  toast.error(getErrorMessage(error, "Đồng bộ thất bại."));
                 }
               }}
             >
@@ -211,9 +218,9 @@ export default function InvoicesPage() {
                   toast.dismiss(t);
                   toast.success(res.data?.message || "Đã dọn.");
                   reloadInvoices();
-                } catch (e: any) {
+                } catch (error: unknown) {
                   toast.dismiss(t);
-                  toast.error(e?.response?.data?.message || "Dọn thất bại.");
+                  toast.error(getErrorMessage(error, "Dọn thất bại."));
                 }
               }}
             >

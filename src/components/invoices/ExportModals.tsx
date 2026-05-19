@@ -97,8 +97,6 @@ export default function ExportModals({
   setSelectedCollectedUsers,
   collectedStatus,
   setCollectedStatus,
-  closingStatus,
-  setClosingStatus,
 
   openExportModal,
   setOpenExportModal,
