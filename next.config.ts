@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
-const defaultBackendOrigin = process.env.NODE_ENV === "production"
-  ? "http://103.200.20.7:3000"
-  : "http://localhost:3000";
+const backendOrigin = process.env.BACKEND_ORIGIN || (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "");
 
-const backendOrigin = process.env.BACKEND_ORIGIN || defaultBackendOrigin;
+if (!backendOrigin) {
+  throw new Error("BACKEND_ORIGIN is required outside local development.");
+}
 
 const nextConfig: NextConfig = {
   typescript: {
