@@ -13,7 +13,7 @@ type Message = {
 };
 
 export default function ProfilePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
   console.log(user);
 
@@ -56,6 +56,10 @@ export default function ProfilePage() {
       });
     }
   }, [user]);
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500 font-bold">Đang tải thông tin tài khoản...</div>;
+  }
 
   if (!isAuthenticated) {
     return <div className="p-8 text-center text-red-600 font-bold">Bạn cần đăng nhập để xem trang này.</div>;

@@ -51,19 +51,3 @@ export const register = async (
   return res;
 };
 
-export const changepass = async (newpass: string, token: string) => {
-  const res = await axios.post<IUserResponse>(
-    `${getApiBaseUrl()}/api/auth/changepass`,
-    {
-      newpass,
-      token,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`, // Token của admin
-      },
-    }
-  );
-  return res;
-};
-

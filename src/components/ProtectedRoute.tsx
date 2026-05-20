@@ -17,19 +17,20 @@ export default function ProtectedRoute({
   fallback = null,
   redirectTo = "/user_invoice",
 }: ProtectedRouteProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       const hasAccess = allowedRoles.includes(user.role) || allowedRoles.includes(user.usertype);
       if (!hasAccess) {
         router.replace(redirectTo);
       }
     }
-  }, [user, router, allowedRoles, redirectTo]);
+  }, [user, loading, router, allowedRoles, redirectTo]);
 
   // show fallback nếu user chưa load hoặc không có quyền
+  if (loading) return fallback;
   if (!user) return fallback;
 
   const hasAccess = allowedRoles.includes(user.role) || allowedRoles.includes(user.usertype);

@@ -49,3 +49,21 @@ export const apiUpdateUser = async (editinguserId: string, formData: Partial<IUs
   return res;
 };
 
+export const changePassword = async (oldPassword: string, newPassword: string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
+  const res = await axios.put(
+    `${getApiBaseUrl()}/api/user/change-password`,
+    {
+      oldPassword,
+      newPassword,
+    },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  return res;
+};
+

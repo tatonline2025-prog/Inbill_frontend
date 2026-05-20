@@ -36,6 +36,9 @@ export function useAuth() {
         localStorage.removeItem("token");
         setIsAuthenticated(false);
         setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
 

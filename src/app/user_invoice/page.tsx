@@ -35,7 +35,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import CollectionSummary from "@/components/invoices/CollectionSummary";
 
 export default function InvoicesPage() {
-  const { isAuthenticated, user } = useAuth(); // Hook 1
+  const { isAuthenticated, user, loading: authLoading } = useAuth(); // Hook 1
 
   // 💡 Định nghĩa đối tượng IUser mặc định (Placeholder)
 
@@ -115,6 +115,10 @@ export default function InvoicesPage() {
     setAllCollectionStatus,
     allPaymentStatus,
   } = useUserInvoiceManagement({ user: currentUser });
+
+  if (authLoading) {
+    return <p style={{ padding: "2rem" }}>Đang tải thông tin đăng nhập...</p>;
+  }
 
   if (!isAuthenticated || !user) {
     return <p style={{ padding: "2rem" }}>Vui lòng đăng nhập...</p>;
