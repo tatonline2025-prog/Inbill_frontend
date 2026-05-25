@@ -146,8 +146,7 @@ export default function InvoicesPage() {
         {/* === TOOLBAR === */}
         <InvoiceToolbar
           invoicesCount={invoices.length}
-          onExport={() => setOpenExportModal(true)}
-          onExportPrinted={handleExportPrinted}
+          onExport={handleExportPrinted}
           invoicesPerPage={invoicesPerPage}
           onInvoicesPerPageChange={handleInvoicesPerPageChange}
           onOpenAddDialog={() => setOpenAddDialog(true)}

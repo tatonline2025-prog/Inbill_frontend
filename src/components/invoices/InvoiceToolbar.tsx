@@ -63,6 +63,7 @@ interface InvoiceToolbarProps {
 export default function InvoiceToolbar({
   // Gán giá trị mặc định cho các prop có thể ảnh hưởng đến logic
   invoicesCount = 0,
+  onExport,
   onExportPrinted,
   invoicesPerPage = 15,
   onInvoicesPerPageChange,
@@ -167,6 +168,24 @@ export default function InvoiceToolbar({
         }}
       >
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+          {onExport && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<DownloadIcon />}
+              onClick={onExport}
+              disabled={invoicesCount === 0}
+              sx={{
+                ...commonButtonSx,
+                minWidth: { xs: "120px", sm: "160px" },
+                backgroundColor: "#16a34a",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#15803d" },
+              }}
+            >
+              Xuất Excel chọn lọc
+            </Button>
+          )}
           {/* 1. Upload Excel + NPT (vàng) */}
           {onOpenUploadWithProvince && (
             <Button
