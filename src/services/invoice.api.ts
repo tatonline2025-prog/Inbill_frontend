@@ -98,6 +98,7 @@ export const fetchallInvoice = async (
   printStatus?: "printed" | "not_printed",
   collectionStatus?: "collected" | "not_collected",
   assignedUserId?: string,
+  billingPeriod?: string,
   province?: string,
   customerCode?: string,
   stationCode?: string,
@@ -119,6 +120,7 @@ export const fetchallInvoice = async (
       printStatus,
       collectionStatus,
       assignedUserId,
+      billingPeriod,
       province,
       customerCode,
       customerName,
@@ -458,6 +460,24 @@ export const deleteInvoicesByBillingPeriod_API = async (billing_period: string) 
 interface LatestPeriodResponse {
   billing_period: string;
 }
+export const deleteInvoicesByBillingPeriodAndUser_API = async (
+  billing_period: string,
+  assignedUserId?: string
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("ChÆ°a Ä‘Äƒng nháº­p");
+
+  const res = await axios.delete(`${getApiBaseUrl()}/api/invoices/deleteByBillingPeriod`, {
+    params: {
+      billing_period,
+      assignedUserId,
+    },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return res;
+};
+
 export const fetchLatestPeriod_API = async () => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chua dang nhap");
@@ -471,6 +491,21 @@ export const fetchLatestPeriod_API = async () => {
   return res.data;
 };
 
+interface BillingPeriodsResponse {
+  success: boolean;
+  periods: string[];
+}
+
+export const fetchBillingPeriods_API = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
+  const res = await axios.get<BillingPeriodsResponse>(`${getApiBaseUrl()}/api/invoices/billing-periods`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
 export const fetchInvoicesForCopyAPI = async (
   filterPrint: string,
   filterCollection: string,
@@ -478,6 +513,7 @@ export const fetchInvoicesForCopyAPI = async (
   isPaidFilter?: boolean,
   selectedProvince?: string,
   areaPrefix?: string,
+  billingPeriod?: string,
   searchType?: "customerCode" | "stationCode",
   searchValue?: string,
   collectionDate?: string
@@ -493,6 +529,7 @@ export const fetchInvoicesForCopyAPI = async (
       isPaidFilter,
       selectedProvince,
       areaPrefix,
+      billingPeriod,
       searchType,
       searchValue,
       collectionDate,

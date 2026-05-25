@@ -58,6 +58,8 @@ interface InvoiceToolbarProps {
   onFilterCollectionChange?: (value: string) => void;
   filterAssignedUser?: string;
   onFilterAssignedUserChange?: (value: string) => void;
+  selectedBillingPeriod?: string;
+  onSelectedBillingPeriodChange?: (value: string) => void;
   userData?: IUser[];
   onBulkUpdate?: (updates: {
     recordBookCode?: string;
@@ -96,6 +98,8 @@ export default function InvoiceToolbar({
   onFilterCollectionChange,
   filterAssignedUser,
   onFilterAssignedUserChange,
+  selectedBillingPeriod = "all",
+  onSelectedBillingPeriodChange,
   userData = [],
   onBulkUpdate,
   billingPeriods = [],
@@ -413,6 +417,25 @@ export default function InvoiceToolbar({
                 </MenuItem>
               ))}
               <MenuItem value="no_one">Chưa phụ trách</MenuItem>
+            </Select>
+          </FormControl>
+        )}
+
+        {onSelectedBillingPeriodChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
+            <InputLabel id="billing-period-filter-label">Kỳ TT</InputLabel>
+            <Select
+              labelId="billing-period-filter-label"
+              value={selectedBillingPeriod}
+              label="Kỳ TT"
+              onChange={(event: SelectChangeEvent) => onSelectedBillingPeriodChange(event.target.value)}
+            >
+              <MenuItem value="all">Tất cả kỳ</MenuItem>
+              {billingPeriods.map((period) => (
+                <MenuItem key={period} value={period}>
+                  {period}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         )}

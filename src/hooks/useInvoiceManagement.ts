@@ -5,6 +5,7 @@ import {
   collectSummaryAPI,
   deleteInvoice_API,
   bulkUpdateInvoices_API,
+  fetchBillingPeriods_API,
   fetchallInvoice,
   fetchInvoiceBylist,
   handleToggle_API,
@@ -40,6 +41,23 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue;
 };
 
+const sortBillingPeriodsDesc = (values: string[]) => {
+  return [...values].sort((left, right) => {
+    const leftMatch = /^(\d{2})\/(\d{4})$/.exec(left);
+    const rightMatch = /^(\d{2})\/(\d{4})$/.exec(right);
+
+    if (!leftMatch && !rightMatch) return right.localeCompare(left, "vi");
+    if (!leftMatch) return 1;
+    if (!rightMatch) return -1;
+
+    const leftYear = Number(leftMatch[2]);
+    const rightYear = Number(rightMatch[2]);
+    if (leftYear !== rightYear) return rightYear - leftYear;
+
+    return Number(rightMatch[1]) - Number(leftMatch[1]);
+  });
+};
+
 export const useInvoiceManagement = () => {
   // --- State Dữ liệu chính ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
@@ -62,6 +80,7 @@ export const useInvoiceManagement = () => {
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("collected_today");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("all");
   const [selectedAreaPrefixes, setSelectedAreaPrefixes] = useState<string[]>([]);
   const [isPaidFilter, setIsPaidFilter] = useState(false);
@@ -111,7 +130,8 @@ export const useInvoiceManagement = () => {
   const [closingStatus, setClosingStatus] = useState<string>("all");
 
   // --- Hằng số ---
-  const billingPeriods = useMemo(() => generateBillingPeriods(), []);
+  const defaultBillingPeriods = useMemo(() => generateBillingPeriods(), []);
+  const [billingPeriods, setBillingPeriods] = useState<string[]>(defaultBillingPeriods);
   const provinces = useMemo(() => PROVINCES, []);
   const { configs: areaConfigs } = useAreaPrefixMap();
   const areaOptions = useMemo<AreaFilterOption[]>(() => {
@@ -176,6 +196,7 @@ export const useInvoiceManagement = () => {
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
         collectionStatusParam,
         filterAssignedUser !== "all" ? filterAssignedUser : undefined,
+        selectedBillingPeriod !== "all" ? selectedBillingPeriod : undefined,
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
         searchParams.stationCode,
@@ -212,6 +233,7 @@ export const useInvoiceManagement = () => {
     filterPrint,
     filterCollection,
     filterAssignedUser,
+    selectedBillingPeriod,
     selectedProvince,
     selectedAreaPrefixes,
     isPaidFilter,
@@ -252,15 +274,24 @@ export const useInvoiceManagement = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetchallUser();
-        const filterUser = res.data.user.filter((user) => user.role === "user" && user.usertype === "internal");
+        const [userResponse, billingPeriodResponse] = await Promise.all([
+          fetchallUser(),
+          fetchBillingPeriods_API().catch(() => ({ success: false, periods: [] })),
+        ]);
+
+        const filterUser = userResponse.data.user.filter((user) => user.role === "user" && user.usertype === "internal");
         setUserData(filterUser);
+
+        const mergedBillingPeriods = sortBillingPeriodsDesc(
+          Array.from(new Set([...defaultBillingPeriods, ...(billingPeriodResponse.periods || [])]))
+        );
+        setBillingPeriods(mergedBillingPeriods);
       } catch (err) {
         console.error(err);
       }
     };
     fetchData();
-  }, []);
+  }, [defaultBillingPeriods]);
 
   // 2. Fetch danh sách Invoice khi filters, pagination, sort, search thay đổi (chỉ khi không bulk search)
   useEffect(() => {
@@ -625,6 +656,9 @@ export const useInvoiceManagement = () => {
     if (filterAssignedUser !== "all") {
       params.append("assignedUserId", filterAssignedUser);
     }
+    if (selectedBillingPeriod !== "all") {
+      params.append("billingPeriod", selectedBillingPeriod);
+    }
     if (selectedProvince !== "all") {
       params.append("province", selectedProvince);
     }
@@ -818,6 +852,7 @@ export const useInvoiceManagement = () => {
     filterPrint,
     filterCollection,
     filterAssignedUser,
+    selectedBillingPeriod,
     selectedProvince,
     selectedAreaPrefixes,
     searchType,
@@ -851,6 +886,7 @@ export const useInvoiceManagement = () => {
     setFilterPrint,
     setFilterCollection,
     setFilterAssignedUser,
+    setSelectedBillingPeriod,
     setIsPaidFilter,
     isPaidFilter,
     setSelectedProvince,

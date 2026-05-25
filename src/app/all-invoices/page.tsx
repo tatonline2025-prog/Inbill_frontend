@@ -66,6 +66,7 @@ export default function AllInvoicesPage() {
         undefined, // printStatus
         appliedStatus || undefined,
         appliedUser !== "all" ? appliedUser : undefined,
+        undefined, // billingPeriod
         undefined, // province
         appliedCode || undefined,
         appliedStation || undefined,

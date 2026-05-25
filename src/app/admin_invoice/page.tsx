@@ -52,6 +52,7 @@ export default function InvoicesPage() {
     filterCollection,
     filterAssignedUser,
     isPaidFilter,
+    selectedBillingPeriod,
     selectedProvince,
     selectedAreaPrefixes,
     searchType,
@@ -79,6 +80,7 @@ export default function InvoicesPage() {
     areaOptions,
     setFilterPrint,
     setFilterAssignedUser,
+    setSelectedBillingPeriod,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,
@@ -138,6 +140,7 @@ export default function InvoicesPage() {
       isPaidFilter,
       selectedProvince,
       selectedAreaPrefixes.length > 0 ? selectedAreaPrefixes.join(",") : undefined,
+      selectedBillingPeriod !== "all" ? selectedBillingPeriod : undefined,
       searchType,
       searchValue.trim(),
       filterCollection === "collected_today" ? toDateKeyVN() : undefined
@@ -173,6 +176,8 @@ export default function InvoicesPage() {
           onFilterCollectionChange={handleCollectionFilterChange}
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
+          selectedBillingPeriod={selectedBillingPeriod}
+          onSelectedBillingPeriodChange={createFilterChangeHandler(setSelectedBillingPeriod)}
           userData={filteredAssignedUsers}
           onBulkUpdate={handleBulkUpdate}
           billingPeriods={billingPeriods}
@@ -335,6 +340,7 @@ export default function InvoicesPage() {
         open={openDeleteAllModal}
         onClose={() => setOpenDeleteAllModal(false)}
         billingPeriods={billingPeriods}
+        assignedUsers={userData}
         onDeleteSuccess={reloadInvoices}
       />
 
