@@ -1,7 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { generateBillingPeriods, PROVINCES } from "@/constants/invoice.constants";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { excelUp } from "@/services/excel.api";
 import { invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
@@ -22,20 +22,16 @@ export default function UsersPage() {
 
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [formData, setFormData] = useState<Partial<IUser> & { areaPrefixes?: { area: string; prefix: string }[] }>();
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editArea, setEditArea] = useState("");
-  const [editPrefix, setEditPrefix] = useState("");
+  const [selectedAreaFilter, setSelectedAreaFilter] = useState("");
+  const [selectedAreaConfigId, setSelectedAreaConfigId] = useState("");
 
-  const { map: AREA_PREFIX_MAP } = useAreaPrefixMap();
+  const { configs: areaConfigs } = useAreaPrefixMap();
 
   const [selectedUserForUpload, setSelectedUserForUpload] = useState<IUser | null>(null);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
   const [showBillingModal, setShowBillingModal] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  const provinces = useMemo(() => PROVINCES, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +60,32 @@ export default function UsersPage() {
     fetchData();
   }, []);
 
+  const getPrimaryAreaPrefix = (user: Partial<IUser> & { areaPrefixes?: { area: string; prefix: string }[] }) => {
+    const firstAreaPrefix = Array.isArray(user.areaPrefixes) ? user.areaPrefixes[0] : undefined;
+    return {
+      area: firstAreaPrefix?.area || "",
+      prefix: firstAreaPrefix?.prefix || "",
+    };
+  };
+
+  const sortedAreaConfigs = useMemo(
+    () => [...areaConfigs].sort((a, b) => a.area.localeCompare(b.area, "vi") || a.prefix.localeCompare(b.prefix, "vi")),
+    [areaConfigs]
+  );
+
+  const areaNameCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    sortedAreaConfigs.forEach((config) => {
+      counts.set(config.area, (counts.get(config.area) ?? 0) + 1);
+    });
+    return counts;
+  }, [sortedAreaConfigs]);
+
+  const selectedAreaConfig = useMemo(
+    () => sortedAreaConfigs.find((config) => config._id === selectedAreaConfigId) ?? null,
+    [sortedAreaConfigs, selectedAreaConfigId]
+  );
+
   const mergedUsers = userData
     .filter((u) => u.usertype === "internal")
     .map((u) => {
@@ -72,10 +94,29 @@ export default function UsersPage() {
         ...u,
         notCollectedCount: summary?.notCollectedCount ?? 0,
         collectedCount: summary?.collectedCount ?? 0,
-      };
+        };
+      });
+
+  const areaFilterOptions = useMemo(() => {
+    const uniqueOptions = new Map<string, { area: string; prefix: string }>();
+    mergedUsers.forEach((user) => {
+      const primary = getPrimaryAreaPrefix(user);
+      if (primary.area && primary.prefix) {
+        uniqueOptions.set(`${primary.area}__${primary.prefix}`, primary);
+      }
     });
 
-  const filteredUsers = selectedProvince ? mergedUsers.filter((u) => u.province === selectedProvince) : mergedUsers;
+    return Array.from(uniqueOptions.entries()).sort(([, a], [, b]) =>
+      a.area.localeCompare(b.area, "vi") || a.prefix.localeCompare(b.prefix, "vi")
+    );
+  }, [mergedUsers]);
+
+  const filteredUsers = selectedAreaFilter
+    ? mergedUsers.filter((user) => {
+        const primary = getPrimaryAreaPrefix(user);
+        return `${primary.area}__${primary.prefix}` === selectedAreaFilter;
+      })
+    : mergedUsers;
 
   // console.log(mergedUsers);
 
@@ -130,20 +171,22 @@ export default function UsersPage() {
     setEditingUser(user);
     const existingAreaPrefixes = (user as unknown as { areaPrefixes?: { area: string; prefix: string }[] })
       .areaPrefixes;
+    const firstAreaPrefix = Array.isArray(existingAreaPrefixes) ? existingAreaPrefixes[0] : undefined;
+    const matchedAreaConfig = firstAreaPrefix
+      ? sortedAreaConfigs.find((config) => config.area === firstAreaPrefix.area && config.prefix === firstAreaPrefix.prefix)
+      : undefined;
     setFormData({
       fullName: user.fullName,
       email: user.email,
-      province: user.province || "",
+      province: matchedAreaConfig?.province || user.province || "",
       username: user.username || "",
       pass: user.pass || "",
       phone: user.phone || "",
       stt: user.stt || "",
       usertype: user.usertype || "",
-      areaPrefixes: Array.isArray(existingAreaPrefixes) ? existingAreaPrefixes : [],
+      areaPrefixes: firstAreaPrefix ? [firstAreaPrefix] : [],
     });
-    setEditingIdx(null);
-    setEditArea("");
-    setEditPrefix("");
+    setSelectedAreaConfigId(matchedAreaConfig?._id || "");
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -163,14 +206,30 @@ export default function UsersPage() {
     }
   };
 
+  const handleAreaConfigChange = (configId: string) => {
+    setSelectedAreaConfigId(configId);
+
+    const nextConfig = sortedAreaConfigs.find((config) => config._id === configId);
+    setFormData((prev) => ({
+      ...prev,
+      province: nextConfig?.province || "",
+      areaPrefixes: nextConfig ? [{ area: nextConfig.area, prefix: nextConfig.prefix }] : [],
+    }));
+  };
+
   const handleSaveEdit = async () => {
     if (!editingUser) return;
+    if (!formData?.areaPrefixes || formData.areaPrefixes.length === 0) {
+      setMessage({ type: "error", text: "Vui lòng chọn xã/phường từ danh sách mã vùng trước khi lưu." });
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
       await updateUserByAdmin(editingUser._id, formData!, token!);
       setUserData((prev) => prev.map((u) => (u._id === editingUser._id ? { ...u, ...formData } : u)));
       setMessage({ type: "success", text: "Cập nhật tài khoản thành công!" });
       setEditingUser(null);
+      setSelectedAreaConfigId("");
       setFormData({
         fullName: "",
         email: "",
@@ -185,6 +244,7 @@ export default function UsersPage() {
     } catch (err) {
       console.error(err);
       setEditingUser(null);
+      setSelectedAreaConfigId("");
       setMessage({ type: "error", text: getErrorMessage(err) });
     }
   };
@@ -291,21 +351,21 @@ export default function UsersPage() {
                   Tổng số tài khoản Người dùng (User): <span className="text-green-900">{totalInternalUsers}</span>
                 </div>
 
-                {/* Dropdown lọc tỉnh */}
+                {/* Dropdown lọc xã/phường */}
                 <div className="flex items-center gap-2 w-full md:w-auto bg-white md:bg-transparent p-1 md:p-0 rounded-md">
-                  <label htmlFor="provinceFilter" className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                    Lọc theo tỉnh:
+                  <label htmlFor="areaFilter" className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                    Lọc theo xã/phường:
                   </label>
                   <select
-                    id="provinceFilter"
-                    value={selectedProvince}
-                    onChange={(e) => setSelectedProvince(e.target.value)}
+                    id="areaFilter"
+                    value={selectedAreaFilter}
+                    onChange={(e) => setSelectedAreaFilter(e.target.value)}
                     className="flex-1 md:flex-none border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none"
                   >
                     <option value="">Tất cả</option>
-                    {Array.from(new Set(mergedUsers.map((u) => u.province))).map((province) => (
-                      <option key={province} value={province}>
-                        {province}
+                    {areaFilterOptions.map(([value, option]) => (
+                      <option key={value} value={value}>
+                        {option.area} - {option.prefix}
                       </option>
                     ))}
                   </select>
@@ -326,7 +386,10 @@ export default function UsersPage() {
                         Số điện thoại
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tỉnh
+                        Xã/Phường
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Prefix
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Ngày tạo
@@ -346,12 +409,14 @@ export default function UsersPage() {
                     {filteredUsers
                       .filter((user) => user.usertype === "internal")
                       .map((user) => {
+                        const primaryAreaPrefix = getPrimaryAreaPrefix(user);
                         return (
                           <tr key={user._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-700">{user.stt}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.phone}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{user.province}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{primaryAreaPrefix.area || "-"}</td>
+                            <td className="px-6 py-4 text-sm font-mono text-gray-700">{primaryAreaPrefix.prefix || "-"}</td>
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {formatDateVN(user.createdAt)}
                             </td>
@@ -464,158 +529,34 @@ export default function UsersPage() {
                 </div>
 
                 <div className="flex gap-4">
-                  <div style={{ flex: "0 0 40%" }}>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tỉnh / Thành phố</label>
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Xã/Phường</label>
                     <select
-                      value={formData?.province || ""}
-                      onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                      value={selectedAreaConfigId}
+                      onChange={(e) => handleAreaConfigChange(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                     >
-                      <option value="">-- Chọn tỉnh --</option>
-                      {provinces.map((province) => (
-                        <option key={province} value={province}>
-                          {province}
-                        </option>
-                      ))}
+                      <option value="">-- Chọn xã/phường --</option>
+                      {sortedAreaConfigs.map((config) => {
+                        const hasDuplicateAreaName = (areaNameCounts.get(config.area) ?? 0) > 1;
+                        return (
+                          <option key={config._id} value={config._id}>
+                            {hasDuplicateAreaName ? `${config.area} (${config.prefix})` : config.area}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
-                  <div style={{ flex: "1 1 60%" }}>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Xã/Phường &amp; Prefix mã hóa đơn
-                    </label>
-                    <div className="border border-gray-300 rounded-lg overflow-hidden text-sm">
-                      {/* Quick-pick dropdown + nút thêm mới */}
-                      <div className="flex items-center border-b border-gray-200 bg-gray-50">
-                        <select
-                          className="flex-1 py-2 px-2 text-gray-700 bg-transparent focus:outline-none"
-                          value=""
-                          onChange={(e) => {
-                            const prov = formData?.province || "";
-                            const opt = (AREA_PREFIX_MAP[prov] || []).find((x) => x.area === e.target.value);
-                            if (!opt) return;
-                            setFormData((prev) => {
-                              const list = prev?.areaPrefixes || [];
-                              if (list.some((x) => x.area === opt.area && x.prefix === opt.prefix)) return prev;
-                              return { ...prev, areaPrefixes: [...list, opt] };
-                            });
-                          }}
-                        >
-                          <option value="">-- Chọn xã/phường --</option>
-                          {(AREA_PREFIX_MAP[formData?.province || ""] || []).map((opt) => (
-                            <option key={opt.area + opt.prefix} value={opt.area}>
-                              {opt.area} – {opt.prefix}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="bg-blue-600 text-white font-bold w-9 h-9 flex items-center justify-center hover:bg-blue-700 shrink-0"
-                          title="Thêm mới"
-                          onClick={() => { setEditingIdx(-1); setEditArea(""); setEditPrefix(""); }}
-                        >
-                          +
-                        </button>
-                      </div>
-                      {/* Danh sách đã thêm */}
-                      {(formData?.areaPrefixes || []).map((it, idx) =>
-                        editingIdx === idx ? (
-                          <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-blue-50 border-b border-gray-200">
-                            <input
-                              className="flex-1 border rounded px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                              value={editArea}
-                              onChange={(e) => setEditArea(e.target.value)}
-                              placeholder="Xã/Phường"
-                              autoFocus
-                            />
-                            <input
-                              className="w-28 border rounded px-1 py-0.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
-                              value={editPrefix}
-                              onChange={(e) => setEditPrefix(e.target.value)}
-                              placeholder="Prefix"
-                            />
-                            <button
-                              type="button"
-                              className="text-blue-600 hover:text-green-700 font-bold px-1"
-                              title="Xác nhận (để trống = xóa)"
-                              onClick={() => {
-                                const a = editArea.trim();
-                                const p = editPrefix.trim();
-                                if (!a || !p) {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    areaPrefixes: (prev?.areaPrefixes || []).filter((_, i) => i !== idx),
-                                  }));
-                                } else {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    areaPrefixes: (prev?.areaPrefixes || []).map((x, i) => (i === idx ? { area: a, prefix: p } : x)),
-                                  }));
-                                }
-                                setEditingIdx(null);
-                              }}
-                            >
-                              ✓
-                            </button>
-                          </div>
-                        ) : (
-                          <div key={idx} className="flex items-center px-2 py-1.5 border-b border-gray-100 hover:bg-gray-50">
-                            <span className="flex-1 text-gray-800">{it.area}</span>
-                            <span className="font-mono text-gray-500 text-right mr-2">{it.prefix}</span>
-                            <button
-                              type="button"
-                              className="text-gray-400 hover:text-blue-600"
-                              title="Chỉnh sửa"
-                              onClick={() => { setEditingIdx(idx); setEditArea(it.area); setEditPrefix(it.prefix); }}
-                            >
-                              ✏
-                            </button>
-                          </div>
-                        )
-                      )}
-                      {/* Hàng thêm mới */}
-                      {editingIdx === -1 && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border-b border-gray-200">
-                          <input
-                            className="flex-1 border rounded px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-green-400"
-                            value={editArea}
-                            onChange={(e) => setEditArea(e.target.value)}
-                            placeholder="Xã/Phường mới"
-                            autoFocus
-                          />
-                          <input
-                            className="w-28 border rounded px-1 py-0.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-green-400"
-                            value={editPrefix}
-                            onChange={(e) => setEditPrefix(e.target.value)}
-                            placeholder="Prefix"
-                          />
-                          <button
-                            type="button"
-                            className="text-green-600 hover:text-green-800 font-bold px-1"
-                            title="Thêm"
-                            onClick={() => {
-                              const a = editArea.trim();
-                              const p = editPrefix.trim();
-                              if (a && p) {
-                                setFormData((prev) => {
-                                  const list = prev?.areaPrefixes || [];
-                                  if (list.some((x) => x.area === a && x.prefix === p)) return prev;
-                                  return { ...prev, areaPrefixes: [...list, { area: a, prefix: p }] };
-                                });
-                              }
-                              setEditingIdx(null);
-                              setEditArea("");
-                              setEditPrefix("");
-                            }}
-                          >
-                            ✓
-                          </button>
-                        </div>
-                      )}
-                      {/* Trạng thái rỗng */}
-                      {(!formData?.areaPrefixes || formData.areaPrefixes.length === 0) && editingIdx !== -1 && (
-                        <div className="px-2 py-2 text-gray-400 italic">Chưa có khu vực nào</div>
-                      )}
-                    </div>
+
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Prefix mã hóa đơn</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={selectedAreaConfig?.prefix || ""}
+                      placeholder="Tự động theo xã/phường"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700 outline-none"
+                    />
                   </div>
                 </div>
 
