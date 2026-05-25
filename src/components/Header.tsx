@@ -1,23 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  const closeMenus = () => {
+    setIsMenuOpen(false);
+    setUserMenuOpen(false);
+  };
+
   const UserDropdown = () => (
     <div className="relative group">
       <button
-        onClick={() => setUserMenuOpen(!userMenuOpen)}
-        className="nav-item flex items-center justify-between w-full md:w-auto gap-2 cursor-pointer text-blue-100 hover:text-white"
+        onClick={() => setUserMenuOpen((previous) => !previous)}
+        className="nav-item flex w-full cursor-pointer items-center justify-between gap-2 text-blue-100 hover:text-white md:w-auto"
       >
-        <div className="flex items-center gap-1">
-          <span>Tài khoản</span>
-        </div>
+        <span>Tài khoản</span>
 
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -33,44 +37,23 @@ export default function Header() {
       </button>
 
       <div
-        className={`
-          transition-all duration-300 overflow-hidden
-          ${userMenuOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0 md:opacity-100 md:max-h-none"}
-          md:absolute md:hidden md:group-hover:block md:top-full md:left-0 md:mt-0 md:pt-2 md:w-56 z-50
-        `}
+        className={`overflow-hidden transition-all duration-300 ${
+          userMenuOpen ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"
+        } md:absolute md:left-0 md:top-full md:z-50 md:mt-0 md:hidden md:w-56 md:pt-2 md:group-hover:block`}
       >
-        <div className="md:bg-white md:rounded-md md:shadow-2xl md:border md:border-gray-200 md:py-1 md:overflow-hidden">
-          {user?.role === "admin" && (
-            <>
-              <Link
-                href="/users"
-                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-gray-100"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Quản lý người dùng
-              </Link>
-              <Link
-                href="/area-config"
-                className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100 md:border-gray-100"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Quản lý mã vùng
-              </Link>
-            </>
-          )}
-
+        <div className="md:overflow-hidden md:rounded-md md:border md:border-gray-200 md:bg-white md:py-1 md:shadow-2xl">
           <Link
             href="/profile"
-            className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition border-b border-gray-100"
-            onClick={() => setIsMenuOpen(false)}
+            className="block rounded-md border-b border-gray-100 py-2 pl-8 pr-3 text-sm font-medium text-white transition hover:bg-blue-500 md:px-4 md:pl-4 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600"
+            onClick={closeMenus}
           >
             Thông tin cá nhân
           </Link>
 
           <Link
             href="/changepass"
-            className="block py-2 px-3 md:px-4 text-sm font-medium rounded-md text-white hover:bg-blue-500 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600 pl-8 md:pl-4 transition"
-            onClick={() => setIsMenuOpen(false)}
+            className="block rounded-md py-2 pl-8 pr-3 text-sm font-medium text-white transition hover:bg-blue-500 md:px-4 md:pl-4 md:text-gray-700 md:hover:bg-gray-100 md:hover:text-blue-600"
+            onClick={closeMenus}
           >
             Đổi mật khẩu
           </Link>
@@ -79,63 +62,63 @@ export default function Header() {
     </div>
   );
 
+  const AdminLinks = () => (
+    <>
+      <Link href="/home" className="nav-item" onClick={closeMenus}>
+        Trang chủ
+      </Link>
+      <Link href="/users" className="nav-item" onClick={closeMenus}>
+        Người dùng
+      </Link>
+      <Link href="/area-config" className="nav-item" onClick={closeMenus}>
+        Mã Vùng
+      </Link>
+      <UserDropdown />
+      <Link href="/all-invoices" className="nav-item" onClick={closeMenus}>
+        DS Tổng
+      </Link>
+      <Link href="/admin_invoice" className="nav-item" onClick={closeMenus}>
+        QL Hóa Đơn
+      </Link>
+    </>
+  );
+
+  const UserLinks = () => (
+    <>
+      <Link href="/userhome" className="nav-item" onClick={closeMenus}>
+        Trang chủ
+      </Link>
+      <UserDropdown />
+      <Link href="/user_invoice" className="nav-item" onClick={closeMenus}>
+        QL Hóa Đơn
+      </Link>
+    </>
+  );
+
   const NavLinks = () => (
     <>
       {isAuthenticated ? (
         <>
-          <span className="max-w-full break-words py-2 px-3 text-sm font-medium text-blue-100 md:max-w-56 md:text-base">
-            👋 Xin chào <span className="font-semibold">{user?.fullName}</span>!
+          <span className="px-2 py-2 text-sm font-medium text-blue-100 md:mr-1 md:text-base">
+            Xin Chào <span className="font-semibold">{user?.fullName || "TAT"}</span> ! $$$
           </span>
 
-          {user?.role === "admin" && (
-            <>
-              <Link href="/home" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Trang chủ
-              </Link>
+          {user?.role === "admin" ? <AdminLinks /> : <UserLinks />}
 
-              <UserDropdown />
-
-              <Link href="/admin_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Quản lý hoá đơn
-              </Link>
-
-              <Link href="/all-invoices" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Danh sách tổng
-              </Link>
-            </>
-          )}
-
-          {user?.role !== "admin" && (
-            <>
-              <Link href="/userhome" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Trang chủ
-              </Link>
-
-              <UserDropdown />
-
-              <Link href="/user_invoice" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-                Quản lý hoá đơn
-              </Link>
-            </>
-          )}
-
-          {/* Đăng xuất */}
           <button
             onClick={() => {
               logout();
-              setIsMenuOpen(false);
+              closeMenus();
             }}
-            className="mt-2 md:mt-0 bg-red-500 hover:bg-red-600 transition px-4 py-2 rounded-md text-white font-medium shadow-sm"
+            className="mt-2 rounded-md bg-red-500 px-4 py-2 font-medium text-white shadow-sm transition hover:bg-red-600 md:mt-0"
           >
             Đăng xuất
           </button>
         </>
       ) : (
-        <>
-          <Link href="/login" className="nav-item" onClick={() => setIsMenuOpen(false)}>
-            Đăng nhập
-          </Link>
-        </>
+        <Link href="/login" className="nav-item" onClick={closeMenus}>
+          Đăng nhập
+        </Link>
       )}
     </>
   );
@@ -143,16 +126,14 @@ export default function Header() {
   return (
     <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
-        {/* Logo */}
         <Link
           href="/"
           className="max-w-[calc(100%-3.5rem)] text-lg font-bold leading-tight tracking-wide transition duration-300 hover:text-blue-200 sm:text-xl lg:text-2xl"
         >
-          All Bill - TAT
+          In Bill - TAT
         </Link>
 
-        {/* Nút menu (mobile) */}
-        <button className="md:hidden focus:outline-none" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <button className="md:hidden focus:outline-none" onClick={() => setIsMenuOpen((previous) => !previous)}>
           {isMenuOpen ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -176,19 +157,17 @@ export default function Header() {
           )}
         </button>
 
-        {/* Menu desktop */}
-        <nav className="hidden md:flex md:flex-wrap md:items-center md:justify-end md:gap-3">
+        <nav className="hidden min-w-0 md:ml-auto md:flex md:flex-wrap md:items-center md:justify-start md:gap-2 lg:gap-3">
           <NavLinks />
         </nav>
       </div>
 
-      {/* Menu mobile (có animation trượt xuống) */}
       <div
-        className={`md:hidden bg-blue-700 transition-all duration-300 overflow-hidden ${
-          isMenuOpen ? "max-h-screen opacity-100 overflow-y-auto" : "max-h-0 opacity-0"
+        className={`overflow-hidden bg-blue-700 transition-all duration-300 md:hidden ${
+          isMenuOpen ? "max-h-screen overflow-y-auto opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="flex flex-col px-3 py-3 space-y-2 sm:px-4">
+        <div className="flex flex-col space-y-2 px-3 py-3 sm:px-4">
           <NavLinks />
         </div>
       </div>
