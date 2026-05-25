@@ -10,7 +10,7 @@ import {
   handleToggle_API,
   handleToggleIsPaid_API,
 } from "@/services/invoice.api";
-import { InvoiceInfo } from "@/types/invoice";
+import { InvoiceInfo, InvoiceNumberDuplicateStatus } from "@/types/invoice";
 import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
 import toast from "react-hot-toast";
@@ -27,6 +27,7 @@ type SortDirection = "asc" | "desc" | "none";
 type AreaFilterOption = {
   value: string;
   label: string;
+  prefix: string;
 };
 
 // Custom hook Debounce (tạm thời đặt ở đây)
@@ -43,6 +44,7 @@ export const useInvoiceManagement = () => {
   // --- State Dữ liệu chính ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [duplicateInvoiceNumbers, setDuplicateInvoiceNumbers] = useState<string[]>([]);
+  const [invoiceNumberStatuses, setInvoiceNumberStatuses] = useState<Record<string, InvoiceNumberDuplicateStatus>>({});
   const [userData, setUserData] = useState<IUser[]>([]);
   const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export const useInvoiceManagement = () => {
   const [filterCollection, setFilterCollection] = useState("collected_today");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("all");
-  const [selectedAreaPrefix, setSelectedAreaPrefix] = useState("all");
+  const [selectedAreaPrefixes, setSelectedAreaPrefixes] = useState<string[]>([]);
   const [isPaidFilter, setIsPaidFilter] = useState(false);
 
   // --- State Tìm kiếm & Sắp xếp ---
@@ -124,9 +126,21 @@ export const useInvoiceManagement = () => {
 
     return sortedConfigs.map((config) => ({
       value: config.prefix,
-      label: (areaNameCounts.get(config.area) ?? 0) > 1 ? `${config.area} (${config.prefix})` : config.area,
+      label: (areaNameCounts.get(config.area) ?? 0) > 1 ? `${config.area} (${config.prefix})` : `${config.area} (${config.prefix})`,
+      prefix: config.prefix,
     }));
   }, [areaConfigs]);
+  const filteredAssignedUsers = useMemo(() => {
+    if (selectedAreaPrefixes.length === 0) {
+      return userData;
+    }
+
+    return userData.filter(
+      (user) =>
+        Array.isArray(user.areaPrefixes) &&
+        user.areaPrefixes.some((areaPrefix) => selectedAreaPrefixes.includes(areaPrefix.prefix))
+    );
+  }, [selectedAreaPrefixes, userData]);
 
   // --- Logic Fetch Dữ liệu ---
 
@@ -172,7 +186,7 @@ export const useInvoiceManagement = () => {
         filterCollection === "duplicates",
         undefined,
         collectionDateParam,
-        selectedAreaPrefix !== "all" ? selectedAreaPrefix : undefined
+        selectedAreaPrefixes.length > 0 ? selectedAreaPrefixes.join(",") : undefined
       );
 
       setTotalPages(res.data.pagination.totalPages);
@@ -181,6 +195,7 @@ export const useInvoiceManagement = () => {
       setTotalAmountInfo(res.data.summary.totalAmount);
       setInvoices(res.data.data);
       setDuplicateInvoiceNumbers(res.data.duplicateInvoiceNumbers || []);
+      setInvoiceNumberStatuses(res.data.invoiceNumberStatuses || {});
     } catch (err) {
       console.error("Lỗi khi tải hóa đơn:", err);
       setError("Không thể tải dữ liệu hóa đơn. Vui lòng thử lại sau.");
@@ -198,7 +213,7 @@ export const useInvoiceManagement = () => {
     filterCollection,
     filterAssignedUser,
     selectedProvince,
-    selectedAreaPrefix,
+    selectedAreaPrefixes,
     isPaidFilter,
     today,
   ]);
@@ -266,6 +281,16 @@ export const useInvoiceManagement = () => {
     fetchInvoices,
   ]);
 
+  useEffect(() => {
+    if (
+      filterAssignedUser !== "all" &&
+      filterAssignedUser !== "no_one" &&
+      !filteredAssignedUsers.some((user) => user._id === filterAssignedUser)
+    ) {
+      setFilterAssignedUser("all");
+    }
+  }, [filterAssignedUser, filteredAssignedUsers]);
+
   // --- Handlers ---
 
   const createFilterChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
@@ -306,6 +331,13 @@ export const useInvoiceManagement = () => {
       setIsBulkSearchActive(false);
       setBulkSearchCodes([]);
     }
+  };
+
+  const handleAreaFilterChange = (values: string[]) => {
+    setSelectedAreaPrefixes(values);
+    setCurrentPage(1);
+    setIsBulkSearchActive(false);
+    setBulkSearchCodes([]);
   };
 
   const handleCollectionFilterChange = (value: string) => {
@@ -359,6 +391,7 @@ export const useInvoiceManagement = () => {
     setBulkSearchCodes(normalizedCodes);
     setTotalPages(1);
     setInvoices(mergedInvoices);
+    setInvoiceNumberStatuses({});
 
     setAssignedCustomerCodes(res.data.summary.totalInvoices);
     setUnAssignedCustomerCodes(res.data.summary.unassignedInvoices);
@@ -563,7 +596,7 @@ export const useInvoiceManagement = () => {
   const handleExportConfirm = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("Vui long dang nhap lai");
+      toast.error("Vui lòng đăng nhập lại");
       return;
     }
     const params = new URLSearchParams();
@@ -595,8 +628,8 @@ export const useInvoiceManagement = () => {
     if (selectedProvince !== "all") {
       params.append("province", selectedProvince);
     }
-    if (selectedAreaPrefix !== "all") {
-      params.append("areaPrefix", selectedAreaPrefix);
+    if (selectedAreaPrefixes.length > 0) {
+      params.append("areaPrefix", selectedAreaPrefixes.join(","));
     }
     if (normalizedSearchValue) {
       if (searchType === "customerCode") {
@@ -623,7 +656,7 @@ export const useInvoiceManagement = () => {
       });
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
         const errorData = await response.json();
-        toast.error(errorData.message || "Co loi xay ra khi xuat file.");
+        toast.error(errorData.message || "Có lỗi xảy ra khi xuất file.");
         return;
       }
       const blob = await response.blob();
@@ -639,8 +672,8 @@ export const useInvoiceManagement = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Loi khi xuat file:", error);
-      toast.error("Khong the ket noi toi may chu de xuat file.");
+      console.error("Lỗi khi xuất file:", error);
+      toast.error("Không thể kết nối tới máy chủ để xuất file.");
       return;
     }
 
@@ -660,7 +693,7 @@ export const useInvoiceManagement = () => {
     }
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("Vui long dang nhap lai");
+      toast.error("Vui lòng đăng nhập lại");
       return;
     }
     try {
@@ -726,7 +759,7 @@ export const useInvoiceManagement = () => {
     const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcelCollected?${params.toString()}`;
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("Vui long dang nhap lai");
+      toast.error("Vui lòng đăng nhập lại");
       return;
     }
 
@@ -770,8 +803,10 @@ export const useInvoiceManagement = () => {
     // State
     invoices,
     duplicateInvoiceNumbers,
+    invoiceNumberStatuses,
     collectSummary,
     userData,
+    filteredAssignedUsers,
     loading,
     error,
     currentPage,
@@ -784,7 +819,7 @@ export const useInvoiceManagement = () => {
     filterCollection,
     filterAssignedUser,
     selectedProvince,
-    selectedAreaPrefix,
+    selectedAreaPrefixes,
     searchType,
     searchValue,
     sortField,
@@ -819,7 +854,6 @@ export const useInvoiceManagement = () => {
     setIsPaidFilter,
     isPaidFilter,
     setSelectedProvince,
-    setSelectedAreaPrefix,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,
@@ -839,6 +873,7 @@ export const useInvoiceManagement = () => {
     handleInvoicesPerPageChange,
     handlePageChange,
     createFilterChangeHandler,
+    handleAreaFilterChange,
     handleCollectionFilterChange,
     handleSearchTypeChange,
     handleSearchChange,

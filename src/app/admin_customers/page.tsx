@@ -115,7 +115,13 @@ export default function AdminCustomersPage() {
     if (!editing) return;
     const t = toast.loading("Đang lưu...");
     try {
-      const updated = await updateCustomerMaster_API(editing._id, editForm);
+      const updated = await updateCustomerMaster_API(editing._id, {
+        ...editForm,
+        assignedTo:
+          typeof editForm.assignedTo === "object"
+            ? editForm.assignedTo?._id ?? null
+            : editForm.assignedTo ?? undefined,
+      });
       toast.dismiss(t);
       toast.success("Đã lưu");
       setItems((rows) => rows.map((r) => (r._id === updated._id ? { ...r, ...updated } : r)));

@@ -1,6 +1,4 @@
-// components/invoices/InvoiceTable.tsx
-
-import { InvoiceInfo } from "@/types/invoice";
+import { Fragment, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import {
   Box,
   Switch,
@@ -13,15 +11,16 @@ import {
   CircularProgress,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { TABLE_HEADERS, DEFAULT_HIDDEN_COLUMNS } from "@/constants/invoice.constants"; // Import hằng số
-import { formatDateVN, formatDateTimeVN } from "@/lib/date-vn";
-import { Fragment, useEffect, useMemo, useState } from "react";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import toast from "react-hot-toast";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import toast from "react-hot-toast";
+
+import { InvoiceInfo, InvoiceNumberDuplicateStatus } from "@/types/invoice";
+import { TABLE_HEADERS, DEFAULT_HIDDEN_COLUMNS } from "@/constants/invoice.constants";
+import { formatDateVN, formatDateTimeVN } from "@/lib/date-vn";
 import { useAuth } from "@/hooks/useAuth";
 import { updateCollectionDate_API } from "@/services/invoice.api";
 
@@ -29,6 +28,7 @@ interface InvoiceTableProps {
   loading: boolean;
   invoices: InvoiceInfo[];
   duplicateInvoiceNumbers?: string[];
+  invoiceNumberStatuses?: Record<string, InvoiceNumberDuplicateStatus>;
   selectedInvoices: string[];
   onSelectAll: (checked: boolean) => void;
   onSelectOne: (checked: boolean, id: string) => void;
@@ -36,7 +36,7 @@ interface InvoiceTableProps {
   invoicesPerPage: number;
   onToggleStatus: (invoiceId: string, field: "printStatus" | "collectionStatus") => void;
   onToggleIsPaid?: (invoiceId: string) => void;
-  onMenuOpen: (event: React.MouseEvent<HTMLElement>, invoice: InvoiceInfo) => void;
+  onMenuOpen: (event: MouseEvent<HTMLElement>, invoice: InvoiceInfo) => void;
   sortField: string | null;
   sortDirection: "asc" | "desc" | "none";
   onSort: (field: string) => void;
@@ -44,10 +44,20 @@ interface InvoiceTableProps {
   onFetchAllData?: () => Promise<InvoiceInfo[]>;
 }
 
+type CopyableHeaderKey = Extract<keyof InvoiceInfo, "invoiceNumber" | "totalAmount">;
+
+const getSortIndicator = (activeField: string | null, field: string, direction: "asc" | "desc" | "none") => {
+  if (activeField !== field) return "↕";
+  if (direction === "desc") return "↓";
+  if (direction === "asc") return "↑";
+  return "↕";
+};
+
 export default function InvoiceTable({
   loading,
   invoices,
   duplicateInvoiceNumbers,
+  invoiceNumberStatuses,
   selectedInvoices,
   onSelectAll,
   onSelectOne,
@@ -62,207 +72,238 @@ export default function InvoiceTable({
   showIsPaidColumn = true,
   onFetchAllData,
 }: InvoiceTableProps) {
-  const defaultColumns = TABLE_HEADERS
-    .map((h) => h.key)
-    .filter((k) => !DEFAULT_HIDDEN_COLUMNS.includes(k as string));
+  const defaultColumns = TABLE_HEADERS.map((header) => String(header.key)).filter(
+    (key) => !DEFAULT_HIDDEN_COLUMNS.includes(key)
+  );
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
+  const [isCopyingAll, setIsCopyingAll] = useState(false);
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [savingDateId, setSavingDateId] = useState<string | null>(null);
 
-  // Thứ tự các cột dữ liệu (không bao gồm checkbox/stt/actions — những cột đó luôn cố định đầu/cuối)
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
   const dataColumnKeys = useMemo(
-    () => TABLE_HEADERS.map((h) => h.key).filter((k) => k !== "checkbox" && k !== "stt" && k !== "actions"),
+    () =>
+      TABLE_HEADERS.map((header) => String(header.key)).filter(
+        (key) => key !== "checkbox" && key !== "stt" && key !== "actions"
+      ),
     []
   );
   const [columnOrder, setColumnOrder] = useState<string[]>(dataColumnKeys);
 
   useEffect(() => {
-    const saved = localStorage.getItem("invoice_column_order_v1");
-    if (saved) {
-      try {
-        const arr = JSON.parse(saved) as string[];
-        const valid = arr.filter((k) => dataColumnKeys.includes(k));
-        const missing = dataColumnKeys.filter((k) => !valid.includes(k));
-        setColumnOrder([...valid, ...missing]);
-      } catch {}
+    const savedOrder = localStorage.getItem("invoice_column_order_v1");
+    if (!savedOrder) return;
+
+    try {
+      const parsed = JSON.parse(savedOrder) as string[];
+      const valid = parsed.filter((key) => dataColumnKeys.includes(key));
+      const missing = dataColumnKeys.filter((key) => !valid.includes(key));
+      setColumnOrder([...valid, ...missing]);
+    } catch {
+      // Bỏ qua dữ liệu localStorage lỗi.
     }
   }, [dataColumnKeys]);
 
-  const moveColumn = (key: string, dir: -1 | 1) => {
-    setColumnOrder((prev) => {
-      const idx = prev.indexOf(key);
-      if (idx === -1) return prev;
-      const target = idx + dir;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[idx], next[target]] = [next[target], next[idx]];
+  useEffect(() => {
+    const savedColumns = localStorage.getItem("invoice_visible_columns_v2");
+    if (!savedColumns) return;
+
+    try {
+      setVisibleColumns(JSON.parse(savedColumns));
+    } catch {
+      // Bỏ qua dữ liệu localStorage lỗi.
+    }
+  }, []);
+
+  const moveColumn = (key: string, direction: -1 | 1) => {
+    setColumnOrder((previous) => {
+      const currentIndex = previous.indexOf(key);
+      if (currentIndex === -1) return previous;
+
+      const targetIndex = currentIndex + direction;
+      if (targetIndex < 0 || targetIndex >= previous.length) return previous;
+
+      const next = [...previous];
+      [next[currentIndex], next[targetIndex]] = [next[targetIndex], next[currentIndex]];
       localStorage.setItem("invoice_column_order_v1", JSON.stringify(next));
       return next;
     });
   };
 
   const headerByKey = useMemo(() => {
-    const m: Record<string, (typeof TABLE_HEADERS)[number]> = {};
-    TABLE_HEADERS.forEach((h) => {
-      m[h.key] = h;
+    const headers: Record<string, (typeof TABLE_HEADERS)[number]> = {};
+    TABLE_HEADERS.forEach((header) => {
+      headers[header.key] = header;
     });
-    return m;
+    return headers;
   }, []);
 
-  // Thứ tự hiển thị của toàn bộ cột (không bỏ qua hidden — isColVisible sẽ lọc khi render)
   const orderedHeaders = useMemo(() => {
-    const list = [
-      headerByKey["checkbox"],
-      headerByKey["stt"],
-      ...columnOrder.map((k) => headerByKey[k]).filter(Boolean),
-      headerByKey["actions"],
+    const headers = [
+      headerByKey.checkbox,
+      headerByKey.stt,
+      ...columnOrder.map((key) => headerByKey[key]).filter(Boolean),
+      headerByKey.actions,
     ];
-    return list.filter(Boolean);
+    return headers.filter(Boolean);
   }, [columnOrder, headerByKey]);
 
-  const [isCopyingAll, setIsCopyingAll] = useState(false);
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const [editingDateId, setEditingDateId] = useState<string | null>(null);
-  const [savingDateId, setSavingDateId] = useState<string | null>(null);
+  const duplicateInvoiceNumbersSet = useMemo(() => {
+    if (duplicateInvoiceNumbers && duplicateInvoiceNumbers.length > 0) {
+      return new Set(duplicateInvoiceNumbers.map((value) => value.toString().trim()));
+    }
+
+    const counter = new Map<string, number>();
+    invoices.forEach((invoice) => {
+      const invoiceNumber = (invoice.invoiceNumber || invoice.recordBookCode || "").toString().trim();
+      if (!invoiceNumber) return;
+      counter.set(invoiceNumber, (counter.get(invoiceNumber) || 0) + 1);
+    });
+
+    const duplicates = new Set<string>();
+    counter.forEach((count, invoiceNumber) => {
+      if (count > 1) duplicates.add(invoiceNumber);
+    });
+    return duplicates;
+  }, [duplicateInvoiceNumbers, invoices]);
+
+  const isDuplicateInvoice = (invoice: InvoiceInfo) => {
+    const invoiceNumber = (invoice.invoiceNumber || invoice.recordBookCode || "").toString().trim();
+    return invoiceNumber ? duplicateInvoiceNumbersSet.has(invoiceNumber) : false;
+  };
+
+  const getInvoiceNumberStatus = (invoice: InvoiceInfo): InvoiceNumberDuplicateStatus | null => {
+    const invoiceNumber = (invoice.invoiceNumber || invoice.recordBookCode || "").toString().trim();
+    return invoiceNumber ? invoiceNumberStatuses?.[invoiceNumber] ?? null : null;
+  };
+
+  const getInvoiceNumberPresentation = (invoice: InvoiceInfo) => {
+    const status = getInvoiceNumberStatus(invoice);
+
+    if (status === "duplicate_invoice") {
+      return {
+        color: "#b45309",
+        fontWeight: 700,
+        title:
+          "Trùng hóa đơn: cùng Mã KH, cùng kỳ thanh toán và nội dung giống nhau sau khi bổ sung dữ liệu còn thiếu.",
+      };
+    }
+
+    if (status === "updated_customer_info") {
+      return {
+        color: "#f97316",
+        fontWeight: 700,
+        title:
+          "Giống mã KH nhưng khác tên khách hàng, địa chỉ hoặc số trạm; đây là nhóm cập nhật thông tin mới.",
+      };
+    }
+
+    if (status === "same_customer_code_parallel" || isDuplicateInvoice(invoice)) {
+      return {
+        color: "#ef4444",
+        fontWeight: 700,
+        title:
+          "Giống mã KH nhưng khác kỳ thanh toán, số tiền hoặc người phụ trách; đây là các hóa đơn song song của cùng Mã KH.",
+      };
+    }
+
+    return {
+      color: undefined,
+      fontWeight: undefined,
+      title: undefined,
+    };
+  };
+
+  const handleToggleColumn = (key: string) => {
+    const nextColumns = visibleColumns.includes(key)
+      ? visibleColumns.filter((columnKey) => columnKey !== key)
+      : [...visibleColumns, key];
+
+    setVisibleColumns(nextColumns);
+    localStorage.setItem("invoice_visible_columns_v2", JSON.stringify(nextColumns));
+  };
+
+  const isColumnVisible = (key: string) => {
+    if (key === "checkbox" || key === "actions") return true;
+    if (key === "isPaid" && !showIsPaidColumn) return false;
+    return visibleColumns.includes(key);
+  };
+
+  const isAllSelected = selectedInvoices.length === invoices.length && invoices.length > 0;
+
+  const handleCopyColumn = (key: CopyableHeaderKey, label: string) => {
+    const columnData = invoices.map((invoice) => (invoice[key] ?? "").toString()).join("\n");
+    navigator.clipboard
+      .writeText(columnData)
+      .then(() => toast.success(`Đã sao chép cột ${label}.`))
+      .catch((error) => console.error("Lỗi sao chép:", error));
+  };
+
+  const handleCopyAllData = async (key: string, label: string) => {
+    if (!onFetchAllData) {
+      toast.error("Tính năng này chưa được cấu hình.");
+      return;
+    }
+
+    setIsCopyingAll(true);
+    const loadingToast = toast.loading(`Đang tải toàn bộ dữ liệu cột ${label}...`);
+
+    try {
+      const allData = await onFetchAllData();
+      if (!allData || allData.length === 0) {
+        toast.dismiss(loadingToast);
+        toast.error("Không có dữ liệu nào.");
+        return;
+      }
+
+      const columnData = allData.map((invoice) => (invoice[key as keyof InvoiceInfo] ?? "").toString()).join("\n");
+      await navigator.clipboard.writeText(columnData);
+      toast.dismiss(loadingToast);
+      toast.success(`Đã sao chép ${allData.length} dòng.`);
+    } catch (error) {
+      console.error(error);
+      toast.dismiss(loadingToast);
+      toast.error("Không thể lấy dữ liệu để sao chép.");
+    } finally {
+      setIsCopyingAll(false);
+    }
+  };
 
   const handleSaveCollectionDate = async (invoice: InvoiceInfo, newDate: string) => {
     setSavingDateId(invoice._id);
+
     try {
       await updateCollectionDate_API(invoice._id, newDate || null);
-      // Cập nhật local UI ngay
       invoice.collectionDate = newDate ? new Date(`${newDate}T12:00:00.000Z`).toISOString() : null;
       invoice.collectionDateAdminEdited = !!newDate;
       invoice.collectionStatus = newDate ? "collected" : "not_collected";
       toast.success("Đã cập nhật ngày thu.");
       setEditingDateId(null);
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       toast.error("Lưu ngày thu thất bại.");
     } finally {
       setSavingDateId(null);
     }
   };
 
-  // Load cấu hình từ localStorage khi mới vào (key v2 để reset cấu hình cũ)
-  useEffect(() => {
-    const savedCols = localStorage.getItem("invoice_visible_columns_v2");
-    if (savedCols) {
-      setVisibleColumns(JSON.parse(savedCols));
-    }
-  }, []);
-
-  // Hàm lưu cấu hình
-  const handleToggleColumn = (key: string) => {
-    const newColumns = visibleColumns.includes(key)
-      ? visibleColumns.filter((c) => c !== key) // Bỏ chọn
-      : [...visibleColumns, key]; // Chọn thêm
-
-    setVisibleColumns(newColumns);
-    localStorage.setItem("invoice_visible_columns_v2", JSON.stringify(newColumns));
-  };
-
-  // Hàm kiểm tra cột có được hiện không (Dùng cho cả Header và Body)
-  const isColVisible = (key: string) => {
-    // Checkbox và Action luôn hiện để thao tác
-    if (key === "checkbox" || key === "action") return true;
-    // IsPaid phụ thuộc vào props bên ngoài nữa
-    if (key === "isPaid" && !showIsPaidColumn) return false;
-
-    return visibleColumns.includes(key);
-  };
-
-  const handleSortClick = (field: string) => {
-    onSort(field);
-  };
-
-  const isAllSelected = selectedInvoices.length === invoices.length && invoices.length > 0;
-
-  // ✅ Phát hiện các mã hóa đơn trùng (tồn tại song song nhiều bản ghi)
-  // Ưu tiên dữ liệu từ BE (toàn DB), fallback đếm trên trang hiện tại.
-  const duplicateInvoiceNumbersSet = useMemo(() => {
-    if (duplicateInvoiceNumbers && duplicateInvoiceNumbers.length > 0) {
-      return new Set(duplicateInvoiceNumbers.map((s) => s.toString().trim()));
-    }
-    const counter = new Map<string, number>();
-    invoices.forEach((inv) => {
-      const key = (inv.invoiceNumber || inv.recordBookCode || "").toString().trim();
-      if (!key) return;
-      counter.set(key, (counter.get(key) || 0) + 1);
-    });
-    const dup = new Set<string>();
-    counter.forEach((v, k) => {
-      if (v > 1) dup.add(k);
-    });
-    return dup;
-  }, [invoices, duplicateInvoiceNumbers]);
-
-  const isDuplicateInvoice = (invoice: InvoiceInfo) => {
-    const key = (invoice.invoiceNumber || invoice.recordBookCode || "").toString().trim();
-    return key ? duplicateInvoiceNumbersSet.has(key) : false;
-  };
-
-  interface CopyableKey {
-    key: Extract<keyof InvoiceInfo, "invoiceNumber" | "totalAmount">;
-    label: string;
-    sortable: boolean;
-  }
-  const handleCopyColumn = (data: CopyableKey) => {
-    const columnData = invoices.map((invoice) => (invoice[data.key] ?? "").toString()).join("\n");
-
-    navigator.clipboard
-      .writeText(columnData)
-      .then(() => toast.success(`Đã copy cột ${data.label}!`))
-      .catch((err) => console.error("Lỗi copy:", err));
-  };
-
-  const handleCopyAllData = async (key: string, label: string) => {
-    if (!onFetchAllData) {
-      toast.error("Chưa cấu hình tính năng này");
-      return;
-    }
-
-    setIsCopyingAll(true);
-    const toastId = toast.loading(`Đang tải toàn bộ dữ liệu cột ${label}...`);
-
-    try {
-      const allData = await onFetchAllData();
-
-      if (!allData || allData.length === 0) {
-        toast.dismiss(toastId);
-        toast.error("Không có dữ liệu nào.");
-        return;
-      }
-
-      const columnData = allData.map((invoice) => (invoice[key as keyof InvoiceInfo] ?? "").toString()).join("\n");
-
-      await navigator.clipboard.writeText(columnData);
-
-      toast.dismiss(toastId);
-      toast.success(`Đã copy ${allData.length} dòng!`);
-    } catch (error) {
-      console.error(error);
-      toast.dismiss(toastId);
-      toast.error("Lỗi khi lấy dữ liệu.");
-    } finally {
-      setIsCopyingAll(false);
-    }
-  };
-
-  // Render một ô dữ liệu theo key cột (để có thể đổi thứ tự dễ)
-  const renderCell = (key: string, invoice: InvoiceInfo): React.ReactNode => {
+  const renderCell = (key: string, invoice: InvoiceInfo): ReactNode => {
     switch (key) {
       case "invoiceNumber": {
-        const dup = isDuplicateInvoice(invoice);
+        const presentation = getInvoiceNumberPresentation(invoice);
         return (
           <td
             style={{
               border: "1px solid #ddd",
               padding: "6px",
-              color: dup ? "#ef4444" : undefined,
-              fontWeight: dup ? 600 : undefined,
+              color: presentation.color,
+              fontWeight: presentation.fontWeight,
             }}
-            title={dup ? "Mã KH này tồn tại nhiều hóa đơn song song (khác kỳ TT hoặc khác người phụ trách) — cần xử lý đặc biệt." : undefined}
+            title={presentation.title}
           >
             {invoice.invoiceNumber || invoice.recordBookCode}
           </td>
@@ -288,11 +329,7 @@ export default function InvoiceTable({
               padding: "4px",
               textAlign: "right",
               fontWeight: "bold",
-              color: invoice.isPaid
-                ? "#2e7d32"
-                : Number(invoice.previousAmount) > 0
-                ? "#d32f2f"
-                : "#f9a825",
+              color: invoice.isPaid ? "#2e7d32" : Number(invoice.previousAmount) > 0 ? "#d32f2f" : "#f9a825",
             }}
           >
             {invoice.totalAmount}
@@ -302,7 +339,9 @@ export default function InvoiceTable({
         return <td style={{ border: "1px solid #ddd", padding: "6px" }}>{invoice.customerName}</td>;
       case "customerAddress":
         return (
-          <td style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word", maxWidth: 240, minWidth: 180 }}>
+          <td
+            style={{ border: "1px solid #ddd", padding: "4px", wordBreak: "break-word", maxWidth: 240, minWidth: 180 }}
+          >
             {invoice.customerAddress}
           </td>
         );
@@ -348,7 +387,7 @@ export default function InvoiceTable({
           <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
             <Switch
               checked={invoice.isPaid ?? false}
-              onChange={() => onToggleIsPaid && onToggleIsPaid(invoice._id)}
+              onChange={() => onToggleIsPaid?.(invoice._id)}
               color="success"
               size="small"
               sx={{ transform: "scale(0.8)" }}
@@ -365,32 +404,36 @@ export default function InvoiceTable({
                   ? formatDateVN(invoice.collectionDate)
                   : formatDateTimeVN(invoice.collectionDate)
                 : "-";
+
               if (!isAdmin) return display;
+
               if (editingDateId === invoice._id) {
-                const defaultVal = invoice.collectionDate
+                const defaultValue = invoice.collectionDate
                   ? new Date(invoice.collectionDate).toISOString().slice(0, 10)
                   : new Date().toISOString().slice(0, 10);
+
                 return (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <input
                       type="date"
-                      defaultValue={defaultVal}
+                      defaultValue={defaultValue}
                       disabled={savingDateId === invoice._id}
                       style={{ fontSize: "0.75rem", padding: "2px 4px" }}
-                      onBlur={(e) => handleSaveCollectionDate(invoice, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                        if (e.key === "Escape") setEditingDateId(null);
+                      onBlur={(event) => handleSaveCollectionDate(invoice, event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") (event.target as HTMLInputElement).blur();
+                        if (event.key === "Escape") setEditingDateId(null);
                       }}
                       autoFocus
                     />
                   </span>
                 );
               }
+
               return (
                 <span
                   role="button"
-                  title={adminEdited ? "Đơn bổ sung (admin chỉnh ngày) — nhấp để sửa" : "Nhấp để chỉnh ngày thu"}
+                  title={adminEdited ? "Đơn bổ sung, nhấp để sửa ngày thu." : "Nhấp để chỉnh ngày thu."}
                   onClick={() => setEditingDateId(invoice._id)}
                   style={{
                     cursor: "pointer",
@@ -432,47 +475,48 @@ export default function InvoiceTable({
           </td>
         );
       default:
-        return <td style={{ border: "1px solid #ddd" }}></td>;
+        return <td style={{ border: "1px solid #ddd" }} />;
     }
   };
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Menu Ẩn/Hiện cột (anchor được set từ header cột Tùy chọn) */}
       <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
+        anchorEl={columnMenuAnchor}
+        open={Boolean(columnMenuAnchor)}
+        onClose={() => setColumnMenuAnchor(null)}
         slotProps={{ paper: { style: { maxHeight: 560, width: 230 } } }}
       >
         <Typography variant="subtitle2" sx={{ px: 2, py: 0.5, color: "gray" }}>
-          Chọn & sắp xếp cột
+          Chọn và sắp xếp cột
         </Typography>
-        {columnOrder.map((key, idx) => {
+        {columnOrder.map((key, index) => {
           const header = headerByKey[key];
           if (!header) return null;
+
           return (
-            <MenuItem
-              key={key}
-              dense
-              sx={{ py: 0, minHeight: 28, gap: 0 }}
-              disableRipple
-            >
+            <MenuItem key={key} dense sx={{ py: 0, minHeight: 28, gap: 0 }} disableRipple>
               <IconButton
                 size="small"
-                disabled={idx === 0}
-                onClick={(e) => { e.stopPropagation(); moveColumn(key, -1); }}
+                disabled={index === 0}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  moveColumn(key, -1);
+                }}
                 sx={{ p: 0.25 }}
-                title="Lên trên"
+                title="Đưa lên trên"
               >
                 <ArrowUpwardIcon sx={{ fontSize: 14 }} />
               </IconButton>
               <IconButton
                 size="small"
-                disabled={idx === columnOrder.length - 1}
-                onClick={(e) => { e.stopPropagation(); moveColumn(key, 1); }}
+                disabled={index === columnOrder.length - 1}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  moveColumn(key, 1);
+                }}
                 sx={{ p: 0.25, mr: 0.5 }}
-                title="Xuống dưới"
+                title="Đưa xuống dưới"
               >
                 <ArrowDownwardIcon sx={{ fontSize: 14 }} />
               </IconButton>
@@ -480,22 +524,14 @@ export default function InvoiceTable({
                 onClick={() => handleToggleColumn(key)}
                 sx={{ display: "flex", alignItems: "center", flex: 1, cursor: "pointer" }}
               >
-                <Checkbox
-                  checked={visibleColumns.includes(key)}
-                  size="small"
-                  sx={{ p: 0.25, mr: 0.5 }}
-                />
-                <ListItemText
-                  primary={header.label}
-                  primaryTypographyProps={{ fontSize: "0.8rem" }}
-                />
+                <Checkbox checked={visibleColumns.includes(key)} size="small" sx={{ p: 0.25, mr: 0.5 }} />
+                <ListItemText primary={header.label} primaryTypographyProps={{ fontSize: "0.8rem" }} />
               </Box>
             </MenuItem>
           );
         })}
       </Menu>
 
-      {/* THÔNG BÁO LOADING / EMPTY */}
       {loading ? (
         <Typography sx={{ p: 4, textAlign: "center" }}>Đang tải dữ liệu hóa đơn...</Typography>
       ) : invoices.length === 0 ? (
@@ -503,213 +539,191 @@ export default function InvoiceTable({
       ) : null}
 
       <Box sx={{ width: "100%", overflowX: "auto" }}>
-      <table
-        style={{
-          width: "100%",
-          minWidth: 1400,
-          borderCollapse: "collapse",
-          fontSize: "0.8rem",
-          tableLayout: "auto",
-        }}
-      >
-        <thead>
-          <tr style={{ backgroundColor: "#f9fafb" }}>
-            {/* Lọc & sắp xếp header theo orderedHeaders */}
-            {orderedHeaders.map((header) => {
-              if (!isColVisible(header.key)) return null; // ẨN HEADER
+        <table
+          style={{
+            width: "100%",
+            minWidth: 1400,
+            borderCollapse: "collapse",
+            fontSize: "0.8rem",
+            tableLayout: "auto",
+          }}
+        >
+          <thead>
+            <tr style={{ backgroundColor: "#f9fafb" }}>
+              {orderedHeaders.map((header) => {
+                if (!isColumnVisible(header.key)) return null;
 
-              const isDataCol = header.key !== "checkbox" && header.key !== "stt" && header.key !== "actions";
+                const isDataColumn = header.key !== "checkbox" && header.key !== "stt" && header.key !== "actions";
+
+                return (
+                  <th
+                    key={header.key}
+                    onClick={isDataColumn ? () => onSort(header.key) : undefined}
+                    style={{
+                      border: "1px solid #e0e0e0",
+                      padding: "8px 4px",
+                      textAlign: "center",
+                      backgroundColor: "#f5f5f5",
+                      fontWeight: 600,
+                      cursor: isDataColumn ? "pointer" : "default",
+                      userSelect: "none",
+                      verticalAlign: "middle",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(event) => {
+                      const button = event.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
+                      if (button) button.style.opacity = "1";
+                    }}
+                    onMouseLeave={(event) => {
+                      const button = event.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
+                      if (button) button.style.opacity = "0";
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
+                      <span>
+                        {header.key === "checkbox" ? (
+                          <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onChange={(event) => onSelectAll(event.target.checked)}
+                          />
+                        ) : (
+                          header.label
+                        )}
+                      </span>
+
+                      {header.key === "actions" && (
+                        <IconButton
+                          size="small"
+                          title="Ẩn hoặc hiện cột"
+                          sx={{ p: 0.25 }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setColumnMenuAnchor(event.currentTarget);
+                          }}
+                        >
+                          <ViewColumnIcon style={{ fontSize: "16px", color: "#1976d2" }} />
+                        </IconButton>
+                      )}
+
+                      {isDataColumn && (
+                        <span style={{ fontSize: "0.7rem", color: sortField === header.key ? "#1976d2" : "#bbb" }}>
+                          {getSortIndicator(sortField, header.key, sortDirection)}
+                        </span>
+                      )}
+
+                      {(header.key === "invoiceNumber" || header.key === "totalAmount") && (
+                        <IconButton
+                          className="copy-btn"
+                          size="small"
+                          style={{ opacity: 0, transition: "opacity 0.2s", padding: 2 }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleCopyColumn(header.key as CopyableHeaderKey, header.label);
+                          }}
+                        >
+                          <ContentCopyIcon style={{ fontSize: "12px", color: "#555" }} />
+                        </IconButton>
+                      )}
+
+                      {header.key === "invoiceNumber" && (
+                        <IconButton
+                          size="small"
+                          sx={{ padding: "2px" }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleCopyAllData(header.key, header.label);
+                          }}
+                          disabled={isCopyingAll}
+                        >
+                          {isCopyingAll ? (
+                            <CircularProgress size={14} color="primary" />
+                          ) : (
+                            <CloudDownloadIcon style={{ fontSize: "16px", color: "#1976d2" }} />
+                          )}
+                        </IconButton>
+                      )}
+                    </Box>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+
+          <tbody>
+            {invoices.map((invoice, index) => {
+              const isMissingRow = invoice.isMissing === true;
+              const invoicePresentation = getInvoiceNumberPresentation(invoice);
 
               return (
-                <th
-                  key={header.key}
-                  onClick={isDataCol ? () => handleSortClick(header.key) : undefined}
+                <tr
+                  key={invoice._id}
                   style={{
-                    border: "1px solid #e0e0e0",
-                    padding: "8px 4px",
-                    textAlign: "center",
-                    backgroundColor: "#f5f5f5",
-                    fontWeight: 600,
-                    cursor: isDataCol ? "pointer" : "default",
-                    userSelect: "none",
-                    verticalAlign: "middle",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => {
-                    const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
-                    if (btn) btn.style.opacity = "1";
-                  }}
-                  onMouseLeave={(e) => {
-                    const btn = e.currentTarget.querySelector(".copy-btn") as HTMLElement | null;
-                    if (btn) btn.style.opacity = "0";
+                    backgroundColor: isMissingRow ? "#ffebee" : "#fff",
+                    color: isMissingRow ? "#d32f2f" : "inherit",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
-                    <span>
-                      {header.key === "checkbox" ? (
-                        <input
-                          type="checkbox"
-                          checked={isAllSelected}
-                          onChange={(e) => onSelectAll(e.target.checked)}
-                        />
-                      ) : (
-                        header.label
+                  <td style={{ border: "1px solid #ddd", textAlign: "center", padding: "4px" }}>
+                    {!isMissingRow && (
+                      <input
+                        type="checkbox"
+                        checked={selectedInvoices.includes(invoice._id)}
+                        onChange={(event) => onSelectOne(event.target.checked, invoice._id)}
+                      />
+                    )}
+                  </td>
+
+                  <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "center" }}>
+                    {index + 1 + (currentPage - 1) * invoicesPerPage}
+                  </td>
+
+                  {isMissingRow ? (
+                    <>
+                      {isColumnVisible("invoiceNumber") && (
+                        <td
+                          style={{
+                            border: "1px solid #ddd",
+                            padding: "6px",
+                            fontWeight: "bold",
+                            color: invoicePresentation.color,
+                          }}
+                          title={invoicePresentation.title}
+                        >
+                          {invoice.invoiceNumber || invoice.recordBookCode}
+                        </td>
                       )}
-                    </span>
+                      {isColumnVisible("customerName") && (
+                        <td
+                          style={{ border: "1px solid #ddd", padding: "6px", fontStyle: "italic" }}
+                          colSpan={Math.max(
+                            1,
+                            columnOrder.filter(
+                              (key) => isColumnVisible(key) && key !== "invoiceNumber" && key !== "customerName"
+                            ).length
+                          )}
+                        >
+                          {invoice.customerName}
+                        </td>
+                      )}
+                    </>
+                  ) : (
+                    columnOrder
+                      .filter((key) => isColumnVisible(key))
+                      .map((key) => <Fragment key={key}>{renderCell(key, invoice)}</Fragment>)
+                  )}
 
-                    {header.key === "actions" && (
-                      <IconButton
-                        size="small"
-                        title="Ẩn/Hiện cột"
-                        sx={{ p: 0.25 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAnchorEl(e.currentTarget);
-                        }}
-                      >
-                        <ViewColumnIcon style={{ fontSize: "16px", color: "#1976d2" }} />
+                  <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
+                    {!isMissingRow && (
+                      <IconButton size="small" onClick={(event) => onMenuOpen(event, invoice)}>
+                        <MoreVertIcon fontSize="small" />
                       </IconButton>
                     )}
-
-                    {header.key === "collectionDate" && (
-                      <span style={{ fontSize: "0.7rem", color: "#666" }}>
-                        {sortField === "collectionDate"
-                          ? sortDirection === "desc"
-                            ? "↓"
-                            : sortDirection === "asc"
-                            ? "↑"
-                            : "↕"
-                          : "↕"}
-                      </span>
-                    )}
-
-                    {/* Indicator sắp xếp cho các cột dữ liệu khác */}
-                    {isDataCol && header.key !== "collectionDate" && (
-                      <span style={{ fontSize: "0.7rem", color: sortField === header.key ? "#1976d2" : "#bbb" }}>
-                        {sortField === header.key
-                          ? sortDirection === "desc"
-                            ? "↓"
-                            : sortDirection === "asc"
-                            ? "↑"
-                            : "↕"
-                          : "↕"}
-                      </span>
-                    )}
-
-                    {(header.key === "invoiceNumber" || header.key === "totalAmount") && (
-                      <IconButton
-                        className="copy-btn"
-                        size="small"
-                        style={{ opacity: 0, transition: "opacity 0.2s", padding: 2 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyColumn(header as CopyableKey);
-                        }}
-                      >
-                        <ContentCopyIcon style={{ fontSize: "12px", color: "#555" }} />
-                      </IconButton>
-                    )}
-
-                    {header.key === "invoiceNumber" && (
-                      <IconButton
-                        size="small"
-                        sx={{ padding: "2px" }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyAllData(header.key, header.label);
-                        }}
-                        disabled={isCopyingAll}
-                      >
-                        {isCopyingAll ? (
-                          <CircularProgress size={14} color="primary" />
-                        ) : (
-                          <CloudDownloadIcon style={{ fontSize: "16px", color: "#1976d2" }} />
-                        )}
-                      </IconButton>
-                    )}
-                  </Box>
-                </th>
+                  </td>
+                </tr>
               );
             })}
-          </tr>
-        </thead>
-
-        <tbody>
-          {invoices.map((invoice, index) => {
-            const isMissingRow = invoice.isMissing === true;
-
-            return (
-              <tr
-                key={invoice._id}
-                style={{
-                  backgroundColor: isMissingRow ? "#ffebee" : "#fff",
-                  color: isMissingRow ? "#d32f2f" : "inherit",
-                }}
-              >
-                {/* Checkbox: Luôn hiện */}
-                <td style={{ border: "1px solid #ddd", textAlign: "center", padding: "4px" }}>
-                  {/* Ẩn checkbox nếu là dòng missing (vì không thao tác được) */}
-                  {!isMissingRow && (
-                    <input
-                      type="checkbox"
-                      checked={selectedInvoices.includes(invoice._id)}
-                      onChange={(e) => onSelectOne(e.target.checked, invoice._id)}
-                    />
-                  )}
-                </td>
-
-                {/* STT: Coi như một cột riêng mặc định hiện */}
-                <td style={{ border: "1px solid #ddd", padding: "4px", textAlign: "center" }}>
-                  {index + 1 + (currentPage - 1) * invoicesPerPage}
-                </td>
-
-                {/* --- CÁC CỘT DỮ LIỆU: render theo thứ tự columnOrder --- */}
-                {isMissingRow ? (
-                  <>
-                    {isColVisible("invoiceNumber") && (
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "6px",
-                          fontWeight: "bold",
-                          color: isDuplicateInvoice(invoice) ? "#ef4444" : undefined,
-                        }}
-                        title={isDuplicateInvoice(invoice) ? "Mã KH này tồn tại nhiều hóa đơn song song." : undefined}
-                      >
-                        {invoice.invoiceNumber || invoice.recordBookCode}
-                      </td>
-                    )}
-                    {isColVisible("customerName") && (
-                      <td
-                        style={{ border: "1px solid #ddd", padding: "6px", fontStyle: "italic" }}
-                        colSpan={Math.max(
-                          1,
-                          columnOrder.filter((k) => isColVisible(k) && k !== "invoiceNumber" && k !== "customerName").length
-                        )}
-                      >
-                        {invoice.customerName}
-                      </td>
-                    )}
-                  </>
-                ) : (
-                  columnOrder
-                    .filter((k) => isColVisible(k))
-                    .map((k) => <Fragment key={k}>{renderCell(k, invoice)}</Fragment>)
-                )}
-
-                {/* Action 3 chấm: Luôn hiện (hoặc check key action nếu có trong headers) */}
-                <td style={{ border: "1px solid #ddd", padding: "2px", textAlign: "center" }}>
-                  {!isMissingRow && (
-                    <IconButton size="small" onClick={(e) => onMenuOpen(e, invoice)}>
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
       </Box>
     </Box>
   );

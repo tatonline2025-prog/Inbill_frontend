@@ -1,5 +1,10 @@
 import { IUser } from "./user";
 
+export type InvoiceNumberDuplicateStatus =
+  | "same_customer_code_parallel"
+  | "updated_customer_info"
+  | "duplicate_invoice";
+
 export interface InvoiceInfo {
   _id: string;
   invoiceNumber: string;
@@ -77,10 +82,14 @@ export interface IInvoiceSummaryByUser {
 export interface FetchInvoiceResponse {
   success: boolean;
   data: InvoiceInfo[];
+  duplicateInvoiceNumbers?: string[];
+  invoiceNumberStatuses?: Record<string, InvoiceNumberDuplicateStatus>;
   summary: {
     totalInvoices: number;
     totalAmount: number;
     unassignedInvoices: number;
+    assignedCustomerCodes?: number;
+    unassignedCustomerCodes?: number;
   };
   pagination: {
     total: number;

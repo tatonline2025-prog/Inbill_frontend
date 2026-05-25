@@ -36,8 +36,10 @@ export default function InvoicesPage() {
   const {
     invoices,
     duplicateInvoiceNumbers,
+    invoiceNumberStatuses,
     collectSummary,
     userData,
+    filteredAssignedUsers,
     loading,
     error,
     currentPage,
@@ -51,7 +53,7 @@ export default function InvoicesPage() {
     filterAssignedUser,
     isPaidFilter,
     selectedProvince,
-    selectedAreaPrefix,
+    selectedAreaPrefixes,
     searchType,
     searchValue,
     sortField,
@@ -77,7 +79,6 @@ export default function InvoicesPage() {
     areaOptions,
     setFilterPrint,
     setFilterAssignedUser,
-    setSelectedAreaPrefix,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,
@@ -95,6 +96,7 @@ export default function InvoicesPage() {
     handleInvoicesPerPageChange,
     handlePageChange,
     createFilterChangeHandler,
+    handleAreaFilterChange,
     handleCollectionFilterChange,
     handleSearchTypeChange,
     handleSearchChange,
@@ -135,7 +137,7 @@ export default function InvoicesPage() {
       filterAssignedUser,
       isPaidFilter,
       selectedProvince,
-      selectedAreaPrefix,
+      selectedAreaPrefixes.length > 0 ? selectedAreaPrefixes.join(",") : undefined,
       searchType,
       searchValue.trim(),
       filterCollection === "collected_today" ? toDateKeyVN() : undefined
@@ -143,7 +145,7 @@ export default function InvoicesPage() {
   };
 
   return (
-    <ProtectedRoute fallback={<p>Redirecting...</p>}>
+    <ProtectedRoute fallback={<p>Đang chuyển hướng...</p>}>
       <Box sx={{ p: 4 }}>
         <InvoiceToolbar
           invoicesCount={invoices.length}
@@ -157,8 +159,8 @@ export default function InvoicesPage() {
           onOpenUploadWithProvince={() => setOpenUploadWithProvince(true)}
           onOpenUploadPaidInvoices={() => setOpenUploadPaidInvoice(true)}
           areaOptions={areaOptions}
-          selectedAreaPrefix={selectedAreaPrefix}
-          onSelectedAreaPrefixChange={createFilterChangeHandler(setSelectedAreaPrefix)}
+          selectedAreaPrefixes={selectedAreaPrefixes}
+          onSelectedAreaPrefixesChange={handleAreaFilterChange}
           searchType={searchType}
           onSearchTypeChange={handleSearchTypeChange}
           searchValue={searchValue}
@@ -171,53 +173,67 @@ export default function InvoicesPage() {
           onFilterCollectionChange={handleCollectionFilterChange}
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
-          userData={userData}
+          userData={filteredAssignedUsers}
           onBulkUpdate={handleBulkUpdate}
           billingPeriods={billingPeriods}
         />
 
         {filterCollection === "duplicates" && (
-          <Box sx={{ mt: 1, display: "flex", gap: 1, justifyContent: "flex-end" }}>
+          <Box sx={{ mt: 1, display: "flex", gap: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <Button
               size="small"
               variant="outlined"
               color="warning"
               startIcon={<SyncIcon />}
               onClick={async () => {
-                if (!confirm("Dong bo thong tin giua cac hoa don trung ma KH. Tiep tuc?")) return;
-                const loadingToast = toast.loading("Dang dong bo ma trung...");
+                if (
+                  !confirm(
+                    "Đồng bộ thông tin còn thiếu giữa các hóa đơn giống mã KH. Các hóa đơn khác kỳ hoặc khác người phụ trách sẽ vẫn được giữ riêng. Tiếp tục?"
+                  )
+                ) {
+                  return;
+                }
+
+                const loadingToast = toast.loading("Đang đồng bộ thông tin giống mã KH...");
                 try {
                   const res = await syncDuplicateInvoices_API();
                   toast.dismiss(loadingToast);
-                  toast.success(res.data?.message || "Da dong bo.");
+                  toast.success(res.data?.message || "Đã đồng bộ.");
                   reloadInvoices();
                 } catch (submitError: unknown) {
                   toast.dismiss(loadingToast);
-                  toast.error(getErrorMessage(submitError, "Dong bo that bai."));
+                  toast.error(getErrorMessage(submitError, "Đồng bộ thất bại."));
                 }
               }}
             >
-              Dong bo thong tin ma trung
+              Đồng bộ thông tin giống mã KH
             </Button>
             <Button
               size="small"
               variant="outlined"
               color="error"
               onClick={async () => {
-                if (!confirm("Xoa bot hoa don trung da dong bo giong nhau va chua tuong tac. Tiep tuc?")) return;
-                const loadingToast = toast.loading("Dang don ma trung...");
+                if (
+                  !confirm(
+                    "Chỉ xóa các hóa đơn trùng thực sự sau khi đã đồng bộ, ưu tiên xóa bản ghi chưa tương tác. Tiếp tục?"
+                  )
+                ) {
+                  return;
+                }
+
+                const loadingToast = toast.loading("Đang dọn hóa đơn trùng thực sự...");
                 try {
                   const res = await cleanupRedundantDuplicates_API();
                   toast.dismiss(loadingToast);
-                  toast.success(res.data?.message || "Da don.");
+                  toast.success(res.data?.message || "Đã dọn.");
                   reloadInvoices();
                 } catch (submitError: unknown) {
                   toast.dismiss(loadingToast);
-                  toast.error(getErrorMessage(submitError, "Don that bai."));
+                  toast.error(getErrorMessage(submitError, "Dọn trùng thất bại."));
                 }
               }}
             >
-              Xoa ma trung chua tuong tac
+              Xóa trùng hóa đơn chưa tương tác
             </Button>
           </Box>
         )}
@@ -238,6 +254,7 @@ export default function InvoicesPage() {
             loading={loading}
             invoices={invoices}
             duplicateInvoiceNumbers={duplicateInvoiceNumbers}
+            invoiceNumberStatuses={invoiceNumberStatuses}
             selectedInvoices={selectedInvoices}
             onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}
@@ -288,7 +305,7 @@ export default function InvoicesPage() {
         onClose={() => setOpenAddDialog(false)}
         onSuccess={() => {
           reloadInvoices();
-          toast.success("Them hoa don thanh cong!");
+          toast.success("Thêm hóa đơn thành công!");
         }}
         assignedUsers={userData}
       />

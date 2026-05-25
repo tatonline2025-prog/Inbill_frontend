@@ -1,17 +1,13 @@
-// constants/invoice.constants.ts
-
 import { InvoiceInfo } from "@/types/invoice";
 import { getNowVNDate } from "@/lib/date-vn";
 
 export const PROVINCES = [
-  // Ưu tiên hiển thị đầu
   "Đồng Tháp",
   "Tây Ninh",
   "Vĩnh Long",
   "Hưng Yên",
   "TP Hồ Chí Minh",
   "TP Hà Nội",
-  // Còn lại theo ABC
   "An Giang",
   "Bắc Ninh",
   "Cà Mau",
@@ -47,8 +43,8 @@ export const generateBillingPeriods = () => {
   const currentYear = nowVN.getUTCFullYear();
   const currentMonth = nowVN.getUTCMonth();
 
-  return Array.from({ length: 7 }, (_, i) => {
-    const offset = i - 3;
+  return Array.from({ length: 7 }, (_, index) => {
+    const offset = index - 3;
     const date = new Date(Date.UTC(currentYear, currentMonth + offset, 1));
     const month = String(date.getUTCMonth() + 1).padStart(2, "0");
     const year = date.getUTCFullYear();
@@ -83,5 +79,4 @@ export const TABLE_HEADERS: {
   { key: "actions", label: "Tùy chọn", sortable: false },
 ];
 
-// Các cột ẩn mặc định khi user mới vào (chưa có cấu hình trong localStorage)
 export const DEFAULT_HIDDEN_COLUMNS = ["issueDate", "customerPhone", "note"];
