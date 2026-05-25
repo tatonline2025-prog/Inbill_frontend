@@ -1,5 +1,4 @@
-// components/invoices/InvoiceToolbar.tsx
-
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -14,25 +13,28 @@ import {
   Select,
   TextField,
 } from "@mui/material";
+import { SelectChangeEvent } from "@mui/material/Select";
 import DownloadIcon from "@mui/icons-material/Download";
 import SearchIcon from "@mui/icons-material/Search";
 import ListIcon from "@mui/icons-material/List";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import { SelectChangeEvent } from "@mui/material/Select";
-import { useState } from "react";
+
 import { IUser } from "@/types/user";
 
 type SearchType = "customerCode" | "stationCode";
+type AreaOption = {
+  value: string;
+  label: string;
+};
 
-// Định nghĩa props (đã được cập nhật với dấu '?')
 interface InvoiceToolbarProps {
-  invoicesCount?: number; // Cần cho logic 'disabled'
+  invoicesCount?: number;
   onExport?: () => void;
   onExportPrinted?: () => void;
   invoicesPerPage?: number;
   onInvoicesPerPageChange?: (value: number) => void;
   onOpenAddDialog?: () => void;
-  selectedInvoicesCount?: number; // Cần cho logic 'disabled'
+  selectedInvoicesCount?: number;
   onDeleteSelected?: () => void;
   onOpenDeleteAllModal?: () => void;
   onOpenUploadWithProvince?: () => void;
@@ -40,10 +42,12 @@ interface InvoiceToolbarProps {
   searchValue?: string;
   onSearchChange?: (search: string) => void;
   onOpenExportByUser?: () => void;
-  searchType: SearchType; // Loại tìm kiếm hiện tại
+  searchType: SearchType;
   onSearchTypeChange: (type: SearchType) => void;
   onBulkSearch?: (codes: string[]) => void;
-  // === Inline filters ===
+  areaOptions?: AreaOption[];
+  selectedAreaPrefix?: string;
+  onSelectedAreaPrefixChange?: (value: string) => void;
   filterPrint?: string;
   onFilterPrintChange?: (value: string) => void;
   filterCollection?: string;
@@ -61,11 +65,10 @@ interface InvoiceToolbarProps {
 }
 
 export default function InvoiceToolbar({
-  // Gán giá trị mặc định cho các prop có thể ảnh hưởng đến logic
   invoicesCount = 0,
   onExport,
   onExportPrinted,
-  invoicesPerPage = 15,
+  invoicesPerPage = 30,
   onInvoicesPerPageChange,
   onOpenAddDialog,
   selectedInvoicesCount = 0,
@@ -78,6 +81,9 @@ export default function InvoiceToolbar({
   searchType,
   onSearchTypeChange,
   onBulkSearch,
+  areaOptions = [],
+  selectedAreaPrefix = "all",
+  onSelectedAreaPrefixChange,
   filterPrint,
   onFilterPrintChange,
   filterCollection,
@@ -91,20 +97,30 @@ export default function InvoiceToolbar({
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkValue, setBulkValue] = useState("");
   const [deleteMenuAnchor, setDeleteMenuAnchor] = useState<null | HTMLElement>(null);
-  const isDeleteMenuOpen = Boolean(deleteMenuAnchor);
-
-  // === State cho dialog cập nhật hàng loạt ===
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [buField, setBuField] = useState<"recordBookCode" | "assignedTo" | "billing_period" | "collectionStatus" | "">("");
-  const [buValue, setBuValue] = useState<string>("");
+  const [buValue, setBuValue] = useState("");
+
+  const commonButtonSx = {
+    borderRadius: 2,
+    textTransform: "none",
+  };
+
+  const searchLabel = searchType === "customerCode" ? "Tim theo Ma KH" : "Tim theo Ma tram";
+  const searchPlaceholder =
+    searchType === "customerCode"
+      ? "Nhap du ma hoac vai ky tu/so cuoi"
+      : "Nhap du ma hoac doan cuoi ma tram";
 
   const handleOpenBulkUpdate = () => {
     setBuField("");
     setBuValue("");
     setIsBulkUpdateOpen(true);
   };
+
   const handleApplyBulkUpdate = () => {
     if (!onBulkUpdate || !buField) return;
+
     const updates: Record<string, unknown> = {};
     if (buField === "recordBookCode") {
       if (!buValue.trim()) return;
@@ -118,45 +134,31 @@ export default function InvoiceToolbar({
       if (buValue !== "collected" && buValue !== "not_collected") return;
       updates.collectionStatus = buValue;
     }
+
     onBulkUpdate(updates as Parameters<NonNullable<typeof onBulkUpdate>>[0]);
     setIsBulkUpdateOpen(false);
   };
 
-  // Kiểu 'sx' chung cho các nút để tránh lặp code
-  const commonButtonSx = {
-    borderRadius: 2,
-    textTransform: "none", // Giữ lại kiểu chữ thường
-  };
-
-  const searchLabel = searchType === "customerCode" ? "Tìm theo Mã KH" : "Tìm theo Mã trạm";
-
-  const handleSearchTypeChange = (event: SelectChangeEvent) => {
-    // Ép kiểu giá trị thành SearchType
+  const handleSearchTypeSelect = (event: SelectChangeEvent) => {
     onSearchTypeChange(event.target.value as SearchType);
-    // Khi thay đổi loại tìm kiếm, có thể bạn muốn xóa giá trị tìm kiếm cũ
-    if (onSearchChange) {
-      onSearchChange("");
-    }
+    onSearchChange?.("");
   };
 
   const handleProcessBulkSearch = () => {
-    if (onBulkSearch) {
-      // Tách chuỗi theo xuống dòng, dấu phẩy hoặc khoảng trắng
-      const codes = bulkValue
-        .split(/[\n, ]+/)
-        .map((code) => code.trim())
-        .filter((code) => code !== "");
+    if (!onBulkSearch) return;
 
-      // Giữ nguyên cả mã trùng để hiển thị đầy đủ khi tìm hàng loạt
-      onBulkSearch(codes);
-      setIsBulkDialogOpen(false);
-      setBulkValue(""); // Reset sau khi tìm
-    }
+    const codes = bulkValue
+      .split(/[\n, ]+/)
+      .map((code) => code.trim())
+      .filter(Boolean);
+
+    onBulkSearch(codes);
+    setIsBulkDialogOpen(false);
+    setBulkValue("");
   };
 
   return (
     <>
-      {/* --- Thanh điều khiển trên cùng --- */}
       <Box
         sx={{
           display: "flex",
@@ -183,34 +185,42 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#15803d" },
               }}
             >
-              Xuất Excel chọn lọc
+              Xuat Excel chon loc
             </Button>
           )}
-          {/* 1. Upload Excel + NPT (vàng) */}
+
           {onOpenUploadWithProvince && (
             <Button
               variant="contained"
               size="small"
               onClick={onOpenUploadWithProvince}
-              sx={{ ...commonButtonSx, backgroundColor: "#facc15", color: "#fff", "&:hover": { backgroundColor: "#eab308" } }}
+              sx={{
+                ...commonButtonSx,
+                backgroundColor: "#facc15",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#eab308" },
+              }}
             >
               Upload Excel + NPT
             </Button>
           )}
 
-          {/* 2. Cập nhật HĐ đã đóng cước (vàng) */}
           {onOpenUploadPaidInvoices && (
             <Button
               variant="contained"
               size="small"
               onClick={onOpenUploadPaidInvoices}
-              sx={{ ...commonButtonSx, backgroundColor: "#facc15", color: "#fff", "&:hover": { backgroundColor: "#eab308" } }}
+              sx={{
+                ...commonButtonSx,
+                backgroundColor: "#facc15",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#eab308" },
+              }}
             >
-              Cập nhật HĐ đã đóng cước
+              Cap nhat HD da dong cuoc
             </Button>
           )}
 
-          {/* 3. Thêm HĐ mới (vàng) */}
           {onOpenAddDialog && (
             <Button
               variant="contained"
@@ -223,25 +233,29 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#eab308" },
               }}
             >
-              Thêm HĐ mới
+              Them HD moi
             </Button>
           )}
 
-          {/* 4. Xóa HĐ (xám, menu) */}
           {(onDeleteSelected || onOpenDeleteAllModal) && (
             <>
               <Button
                 variant="contained"
                 size="small"
                 endIcon={<ArrowDropDownIcon />}
-                onClick={(e) => setDeleteMenuAnchor(e.currentTarget)}
-                sx={{ ...commonButtonSx, backgroundColor: "#6b7280", color: "#fff", "&:hover": { backgroundColor: "#4b5563" } }}
+                onClick={(event) => setDeleteMenuAnchor(event.currentTarget)}
+                sx={{
+                  ...commonButtonSx,
+                  backgroundColor: "#6b7280",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#4b5563" },
+                }}
               >
-                Xóa HĐ
+                Xoa HD
               </Button>
               <Menu
                 anchorEl={deleteMenuAnchor}
-                open={isDeleteMenuOpen}
+                open={Boolean(deleteMenuAnchor)}
                 onClose={() => setDeleteMenuAnchor(null)}
               >
                 {onDeleteSelected && (
@@ -252,7 +266,7 @@ export default function InvoiceToolbar({
                       onDeleteSelected();
                     }}
                   >
-                    Xóa HĐ đang chọn ({selectedInvoicesCount})
+                    Xoa HD dang chon ({selectedInvoicesCount})
                   </MenuItem>
                 )}
                 {onOpenDeleteAllModal && (
@@ -262,14 +276,13 @@ export default function InvoiceToolbar({
                       onOpenDeleteAllModal();
                     }}
                   >
-                    Xóa HĐ theo kỳ
+                    Xoa HD theo ky
                   </MenuItem>
                 )}
               </Menu>
             </>
           )}
 
-          {/* Cập nhật hàng loạt (xanh dương) */}
           {onBulkUpdate && (
             <Button
               variant="contained"
@@ -283,11 +296,10 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#1d4ed8" },
               }}
             >
-              Cập nhật hàng loạt ({selectedInvoicesCount})
+              Cap nhat hang loat ({selectedInvoicesCount})
             </Button>
           )}
 
-          {/* 4. Xuất Excel chọn lọc (xanh lá) */}
           {onExportPrinted && (
             <Button
               variant="contained"
@@ -303,60 +315,75 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#15803d" },
               }}
             >
-              Xuất Excel chọn lọc
+              Xuat Excel chon loc
             </Button>
           )}
         </Box>
 
-        {/* Ô chọn số lượng hiển thị */}
         {onInvoicesPerPageChange && (
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: { xs: 100, sm: 120 },
-            }}
-          >
-            <InputLabel id="invoices-per-page-label">Hiển thị</InputLabel>
+          <FormControl size="small" sx={{ minWidth: { xs: 100, sm: 120 } }}>
+            <InputLabel id="invoices-per-page-label">Hien thi</InputLabel>
             <Select
               labelId="invoices-per-page-label"
               value={invoicesPerPage}
-              label="Hiển thị"
-              onChange={(e: SelectChangeEvent<number>) => onInvoicesPerPageChange(Number(e.target.value))}
+              label="Hien thi"
+              onChange={(event: SelectChangeEvent<number>) => onInvoicesPerPageChange(Number(event.target.value))}
             >
               <MenuItem value={30}>30</MenuItem>
-              <MenuItem value={50}>50</MenuItem>
               <MenuItem value={100}>100</MenuItem>
               <MenuItem value={200}>200</MenuItem>
-              <MenuItem value={300}>300</MenuItem>
+              <MenuItem value={500}>500</MenuItem>
             </Select>
           </FormControl>
         )}
       </Box>
 
-      {/* --- Hàng 2: Tìm theo + input + Tìm hàng loạt + Filters --- */}
       <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 3 }}>
+        {onSelectedAreaPrefixChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: 180, sm: 220 } }}>
+            <InputLabel id="area-prefix-label">Xa/Phuong</InputLabel>
+            <Select
+              labelId="area-prefix-label"
+              value={selectedAreaPrefix}
+              label="Xa/Phuong"
+              onChange={(event: SelectChangeEvent) => onSelectedAreaPrefixChange(event.target.value)}
+            >
+              <MenuItem value="all">Tat ca xa/phuong</MenuItem>
+              {areaOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
         {onSearchChange && (
           <>
             <FormControl size="small" sx={{ minWidth: { xs: 110, sm: 130 } }}>
-              <InputLabel id="search-type-label">Tìm theo</InputLabel>
-              <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeChange}>
-                <MenuItem value="customerCode">Mã KH</MenuItem>
-                <MenuItem value="stationCode">Mã trạm</MenuItem>
+              <InputLabel id="search-type-label">Tim theo</InputLabel>
+              <Select
+                labelId="search-type-label"
+                value={searchType}
+                label="Tim theo"
+                onChange={handleSearchTypeSelect}
+              >
+                <MenuItem value="customerCode">Ma KH</MenuItem>
+                <MenuItem value="stationCode">Ma tram</MenuItem>
               </Select>
             </FormControl>
 
             <TextField
               label={searchLabel}
+              placeholder={searchPlaceholder}
               size="small"
               value={searchValue}
-              onChange={(e) => onSearchChange(e.target.value)}
-              inputProps={{ maxLength: 10 }}
-              sx={{ width: { xs: 140, sm: 170 } }}
+              onChange={(event) => onSearchChange(event.target.value)}
+              sx={{ width: { xs: "100%", sm: 320, md: 420 } }}
             />
           </>
         )}
 
-        {/* Nút Tìm hàng loạt */}
         {onBulkSearch && (
           <Button
             variant="outlined"
@@ -365,113 +392,111 @@ export default function InvoiceToolbar({
             onClick={() => setIsBulkDialogOpen(true)}
             sx={{ ...commonButtonSx, height: "40px" }}
           >
-            Tìm hàng loạt
+            Tim hang loat
           </Button>
         )}
 
-        {/* Filters: Trạng thái in bill / Trạng thái hóa đơn / Người phụ trách */}
         {onFilterPrintChange && (
           <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 160 } }}>
-            <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
+            <InputLabel id="filter-print-label">Trang thai in bill</InputLabel>
             <Select
               labelId="filter-print-label"
               value={filterPrint ?? "all"}
-              label="Trạng thái in bill"
-              onChange={(e: SelectChangeEvent) => onFilterPrintChange(e.target.value)}
+              label="Trang thai in bill"
+              onChange={(event: SelectChangeEvent) => onFilterPrintChange(event.target.value)}
             >
-              <MenuItem value="all">Tất cả</MenuItem>
-              <MenuItem value="printed">Đã in</MenuItem>
-              <MenuItem value="notPrinted">Chưa in</MenuItem>
+              <MenuItem value="all">Tat ca</MenuItem>
+              <MenuItem value="printed">Da in</MenuItem>
+              <MenuItem value="notPrinted">Chua in</MenuItem>
             </Select>
           </FormControl>
         )}
 
         {onFilterCollectionChange && (
-          <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 160 } }}>
-            <InputLabel id="filter-collection-label">Trạng thái hóa đơn</InputLabel>
+          <FormControl size="small" sx={{ minWidth: { xs: 160, sm: 180 } }}>
+            <InputLabel id="filter-collection-label">Trang thai hoa don</InputLabel>
             <Select
               labelId="filter-collection-label"
-              value={filterCollection ?? "all"}
-              label="Trạng thái hóa đơn"
-              onChange={(e: SelectChangeEvent) => onFilterCollectionChange(e.target.value)}
+              value={filterCollection ?? "collected_today"}
+              label="Trang thai hoa don"
+              onChange={(event: SelectChangeEvent) => onFilterCollectionChange(event.target.value)}
             >
-              <MenuItem value="all">Tất cả</MenuItem>
-              <MenuItem value="collected">Đã thu</MenuItem>
-              <MenuItem value="not_collected">Chưa thu</MenuItem>
-              <MenuItem value="is_paid">Đã đóng cước</MenuItem>
-              <MenuItem value="duplicates" sx={{ color: "#ef4444", fontWeight: 600 }}>Mã trùng</MenuItem>
+              <MenuItem value="collected_today">Da thu hom nay</MenuItem>
+              <MenuItem value="collected">Tat ca da thu</MenuItem>
+              <MenuItem value="all">Danh sach day du</MenuItem>
+              <MenuItem value="not_collected">Chua thu</MenuItem>
+              <MenuItem value="is_paid">Da dong cuoc</MenuItem>
+              <MenuItem value="duplicates" sx={{ color: "#ef4444", fontWeight: 600 }}>
+                Ma trung
+              </MenuItem>
             </Select>
           </FormControl>
         )}
 
         {onFilterAssignedUserChange && (
           <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 160 } }}>
-            <InputLabel id="assigned-user-label">Người phụ trách</InputLabel>
+            <InputLabel id="assigned-user-label">Nguoi phu trach</InputLabel>
             <Select
               labelId="assigned-user-label"
               value={filterAssignedUser ?? "all"}
-              label="Người phụ trách"
-              onChange={(e: SelectChangeEvent) => onFilterAssignedUserChange(e.target.value)}
+              label="Nguoi phu trach"
+              onChange={(event: SelectChangeEvent) => onFilterAssignedUserChange(event.target.value)}
             >
-              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="all">Tat ca</MenuItem>
               {userData.map((user) => (
                 <MenuItem key={user._id} value={user._id}>
                   {user.fullName || user.email}
                 </MenuItem>
               ))}
-              <MenuItem value="no_one">Chưa phụ trách</MenuItem>
+              <MenuItem value="no_one">Chua phu trach</MenuItem>
             </Select>
           </FormControl>
         )}
       </Box>
 
-      {/* --- DIALOG NHẬP MÃ HÀNG LOẠT --- */}
       <Dialog open={isBulkDialogOpen} onClose={() => setIsBulkDialogOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 1 }}>
-          <SearchIcon color="primary" /> Tìm kiếm hàng loạt mã
+          <SearchIcon color="primary" /> Tim kiem hang loat ma
         </DialogTitle>
         <DialogContent dividers>
           <TextField
             fullWidth
             multiline
             rows={20}
-            placeholder={`Ví dụ:\nPB07090005082\nPB07090024645\nPB05030075757\n...`}
+            placeholder={`Vi du:\nPB07090005082\nPB07090024645\nPB05030075757\n...`}
             variant="outlined"
             value={bulkValue}
-            onChange={(e) => setBulkValue(e.target.value)}
+            onChange={(event) => setBulkValue(event.target.value)}
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setIsBulkDialogOpen(false)} color="inherit">
-            Hủy bỏ
+            Huy bo
           </Button>
           <Button onClick={handleProcessBulkSearch} variant="contained" color="primary" disabled={!bulkValue.trim()}>
-            Tìm kiếm ngay
+            Tim kiem ngay
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* --- DIALOG CẬP NHẬT HÀNG LOẠT --- */}
       <Dialog open={isBulkUpdateOpen} onClose={() => setIsBulkUpdateOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontWeight: "bold" }}>
-          Cập nhật hàng loạt ({selectedInvoicesCount} hoá đơn)
-        </DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Cap nhat hang loat ({selectedInvoicesCount} hoa don)</DialogTitle>
         <DialogContent dividers>
           <FormControl fullWidth size="small" sx={{ mt: 1, mb: 2 }}>
-            <InputLabel id="bu-field-label">Trường cần cập nhật</InputLabel>
+            <InputLabel id="bu-field-label">Truong can cap nhat</InputLabel>
             <Select
               labelId="bu-field-label"
-              label="Trường cần cập nhật"
+              label="Truong can cap nhat"
               value={buField}
-              onChange={(e) => {
-                setBuField(e.target.value as typeof buField);
+              onChange={(event) => {
+                setBuField(event.target.value as typeof buField);
                 setBuValue("");
               }}
             >
-              <MenuItem value="recordBookCode">Mã trạm</MenuItem>
-              <MenuItem value="assignedTo">Người phụ trách</MenuItem>
-              <MenuItem value="billing_period">Kỳ TT</MenuItem>
-              <MenuItem value="collectionStatus">Trạng thái thu</MenuItem>
+              <MenuItem value="recordBookCode">Ma tram</MenuItem>
+              <MenuItem value="assignedTo">Nguoi phu trach</MenuItem>
+              <MenuItem value="billing_period">Ky TT</MenuItem>
+              <MenuItem value="collectionStatus">Trang thai thu</MenuItem>
             </Select>
           </FormControl>
 
@@ -479,24 +504,24 @@ export default function InvoiceToolbar({
             <TextField
               fullWidth
               size="small"
-              label="Mã trạm mới"
+              label="Ma tram moi"
               value={buValue}
-              onChange={(e) => setBuValue(e.target.value)}
+              onChange={(event) => setBuValue(event.target.value)}
             />
           )}
 
           {buField === "billing_period" && (
             <FormControl fullWidth size="small">
-              <InputLabel id="bu-bp-label">Kỳ TT</InputLabel>
+              <InputLabel id="bu-bp-label">Ky TT</InputLabel>
               <Select
                 labelId="bu-bp-label"
-                label="Kỳ TT"
+                label="Ky TT"
                 value={buValue}
-                onChange={(e) => setBuValue(String(e.target.value))}
+                onChange={(event) => setBuValue(String(event.target.value))}
               >
-                {billingPeriods.map((p) => (
-                  <MenuItem key={p} value={p}>
-                    {p}
+                {billingPeriods.map((period) => (
+                  <MenuItem key={period} value={period}>
+                    {period}
                   </MenuItem>
                 ))}
               </Select>
@@ -505,17 +530,17 @@ export default function InvoiceToolbar({
 
           {buField === "assignedTo" && (
             <FormControl fullWidth size="small">
-              <InputLabel id="bu-au-label">Người phụ trách</InputLabel>
+              <InputLabel id="bu-au-label">Nguoi phu trach</InputLabel>
               <Select
                 labelId="bu-au-label"
-                label="Người phụ trách"
+                label="Nguoi phu trach"
                 value={buValue}
-                onChange={(e) => setBuValue(String(e.target.value))}
+                onChange={(event) => setBuValue(String(event.target.value))}
               >
-                <MenuItem value="">(Bỏ trống / Chưa gán)</MenuItem>
-                {userData.map((u) => (
-                  <MenuItem key={u._id} value={u._id}>
-                    {u.fullName}
+                <MenuItem value="">(Bo trong / Chua gan)</MenuItem>
+                {userData.map((user) => (
+                  <MenuItem key={user._id} value={user._id}>
+                    {user.fullName}
                   </MenuItem>
                 ))}
               </Select>
@@ -524,22 +549,22 @@ export default function InvoiceToolbar({
 
           {buField === "collectionStatus" && (
             <FormControl fullWidth size="small">
-              <InputLabel id="bu-cs-label">Trạng thái thu</InputLabel>
+              <InputLabel id="bu-cs-label">Trang thai thu</InputLabel>
               <Select
                 labelId="bu-cs-label"
-                label="Trạng thái thu"
+                label="Trang thai thu"
                 value={buValue}
-                onChange={(e) => setBuValue(String(e.target.value))}
+                onChange={(event) => setBuValue(String(event.target.value))}
               >
-                <MenuItem value="collected">Đã thu</MenuItem>
-                <MenuItem value="not_collected">Chưa thu</MenuItem>
+                <MenuItem value="collected">Da thu</MenuItem>
+                <MenuItem value="not_collected">Chua thu</MenuItem>
               </Select>
             </FormControl>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setIsBulkUpdateOpen(false)} color="inherit">
-            Hủy
+            Huy
           </Button>
           <Button
             onClick={handleApplyBulkUpdate}
@@ -551,7 +576,7 @@ export default function InvoiceToolbar({
                 !buValue)
             }
           >
-            Áp dụng
+            Ap dung
           </Button>
         </DialogActions>
       </Dialog>

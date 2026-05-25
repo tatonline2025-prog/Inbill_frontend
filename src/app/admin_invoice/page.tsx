@@ -1,27 +1,27 @@
-// app/admin/invoices/page.tsx
-
 "use client";
 
 import { Box, Button, Pagination } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
+import toast from "react-hot-toast";
+
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AddInvoiceDialog from "@/components/AddInvoiceDialog";
 import EditInvoiceDialog from "@/components/EditInvoiceDialog";
 import UploadInvoiceWithProvinceDialog from "@/components/UploadInvoiceWithProvinceDialog";
+import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
 import DeleteAllInvoicesDialog from "@/components/invoices/DeleteAllInvoicesDialog";
-
-// Import Custom Hook
-import { useInvoiceManagement } from "@/hooks/useInvoiceManagement";
-
-// Import các component con
 import InvoiceToolbar from "@/components/invoices/InvoiceToolbar";
 import InvoiceSummary from "@/components/invoices/InvoiceSummary";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
 import InvoiceActionMenu from "@/components/invoices/InvoiceActionMenu";
-import ExportModals from "@/components/invoices/ExportModals"; // Component mới
-import toast from "react-hot-toast";
-import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
-import { fetchInvoicesForCopyAPI, syncDuplicateInvoices_API, cleanupRedundantDuplicates_API } from "@/services/invoice.api";
+import ExportModals from "@/components/invoices/ExportModals";
+import { useInvoiceManagement } from "@/hooks/useInvoiceManagement";
+import { toDateKeyVN } from "@/lib/date-vn";
+import {
+  cleanupRedundantDuplicates_API,
+  fetchInvoicesForCopyAPI,
+  syncDuplicateInvoices_API,
+} from "@/services/invoice.api";
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (typeof error === "object" && error !== null) {
@@ -51,6 +51,7 @@ export default function InvoicesPage() {
     filterAssignedUser,
     isPaidFilter,
     selectedProvince,
+    selectedAreaPrefix,
     searchType,
     searchValue,
     sortField,
@@ -72,13 +73,11 @@ export default function InvoicesPage() {
     selectedCollectedUsers,
     collectedStatus,
     closingStatus,
-
     billingPeriods,
-
+    areaOptions,
     setFilterPrint,
-    setFilterCollection,
     setFilterAssignedUser,
-    setIsPaidFilter,
+    setSelectedAreaPrefix,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,
@@ -92,11 +91,11 @@ export default function InvoicesPage() {
     setSelectedCollectedUsers,
     setCollectedStatus,
     setClosingStatus,
-
     reloadInvoices,
     handleInvoicesPerPageChange,
     handlePageChange,
     createFilterChangeHandler,
+    handleCollectionFilterChange,
     handleSearchTypeChange,
     handleSearchChange,
     handleBulkSearch,
@@ -115,7 +114,6 @@ export default function InvoicesPage() {
     handleExportPrinted,
     handleExportByUserConfirm,
     handleExportCollectedConfirm,
-
     openExportModal,
     setOpenExportModal,
     selectedUsers,
@@ -126,24 +124,27 @@ export default function InvoicesPage() {
     setPaymentStatus,
   } = useInvoiceManagement();
 
-  if (error) return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
+  if (error) {
+    return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
+  }
 
   const fetchAllInvoicesForCopy = async () => {
-    // Gọi API lấy TẤT CẢ hóa đơn theo filter hiện tại (bỏ qua page/limit)
-    const response = await fetchInvoicesForCopyAPI(
+    return fetchInvoicesForCopyAPI(
       filterPrint,
       filterCollection,
       filterAssignedUser,
       isPaidFilter,
-      selectedProvince
+      selectedProvince,
+      selectedAreaPrefix,
+      searchType,
+      searchValue.trim(),
+      filterCollection === "collected_today" ? toDateKeyVN() : undefined
     );
-    return response;
   };
 
   return (
     <ProtectedRoute fallback={<p>Redirecting...</p>}>
       <Box sx={{ p: 4 }}>
-        {/* === TOOLBAR === */}
         <InvoiceToolbar
           invoicesCount={invoices.length}
           onExport={handleExportPrinted}
@@ -155,25 +156,19 @@ export default function InvoicesPage() {
           onOpenDeleteAllModal={() => setOpenDeleteAllModal(true)}
           onOpenUploadWithProvince={() => setOpenUploadWithProvince(true)}
           onOpenUploadPaidInvoices={() => setOpenUploadPaidInvoice(true)}
+          areaOptions={areaOptions}
+          selectedAreaPrefix={selectedAreaPrefix}
+          onSelectedAreaPrefixChange={createFilterChangeHandler(setSelectedAreaPrefix)}
           searchType={searchType}
           onSearchTypeChange={handleSearchTypeChange}
-          searchValue={searchValue} // Dùng searchValue
+          searchValue={searchValue}
           onSearchChange={handleSearchChange}
           onOpenExportByUser={() => setOpenExportByUser(true)}
           onBulkSearch={handleBulkSearch}
           filterPrint={filterPrint}
           onFilterPrintChange={createFilterChangeHandler(setFilterPrint)}
           filterCollection={isPaidFilter ? "is_paid" : filterCollection}
-          onFilterCollectionChange={(value) => {
-            // Khi chọn "Đã đóng cước" → bật isPaidFilter và reset filterCollection về "all"
-            if (value === "is_paid") {
-              setIsPaidFilter(true);
-              setFilterCollection("all");
-            } else {
-              setIsPaidFilter(false);
-              setFilterCollection(value);
-            }
-          }}
+          onFilterCollectionChange={handleCollectionFilterChange}
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
           userData={userData}
@@ -181,7 +176,6 @@ export default function InvoicesPage() {
           billingPeriods={billingPeriods}
         />
 
-        {/* Nút đồng bộ + dọn mã trùng */}
         {filterCollection === "duplicates" && (
           <Box sx={{ mt: 1, display: "flex", gap: 1, justifyContent: "flex-end" }}>
             <Button
@@ -190,45 +184,44 @@ export default function InvoicesPage() {
               color="warning"
               startIcon={<SyncIcon />}
               onClick={async () => {
-                if (!confirm("Đồng bộ thông tin (tên KH, địa chỉ, mã trạm, SĐT, tỉnh) giữa các hóa đơn cùng mã KH — copy field trống từ 'anh em' có dữ liệu. Tiếp tục?")) return;
-                const t = toast.loading("Đang đồng bộ mã trùng...");
+                if (!confirm("Dong bo thong tin giua cac hoa don trung ma KH. Tiep tuc?")) return;
+                const loadingToast = toast.loading("Dang dong bo ma trung...");
                 try {
                   const res = await syncDuplicateInvoices_API();
-                  toast.dismiss(t);
-                  toast.success(res.data?.message || "Đã đồng bộ.");
+                  toast.dismiss(loadingToast);
+                  toast.success(res.data?.message || "Da dong bo.");
                   reloadInvoices();
-                } catch (error: unknown) {
-                  toast.dismiss(t);
-                  toast.error(getErrorMessage(error, "Đồng bộ thất bại."));
+                } catch (submitError: unknown) {
+                  toast.dismiss(loadingToast);
+                  toast.error(getErrorMessage(submitError, "Dong bo that bai."));
                 }
               }}
             >
-              Đồng bộ thông tin mã trùng
+              Dong bo thong tin ma trung
             </Button>
             <Button
               size="small"
               variant="outlined"
               color="error"
               onClick={async () => {
-                if (!confirm("Xóa bớt hóa đơn trùng đã đồng bộ giống hệt nhau và CHƯA tương tác (chưa thu, chưa in, chưa đóng cước). Hành động này không hoàn tác được. Tiếp tục?")) return;
-                const t = toast.loading("Đang dọn mã trùng...");
+                if (!confirm("Xoa bot hoa don trung da dong bo giong nhau va chua tuong tac. Tiep tuc?")) return;
+                const loadingToast = toast.loading("Dang don ma trung...");
                 try {
                   const res = await cleanupRedundantDuplicates_API();
-                  toast.dismiss(t);
-                  toast.success(res.data?.message || "Đã dọn.");
+                  toast.dismiss(loadingToast);
+                  toast.success(res.data?.message || "Da don.");
                   reloadInvoices();
-                } catch (error: unknown) {
-                  toast.dismiss(t);
-                  toast.error(getErrorMessage(error, "Dọn thất bại."));
+                } catch (submitError: unknown) {
+                  toast.dismiss(loadingToast);
+                  toast.error(getErrorMessage(submitError, "Don that bai."));
                 }
               }}
             >
-              Xóa mã trùng chưa tương tác
+              Xoa ma trung chua tuong tac
             </Button>
           </Box>
         )}
 
-        {/* === SUMMARY === */}
         <InvoiceSummary
           filterAssignedUser={filterAssignedUser}
           totalUsers={userData.length}
@@ -240,7 +233,6 @@ export default function InvoicesPage() {
           isPaid={collectSummary?.isPaid}
         />
 
-        {/* === DATA TABLE === */}
         <Box sx={{ overflowX: "auto" }}>
           <InvoiceTable
             loading={loading}
@@ -260,7 +252,6 @@ export default function InvoicesPage() {
             onFetchAllData={fetchAllInvoicesForCopy}
           />
 
-          {/* --- Phân trang --- */}
           {!loading && invoices.length > 0 && (
             <Box
               sx={{
@@ -284,7 +275,6 @@ export default function InvoicesPage() {
         </Box>
       </Box>
 
-      {/* === ACTION MENU === */}
       <InvoiceActionMenu
         anchorEl={anchorEl}
         selectedInvoice={selectedInvoice}
@@ -293,13 +283,12 @@ export default function InvoicesPage() {
         onDeleteSuccess={reloadInvoices}
       />
 
-      {/* === DIALOGS KHÁC === */}
       <AddInvoiceDialog
         open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
         onSuccess={() => {
           reloadInvoices();
-          toast.success("Thêm hoá đơn thành công!");
+          toast.success("Them hoa don thanh cong!");
         }}
         assignedUsers={userData}
       />
@@ -322,9 +311,7 @@ export default function InvoicesPage() {
       <UploadPaidInvoicesDialog
         open={openUploadpaidInvoice}
         onClose={() => setOpenUploadPaidInvoice(false)}
-        onSuccess={() => {
-          reloadInvoices();
-        }}
+        onSuccess={reloadInvoices}
       />
 
       <DeleteAllInvoicesDialog
@@ -334,7 +321,6 @@ export default function InvoicesPage() {
         onDeleteSuccess={reloadInvoices}
       />
 
-      {/* === EXPORT MODALS (Tách ra) === */}
       <ExportModals
         userData={userData}
         openExportByUser={openExportByUser}

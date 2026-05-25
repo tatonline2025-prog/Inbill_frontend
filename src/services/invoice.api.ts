@@ -106,7 +106,9 @@ export const fetchallInvoice = async (
   sortDirection?: "asc" | "desc",
   isPaid?: boolean,
   onlyDuplicates?: boolean,
-  customerName?: string
+  customerName?: string,
+  collectionDate?: string,
+  areaPrefix?: string
 ) => {
   const token = localStorage.getItem("token");
 
@@ -126,6 +128,8 @@ export const fetchallInvoice = async (
       sortDirection,
       isPaid,
       onlyDuplicates: onlyDuplicates ? "true" : undefined,
+      collectionDate,
+      areaPrefix,
     },
     headers: {
       Authorization: `Bearer ${token}`,
@@ -472,7 +476,11 @@ export const fetchInvoicesForCopyAPI = async (
   filterCollection: string,
   filterAssignedUser: string,
   isPaidFilter?: boolean,
-  selectedProvince?: string
+  selectedProvince?: string,
+  areaPrefix?: string,
+  searchType?: "customerCode" | "stationCode",
+  searchValue?: string,
+  collectionDate?: string
 ) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chua dang nhap");
@@ -484,6 +492,10 @@ export const fetchInvoicesForCopyAPI = async (
       filterAssignedUser,
       isPaidFilter,
       selectedProvince,
+      areaPrefix,
+      searchType,
+      searchValue,
+      collectionDate,
     },
     headers: { Authorization: `Bearer ${token}` },
   });

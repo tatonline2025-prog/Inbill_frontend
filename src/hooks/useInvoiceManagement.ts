@@ -20,9 +20,14 @@ import { PROVINCES, generateBillingPeriods } from "@/constants/invoice.constants
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 import { getApiBaseUrl } from "@/lib/api-base-url";
 import { toDateKeyVN, toISOStringVN } from "@/lib/date-vn";
+import { useAreaPrefixMap } from "@/hooks/useAreaPrefixMap";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
+type AreaFilterOption = {
+  value: string;
+  label: string;
+};
 
 // Custom hook Debounce (tạm thời đặt ở đây)
 const useDebounce = (value: string, delay: number) => {
@@ -53,9 +58,10 @@ export const useInvoiceManagement = () => {
 
   // --- State Bộ lọc ---
   const [filterPrint, setFilterPrint] = useState("all");
-  const [filterCollection, setFilterCollection] = useState("all");
+  const [filterCollection, setFilterCollection] = useState("collected_today");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("all");
+  const [selectedAreaPrefix, setSelectedAreaPrefix] = useState("all");
   const [isPaidFilter, setIsPaidFilter] = useState(false);
 
   // --- State Tìm kiếm & Sắp xếp ---
@@ -105,6 +111,22 @@ export const useInvoiceManagement = () => {
   // --- Hằng số ---
   const billingPeriods = useMemo(() => generateBillingPeriods(), []);
   const provinces = useMemo(() => PROVINCES, []);
+  const { configs: areaConfigs } = useAreaPrefixMap();
+  const areaOptions = useMemo<AreaFilterOption[]>(() => {
+    const sortedConfigs = [...areaConfigs].sort(
+      (a, b) => a.area.localeCompare(b.area, "vi") || a.prefix.localeCompare(b.prefix, "vi")
+    );
+    const areaNameCounts = new Map<string, number>();
+
+    sortedConfigs.forEach((config) => {
+      areaNameCounts.set(config.area, (areaNameCounts.get(config.area) ?? 0) + 1);
+    });
+
+    return sortedConfigs.map((config) => ({
+      value: config.prefix,
+      label: (areaNameCounts.get(config.area) ?? 0) > 1 ? `${config.area} (${config.prefix})` : config.area,
+    }));
+  }, [areaConfigs]);
 
   // --- Logic Fetch Dữ liệu ---
 
@@ -117,12 +139,20 @@ export const useInvoiceManagement = () => {
       const sortDirectionToSend = sortDirection !== "none" ? sortDirection : undefined;
 
       const searchParams: { customerCode?: string; stationCode?: string } = {};
+      const normalizedSearchValue = debouncedSearchValue.trim();
+      const collectionStatusParam =
+        filterCollection === "not_collected"
+          ? "not_collected"
+          : filterCollection === "collected" || filterCollection === "collected_today"
+          ? "collected"
+          : undefined;
+      const collectionDateParam = filterCollection === "collected_today" ? today : undefined;
 
-      if (debouncedSearchValue) {
+      if (normalizedSearchValue) {
         if (searchType === "customerCode") {
-          searchParams.customerCode = debouncedSearchValue;
+          searchParams.customerCode = normalizedSearchValue;
         } else if (searchType === "stationCode") {
-          searchParams.stationCode = debouncedSearchValue;
+          searchParams.stationCode = normalizedSearchValue;
         }
       }
 
@@ -130,9 +160,7 @@ export const useInvoiceManagement = () => {
         page,
         perPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
-        filterCollection === "collected" || filterCollection === "not_collected"
-          ? filterCollection
-          : undefined,
+        collectionStatusParam,
         filterAssignedUser !== "all" ? filterAssignedUser : undefined,
         selectedProvince !== "all" ? selectedProvince : undefined,
         searchParams.customerCode,
@@ -141,7 +169,10 @@ export const useInvoiceManagement = () => {
         sortFieldToSend,
         sortDirectionToSend,
         isPaidFilter,
-        filterCollection === "duplicates"
+        filterCollection === "duplicates",
+        undefined,
+        collectionDateParam,
+        selectedAreaPrefix !== "all" ? selectedAreaPrefix : undefined
       );
 
       setTotalPages(res.data.pagination.totalPages);
@@ -167,7 +198,9 @@ export const useInvoiceManagement = () => {
     filterCollection,
     filterAssignedUser,
     selectedProvince,
+    selectedAreaPrefix,
     isPaidFilter,
+    today,
   ]);
 
   const fetchCollectSummary = useCallback(async () => {
@@ -268,8 +301,24 @@ export const useInvoiceManagement = () => {
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
-    // KHÔNG setCurrentPage(1) ở đây để input không bị giật,
-    // việc gọi API và reset page sẽ do useEffect(debouncedSearchValue) đảm nhiệm
+    setCurrentPage(1);
+    if (isBulkSearchActive) {
+      setIsBulkSearchActive(false);
+      setBulkSearchCodes([]);
+    }
+  };
+
+  const handleCollectionFilterChange = (value: string) => {
+    if (value === "is_paid") {
+      setIsPaidFilter(true);
+      setFilterCollection("all");
+    } else {
+      setIsPaidFilter(false);
+      setFilterCollection(value);
+    }
+    setCurrentPage(1);
+    setIsBulkSearchActive(false);
+    setBulkSearchCodes([]);
   };
 
   const handleBulkSearch = async (codes: string[]) => {
@@ -518,18 +567,27 @@ export const useInvoiceManagement = () => {
       return;
     }
     const params = new URLSearchParams();
+    const normalizedSearchValue = searchValue.trim();
+    const exportCollectionStatus =
+      filterCollection === "collected_today"
+        ? "collected"
+        : filterCollection === "collected" || filterCollection === "not_collected"
+        ? filterCollection
+        : collectionStatus !== "all"
+        ? collectionStatus
+        : undefined;
 
     if (selectedUsers.length > 0) {
       params.append("userIds", selectedUsers.join(","));
     }
-    if (collectionStatus !== "all") {
-      params.append("collectionStatus", collectionStatus);
+    if (exportCollectionStatus) {
+      params.append("collectionStatus", exportCollectionStatus);
     }
     if (paymentStatus !== "all") {
       params.append("paymentStatus", paymentStatus);
     }
     if (filterPrint !== "all") {
-      params.append("printStatus", filterPrint);
+      params.append("printStatus", filterPrint === "notPrinted" ? "not_printed" : "printed");
     }
     if (filterAssignedUser !== "all") {
       params.append("assignedUserId", filterAssignedUser);
@@ -537,12 +595,18 @@ export const useInvoiceManagement = () => {
     if (selectedProvince !== "all") {
       params.append("province", selectedProvince);
     }
-    if (searchValue) {
+    if (selectedAreaPrefix !== "all") {
+      params.append("areaPrefix", selectedAreaPrefix);
+    }
+    if (normalizedSearchValue) {
       if (searchType === "customerCode") {
-        params.append("customerCode", searchValue);
+        params.append("customerCode", normalizedSearchValue);
       } else if (searchType === "stationCode") {
-        params.append("stationCode", searchValue);
+        params.append("stationCode", normalizedSearchValue);
       }
+    }
+    if (filterCollection === "collected_today") {
+      params.append("collectionDate", today);
     }
     if (isPaidFilter) {
       params.append("isPaid", "true");
@@ -720,6 +784,7 @@ export const useInvoiceManagement = () => {
     filterCollection,
     filterAssignedUser,
     selectedProvince,
+    selectedAreaPrefix,
     searchType,
     searchValue,
     sortField,
@@ -745,6 +810,7 @@ export const useInvoiceManagement = () => {
     // Hằng số
     billingPeriods,
     provinces,
+    areaOptions,
 
     // Setters
     setFilterPrint,
@@ -753,6 +819,7 @@ export const useInvoiceManagement = () => {
     setIsPaidFilter,
     isPaidFilter,
     setSelectedProvince,
+    setSelectedAreaPrefix,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,
@@ -772,6 +839,7 @@ export const useInvoiceManagement = () => {
     handleInvoicesPerPageChange,
     handlePageChange,
     createFilterChangeHandler,
+    handleCollectionFilterChange,
     handleSearchTypeChange,
     handleSearchChange,
     handleBulkSearch,
