@@ -1,21 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+import { useAuth } from "@/hooks/useAuth";
 import { dailyCollectionSummaryAPI, IDailyCollectionSummary } from "@/services/invoice.api";
 import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
-import { useAuth } from "@/hooks/useAuth";
 
-// Lấy ngày dạng "YYYY-MM-DD" tính theo giờ VN
-function toVNDateStr(d: Date) {
-  return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+function toVNDateStr(date: Date) {
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
 }
 
 export default function DailyCollectionTable() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // ── Filter states ──────────────────────────────────────────────
   const [mode, setMode] = useState<"days" | "range">("days");
   const [days, setDays] = useState(31);
   const today = toVNDateStr(new Date());
@@ -23,33 +22,29 @@ export default function DailyCollectionTable() {
   const [dateTo, setDateTo] = useState(today);
   const [assignedUserId, setAssignedUserId] = useState("all");
 
-  // ── Data states ────────────────────────────────────────────────
   const [rows, setRows] = useState<IDailyCollectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<IUser[]>([]);
 
-  // ── Fetch danh sách user (chỉ admin) ──────────────────────────
   useEffect(() => {
     if (!isAdmin) return;
+
     fetchallUser()
-      .then((res) => setUsers(res.data.user.filter((u) => u.usertype === "internal")))
+      .then((response) => setUsers(response.data.user.filter((item) => item.usertype === "internal")))
       .catch(() => {});
   }, [isAdmin]);
 
-  // ── Fetch dữ liệu thống kê ─────────────────────────────────────
   const load = async () => {
     try {
       setLoading(true);
       setError(null);
-      const params =
-        mode === "range"
-          ? { dateFrom, dateTo, assignedUserId }
-          : { days, assignedUserId };
-      const res = await dailyCollectionSummaryAPI(params);
-      setRows(res.data);
-    } catch (e) {
-      console.error(e);
+
+      const params = mode === "range" ? { dateFrom, dateTo, assignedUserId } : { days, assignedUserId };
+      const response = await dailyCollectionSummaryAPI(params);
+      setRows(response.data);
+    } catch (loadError) {
+      console.error(loadError);
       setError("Không tải được dữ liệu thống kê.");
     } finally {
       setLoading(false);
@@ -57,22 +52,19 @@ export default function DailyCollectionTable() {
   };
 
   useEffect(() => {
-    load();
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Tổng hợp
-  const totalCount = rows.reduce((s, r) => s + r.totalCount, 0);
-  const totalAmount = rows.reduce((s, r) => s + r.totalAmount, 0);
+  const totalCount = rows.reduce((sum, row) => sum + row.totalCount, 0);
+  const totalAmount = rows.reduce((sum, row) => sum + row.totalAmount, 0);
 
   return (
-    <div className="w-full max-w-4xl bg-white shadow-lg rounded-2xl p-4 sm:p-6">
-      {/* ── Bộ lọc ── */}
+    <div className="w-full max-w-4xl rounded-2xl bg-white p-4 shadow-lg sm:p-6">
       <div className="mb-4 space-y-3">
-        {/* Chọn chế độ */}
-        <div className="flex gap-3 flex-wrap items-center">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-semibold text-gray-600">Chế độ:</span>
-          <label className="flex items-center gap-1 text-sm cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-1 text-sm">
             <input
               type="radio"
               name="mode"
@@ -82,7 +74,7 @@ export default function DailyCollectionTable() {
             />
             N ngày gần nhất
           </label>
-          <label className="flex items-center gap-1 text-sm cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-1 text-sm">
             <input
               type="radio"
               name="mode"
@@ -94,42 +86,43 @@ export default function DailyCollectionTable() {
           </label>
         </div>
 
-        {/* Filter row */}
-        <div className="flex flex-wrap gap-3 items-end">
+        <div className="flex flex-wrap items-end gap-3">
           {mode === "days" ? (
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Số ngày</label>
+              <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Số ngày</label>
               <select
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
+                onChange={(event) => setDays(Number(event.target.value))}
               >
-                {[7, 14, 31, 60, 90].map((d) => (
-                  <option key={d} value={d}>{d} ngày</option>
+                {[7, 14, 31, 60, 90].map((value) => (
+                  <option key={value} value={value}>
+                    {value} ngày
+                  </option>
                 ))}
               </select>
             </div>
           ) : (
             <>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Từ ngày</label>
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Từ ngày</label>
                 <input
                   type="date"
-                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={dateFrom}
                   max={dateTo}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  onChange={(event) => setDateFrom(event.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Đến ngày</label>
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Đến ngày</label>
                 <input
                   type="date"
-                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={dateTo}
                   min={dateFrom}
                   max={today}
-                  onChange={(e) => setDateTo(e.target.value)}
+                  onChange={(event) => setDateTo(event.target.value)}
                 />
               </div>
             </>
@@ -137,40 +130,56 @@ export default function DailyCollectionTable() {
 
           {isAdmin && (
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Người phụ trách</label>
+              <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Người phụ trách</label>
               <select
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                className="min-w-[160px] rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={assignedUserId}
-                onChange={(e) => setAssignedUserId(e.target.value)}
+                onChange={(event) => setAssignedUserId(event.target.value)}
               >
                 <option value="all">Tất cả</option>
-                {users.map((u) => (
-                  <option key={u._id} value={u._id}>{u.fullName || u.username}</option>
+                {users.map((item) => (
+                  <option key={item._id} value={item._id}>
+                    {item.fullName || item.username}
+                  </option>
                 ))}
               </select>
             </div>
           )}
 
           <button
-            className="bg-blue-600 text-white font-bold px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-blue-600 px-5 py-2 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
             onClick={load}
             disabled={loading}
           >
-            {loading ? "Đang tải..." : "🔍 Xem"}
+            {loading ? "Đang tải..." : "Xem"}
           </button>
         </div>
       </div>
 
-      {error && <p className="text-center text-red-600 mb-2">{error}</p>}
+      {error && <p className="mb-2 text-center text-red-600">{error}</p>}
 
-      {/* ── Bảng kết quả ── */}
+      {!loading && rows.length > 0 && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <div className="text-xs font-bold uppercase tracking-wide text-blue-600">Tổng số đơn</div>
+            <div className="mt-1 text-2xl font-bold text-blue-900">{totalCount.toLocaleString("vi-VN")}</div>
+          </div>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+            <div className="text-xs font-bold uppercase tracking-wide text-emerald-600">Tổng tiền</div>
+            <div className="mt-1 text-2xl font-bold text-emerald-900">
+              {totalAmount.toLocaleString("vi-VN")}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap">Ngày</th>
-              <th className="border border-gray-300 px-3 py-2 text-right font-semibold whitespace-nowrap">Tổng HĐ</th>
-              <th className="border border-gray-300 px-3 py-2 text-right font-semibold whitespace-nowrap">Tổng tiền</th>
+              <th className="whitespace-nowrap border border-gray-300 px-3 py-2 text-left font-semibold">Ngày</th>
+              <th className="whitespace-nowrap border border-gray-300 px-3 py-2 text-right font-semibold">Tổng HĐ</th>
+              <th className="whitespace-nowrap border border-gray-300 px-3 py-2 text-right font-semibold">Tổng tiền</th>
               <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Người phụ trách</th>
             </tr>
           </thead>
@@ -182,38 +191,28 @@ export default function DailyCollectionTable() {
                 </td>
               </tr>
             )}
-            {!loading && rows.map((r) => {
-              const empty = r.totalCount === 0;
-              return (
-                <tr key={r.date} className={empty ? "text-gray-300" : ""}>
-                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap">{r.date}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-right whitespace-nowrap">
-                    {empty ? "" : r.totalCount.toLocaleString("vi-VN")}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right whitespace-nowrap">
-                    {empty ? "" : r.totalAmount.toLocaleString("vi-VN")}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2">
-                    {empty ? "" : r.assignedUsers.filter(Boolean).join(", ")}
-                  </td>
-                </tr>
-              );
-            })}
+
+            {!loading &&
+              rows.map((row) => {
+                const isEmpty = row.totalCount === 0;
+                return (
+                  <tr key={row.date} className={isEmpty ? "text-gray-300" : ""}>
+                    <td className="whitespace-nowrap border border-gray-300 px-3 py-2">{row.date}</td>
+                    <td className="whitespace-nowrap border border-gray-300 px-3 py-2 text-right">
+                      {isEmpty ? "" : row.totalCount.toLocaleString("vi-VN")}
+                    </td>
+                    <td className="whitespace-nowrap border border-gray-300 px-3 py-2 text-right">
+                      {isEmpty ? "" : row.totalAmount.toLocaleString("vi-VN")}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      {isEmpty ? "" : row.assignedUsers.filter(Boolean).join(", ")}
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
-          {/* Dòng tổng */}
-          {!loading && rows.length > 0 && (
-            <tfoot>
-              <tr className="bg-blue-50 font-semibold">
-                <td className="border border-gray-300 px-3 py-2">Tổng cộng</td>
-                <td className="border border-gray-300 px-3 py-2 text-right">{totalCount.toLocaleString("vi-VN")}</td>
-                <td className="border border-gray-300 px-3 py-2 text-right">{totalAmount.toLocaleString("vi-VN")}</td>
-                <td className="border border-gray-300 px-3 py-2"></td>
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
     </div>
   );
 }
-
