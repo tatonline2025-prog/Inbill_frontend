@@ -465,7 +465,7 @@ export const deleteInvoicesByBillingPeriodAndUser_API = async (
   assignedUserId?: string
 ) => {
   const token = localStorage.getItem("token");
-  if (!token) throw new Error("ChÆ°a Ä‘Äƒng nháº­p");
+  if (!token) throw new Error("Chưa đăng nhập");
 
   const res = await axios.delete(`${getApiBaseUrl()}/api/invoices/deleteByBillingPeriod`, {
     params: {

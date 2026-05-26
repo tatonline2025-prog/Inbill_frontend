@@ -187,7 +187,7 @@ export default function UsersPage() {
     }
 
     setIsLoading(true);
-    setMessage({ type: "info", text: `Đang tải file cho user: ${userId} (${billingPeriod})...` });
+    setMessage({ type: "info", text: `Đang tải file cho người dùng: ${userId} (${billingPeriod})...` });
 
     const formData = new FormData();
     formData.append("excelFile", selectedFile);
@@ -202,11 +202,11 @@ export default function UsersPage() {
       // console.log("Upload thành công:", response.data);
 
       setMessage({ type: "success", text: `Đã tải file cho ${userId} (${billingPeriod}) thành công.` });
-      toast.success(`Đã up file thành công.`);
+      toast.success("Đã tải file lên thành công.");
     } catch (error) {
       console.error(error);
       setMessage({ type: "error", text: getErrorMessage(error) });
-      toast.success(`Up file thất bại`);
+      toast.error("Tải file lên thất bại.");
     } finally {
       setIsLoading(false);
       setShowBillingModal(false);
@@ -666,32 +666,33 @@ export default function UsersPage() {
           <div className="fixed inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] p-6">
               <h2 className="text-lg font-semibold mb-4 text-gray-800">
-                Tải Excel lên cho {selectedUserForUpload.fullName}
+                Tải Excel cho {selectedUserForUpload.fullName}
               </h2>
 
               <div className="space-y-4">
                 {/* 🔹 Chọn tháng */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Chọn Kỳ</label>
-                  <select
-                    value={selectedBillingPeriod}
-                    onChange={(e) => setSelectedBillingPeriod(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
-                  >
-                    <option value="">-- Chọn Kỳ --</option>
-                    {uploadVisibleBillingPeriods.map((period) => (
-                      <option key={period} value={period}>
-                        {period}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={expandUploadBillingPeriods}
-                    className="mt-2 px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
-                  >
-                    +
-                  </button>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Chọn kỳ hóa đơn</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedBillingPeriod}
+                      onChange={(e) => setSelectedBillingPeriod(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                    >
+                      {uploadVisibleBillingPeriods.map((period) => (
+                        <option key={period} value={period}>
+                          {period}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={expandUploadBillingPeriods}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 

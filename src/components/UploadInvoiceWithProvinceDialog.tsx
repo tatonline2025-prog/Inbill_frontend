@@ -109,11 +109,11 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
     try {
       const response = await excelUpProvince(formData);
       if (response?.status === 200) {
-        toast.success("Upload file tổng thành công.");
+        toast.success("Tải file tổng lên thành công.");
         onSuccess();
         handleDialogClose();
       } else {
-        toast.error("Upload thất bại.");
+        toast.error("Tải file lên thất bại.");
       }
     } catch (error) {
       console.error(error);
@@ -137,7 +137,7 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
     <Dialog open={open} onClose={handleDialogClose}>
       <Box sx={{ p: 3, minWidth: 320 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Upload Excel + NPT
+          Tải Excel + người phụ trách
         </Typography>
 
         <FormControl fullWidth sx={{ mb: 2 }}>
@@ -199,7 +199,7 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >
-            {loading ? "Đang upload..." : "Upload"}
+            {loading ? "Đang tải lên..." : "Tải lên"}
           </Button>
         </Box>
       </Box>

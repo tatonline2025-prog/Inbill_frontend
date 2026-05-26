@@ -138,7 +138,7 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
     <Dialog open={open} onClose={handleDialogClose}>
       <Box sx={{ p: 3, minWidth: 320 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Upload Excel
+          Tải Excel
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
@@ -184,7 +184,7 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
             onClick={handleUpload}
             startIcon={loading ? <Spinner size={20} /> : null}
           >
-            {loading ? "Đang upload..." : "Upload"}
+            {loading ? "Đang tải lên..." : "Tải lên"}
           </Button>
         </Box>
       </Box>

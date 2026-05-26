@@ -84,7 +84,7 @@ const UploadPaidInvoicesDialog: React.FC<Props> = ({ open, onClose, onSuccess })
           label="Danh sách Mã Hóa Đơn"
           multiline
           rows={8}
-          placeholder={`Paste danh sách mã hóa đơn vào đây.\nVí dụ:\nPB071...\nPB072...\nPB073...`}
+          placeholder={`Dán danh sách mã hóa đơn vào đây.\nVí dụ:\nPB071...\nPB072...\nPB073...`}
           value={invoiceText}
           onChange={(e) => setInvoiceText(e.target.value)}
           fullWidth

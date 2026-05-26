@@ -368,11 +368,11 @@ export default function AddInvoiceDialog({
 
         <Box sx={{ display: "flex", gap: 2 }}>
           <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }}>
-            <FormControl size="small" sx={{ width: 150 }}>
-              <InputLabel id="add-invoice-period-label">Kỳ TT</InputLabel>
+            <FormControl size="small" sx={{ width: 170 }}>
+              <InputLabel id="add-invoice-period-label">Kỳ thanh toán</InputLabel>
               <Select
                 labelId="add-invoice-period-label"
-                label="Kỳ TT"
+                label="Kỳ thanh toán"
                 value={commonInfo.billing_period}
                 onChange={(event) => handleCommonChange("billing_period", event.target.value)}
               >
@@ -397,7 +397,7 @@ export default function AddInvoiceDialog({
               onChange={(event) => handleCommonChange("assignedTo", event.target.value)}
             >
               <MenuItem value="">
-                <em>-- Trống --</em>
+                <em>-- Chưa chọn --</em>
               </MenuItem>
               {assignedUsers.map((user) => (
                 <MenuItem key={user._id} value={user._id}>

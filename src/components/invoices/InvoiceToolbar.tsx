@@ -239,7 +239,7 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#eab308" },
               }}
             >
-              Upload Excel + NPT
+              Tải Excel + người phụ trách
             </Button>
           )}
 
@@ -430,11 +430,11 @@ export default function InvoiceToolbar({
         {onSelectedBillingPeriodChange && (
           <>
           <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
-            <InputLabel id="billing-period-filter-label">Kỳ TT</InputLabel>
+            <InputLabel id="billing-period-filter-label">Kỳ thanh toán</InputLabel>
             <Select
               labelId="billing-period-filter-label"
               value={selectedBillingPeriod}
-              label="Kỳ TT"
+              label="Kỳ thanh toán"
               onChange={(event: SelectChangeEvent) => onSelectedBillingPeriodChange(event.target.value)}
             >
               <MenuItem value="all">Tất cả kỳ</MenuItem>
@@ -570,7 +570,7 @@ export default function InvoiceToolbar({
             >
               <MenuItem value="recordBookCode">Mã trạm</MenuItem>
               <MenuItem value="assignedTo">Người phụ trách</MenuItem>
-              <MenuItem value="billing_period">Kỳ TT</MenuItem>
+              <MenuItem value="billing_period">Kỳ thanh toán</MenuItem>
               <MenuItem value="collectionStatus">Trạng thái thu</MenuItem>
             </Select>
           </FormControl>
@@ -587,10 +587,10 @@ export default function InvoiceToolbar({
 
           {bulkUpdateField === "billing_period" && (
             <FormControl fullWidth size="small">
-              <InputLabel id="bulk-update-period-label">Kỳ TT</InputLabel>
+              <InputLabel id="bulk-update-period-label">Kỳ thanh toán</InputLabel>
               <Select
                 labelId="bulk-update-period-label"
-                label="Kỳ TT"
+                label="Kỳ thanh toán"
                 value={bulkUpdateValue}
                 onChange={(event) => setBulkUpdateValue(String(event.target.value))}
               >
