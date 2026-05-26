@@ -22,6 +22,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import ListIcon from "@mui/icons-material/List";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
+import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
 import { IUser } from "@/types/user";
 
 type SearchType = "customerCode" | "stationCode";
@@ -124,6 +125,11 @@ export default function InvoiceToolbar({
       return accumulator;
     }, {});
   }, [areaOptions]);
+  const { visiblePeriods: visibleBillingPeriods, expandPeriods: expandBillingPeriods } = useExpandableBillingPeriods({
+    fallbackPeriods: billingPeriods,
+    selectedPeriod: selectedBillingPeriod !== "all" ? selectedBillingPeriod : undefined,
+    resetKey: selectedBillingPeriod,
+  });
 
   const searchLabel = searchType === "customerCode" ? "Mã KH" : "Mã trạm";
   const searchPlaceholder =
@@ -422,6 +428,7 @@ export default function InvoiceToolbar({
         )}
 
         {onSelectedBillingPeriodChange && (
+          <>
           <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
             <InputLabel id="billing-period-filter-label">Kỳ TT</InputLabel>
             <Select
@@ -431,13 +438,17 @@ export default function InvoiceToolbar({
               onChange={(event: SelectChangeEvent) => onSelectedBillingPeriodChange(event.target.value)}
             >
               <MenuItem value="all">Tất cả kỳ</MenuItem>
-              {billingPeriods.map((period) => (
+              {visibleBillingPeriods.map((period) => (
                 <MenuItem key={period} value={period}>
                   {period}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+          <Button variant="outlined" onClick={expandBillingPeriods} sx={{ minWidth: 44, px: 0 }}>
+            +
+          </Button>
+          </>
         )}
 
         {onSearchChange && (

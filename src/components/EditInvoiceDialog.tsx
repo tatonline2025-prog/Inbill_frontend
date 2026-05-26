@@ -1,25 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
+  Box,
   Button,
-  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
+  MenuItem,
   Select,
-  Box,
+  TextField,
 } from "@mui/material";
+import { isAxiosError } from "axios";
+import toast from "react-hot-toast";
+
+import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { fetchBillingPeriods_API, fetchLatestPeriod_API, updateInvoice } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
-import toast from "react-hot-toast";
-import { isAxiosError } from "axios";
-import { updateInvoice } from "@/services/invoice.api";
-import { generateBillingPeriods } from "@/constants/invoice.constants";
 
 interface EditInvoiceDialogProps {
   open: boolean;
@@ -36,6 +38,7 @@ export default function EditInvoiceDialog({
   onSuccess,
   assignedUsers,
 }: EditInvoiceDialogProps) {
+  const [baseBillingPeriod, setBaseBillingPeriod] = useState("");
   const [formData, setFormData] = useState({
     customerName: "",
     customerAddress: "",
@@ -47,6 +50,13 @@ export default function EditInvoiceDialog({
     recordBookCode: "",
     assignedTo: "",
     billing_period: "",
+  });
+
+  const { visiblePeriods, expandPeriods } = useExpandableBillingPeriods({
+    basePeriod: baseBillingPeriod,
+    fallbackPeriods: [invoice?.billing_period || ""],
+    resetKey: `${open}-${invoice?._id ?? ""}`,
+    selectedPeriod: formData.billing_period,
   });
 
   useEffect(() => {
@@ -66,28 +76,74 @@ export default function EditInvoiceDialog({
     }
   }, [invoice]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadDefaultBillingPeriod = async () => {
+      try {
+        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
+          fetchBillingPeriods_API().catch(() => null),
+          fetchLatestPeriod_API().catch(() => null),
+        ]);
+        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const nextPeriod =
+          sortedBillingPeriods[0] ||
+          normalizeBillingPeriod(invoice?.billing_period) ||
+          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
+          getCurrentBillingPeriod();
+
+        if (!isActive) {
+          return;
+        }
+
+        setBaseBillingPeriod(nextPeriod);
+      } catch (error) {
+        console.error(error);
+
+        if (!isActive) {
+          return;
+        }
+
+        setBaseBillingPeriod(
+          normalizeBillingPeriod(invoice?.billing_period) || getCurrentBillingPeriod()
+        );
+      }
+    };
+
+    loadDefaultBillingPeriod();
+
+    return () => {
+      isActive = false;
+    };
+  }, [invoice?.billing_period, open]);
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
-    if (!invoice) return;
+    if (!invoice) {
+      return;
+    }
 
     try {
       const normalizedForm = {
         ...formData,
         _id: invoice._id,
-        customerName: formData.customerName?.trim() || "",
-        billing_period: formData.billing_period?.trim() || "",
+        customerName: formData.customerName.trim() || "",
+        billing_period: formData.billing_period.trim() || "",
         currentAmount: formData.currentAmount?.toString().trim() || "0",
         previousAmount: formData.previousAmount?.toString().trim() || "0",
         totalAmount: formData.totalAmount?.toString().trim() || "0",
       };
 
-      // res ở đây bây giờ chính là res.data từ server
-      const res = await updateInvoice(normalizedForm, invoice._id);
+      const response = await updateInvoice(normalizedForm, invoice._id);
 
-      const selectedAssignedUser = assignedUsers.find((u) => u._id === normalizedForm.assignedTo);
+      const selectedAssignedUser = assignedUsers.find((user) => user._id === normalizedForm.assignedTo);
       const nextAssignedTo =
         normalizedForm.assignedTo && selectedAssignedUser
           ? {
@@ -97,90 +153,98 @@ export default function EditInvoiceDialog({
             }
           : invoice.assignedTo ?? null;
 
-      // Cập nhật UI theo đúng hóa đơn đang chỉnh sửa để tránh "nhảy" sang hóa đơn trùng mã khách hàng.
       const localUpdatedInvoice: InvoiceInfo = {
         ...invoice,
         ...normalizedForm,
         assignedTo: nextAssignedTo,
       };
 
-      // Backend của bạn trả về 200 kèm message, axios sẽ không ném lỗi nếu status 2xx
-      toast.success(res.message || "Cập nhật hoá đơn thành công!");
+      toast.success(response.message || "Cập nhật hóa đơn thành công.");
       onSuccess(localUpdatedInvoice);
       onClose();
-    } catch (err) {
-      console.error(err);
-      if (isAxiosError(err)) {
-        const errorMessage = err.response?.data?.message;
+    } catch (error) {
+      console.error(error);
+
+      if (isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message;
         if (errorMessage) {
           toast.error(`Lỗi: ${errorMessage}`);
         } else {
-          toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn. Vui lòng thử lại!");
+          toast.error("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
         }
         return;
       }
-      toast.error("Đã xảy ra lỗi khi cập nhật hoá đơn. Vui lòng thử lại!");
+
+      toast.error("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Chỉnh sửa hoá đơn {invoice?.invoiceNumber}</DialogTitle>
+      <DialogTitle>Chỉnh sửa hóa đơn {invoice?.invoiceNumber}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
         <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Kỳ này"
             type="number"
             value={formData.currentAmount}
-            onChange={(e) => handleChange("currentAmount", e.target.value)}
+            onChange={(event) => handleChange("currentAmount", event.target.value)}
             fullWidth
           />
           <TextField
             label="Kỳ trước"
             type="number"
             value={formData.previousAmount}
-            onChange={(e) => handleChange("previousAmount", e.target.value)}
+            onChange={(event) => handleChange("previousAmount", event.target.value)}
             fullWidth
           />
           <TextField
             label="Tổng tiền"
             type="number"
             value={formData.totalAmount}
-            onChange={(e) => handleChange("totalAmount", e.target.value)}
+            onChange={(event) => handleChange("totalAmount", event.target.value)}
             fullWidth
           />
 
           <TextField
             label="Tên khách hàng"
             value={formData.customerName}
-            onChange={(e) => handleChange("customerName", e.target.value)}
+            onChange={(event) => handleChange("customerName", event.target.value)}
             fullWidth
           />
           <TextField
             label="Địa chỉ"
             value={formData.customerAddress}
-            onChange={(e) => handleChange("customerAddress", e.target.value)}
+            onChange={(event) => handleChange("customerAddress", event.target.value)}
             fullWidth
           />
 
-          <TextField
-            select
-            label="Kỳ hoá đơn"
-            value={formData.billing_period}
-            onChange={(e) => handleChange("billing_period", e.target.value)}
-            fullWidth
-          >
-            {generateBillingPeriods().map((period) => (
-              <MenuItem key={period} value={period}>
-                {period}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }}>
+            <FormControl fullWidth>
+              <InputLabel id="edit-billing-period-label">Kỳ hóa đơn</InputLabel>
+              <Select
+                labelId="edit-billing-period-label"
+                label="Kỳ hóa đơn"
+                value={formData.billing_period}
+                onChange={(event) => handleChange("billing_period", event.target.value)}
+              >
+                {visiblePeriods.map((period) => (
+                  <MenuItem key={period} value={period}>
+                    {period}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Button variant="outlined" onClick={expandPeriods} sx={{ minWidth: 44, px: 0 }}>
+              +
+            </Button>
+          </Box>
 
           <TextField
             label="Trạm"
             value={formData.recordBookCode}
-            onChange={(e) => handleChange("recordBookCode", e.target.value)}
+            onChange={(event) => handleChange("recordBookCode", event.target.value)}
             fullWidth
           />
 
@@ -191,7 +255,7 @@ export default function EditInvoiceDialog({
                 labelId="assigned-user-label"
                 value={formData.assignedTo}
                 label="Nhân viên phụ trách"
-                onChange={(e) => handleChange("assignedTo", e.target.value)}
+                onChange={(event) => handleChange("assignedTo", event.target.value)}
               >
                 <MenuItem value="">
                   <em>Chọn nhân viên</em>

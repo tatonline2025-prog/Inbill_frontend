@@ -1,9 +1,10 @@
 "use client";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { generateBillingPeriods } from "@/constants/invoice.constants";
+import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
 import { excelUp } from "@/services/excel.api";
-import { invoiceSummary } from "@/services/invoice.api";
+import { fetchBillingPeriods_API, fetchLatestPeriod_API, invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
 import { formatDateVN } from "@/lib/date-vn";
 import { useAreaPrefixMap } from "@/hooks/useAreaPrefixMap";
@@ -29,9 +30,16 @@ export default function UsersPage() {
 
   const [selectedUserForUpload, setSelectedUserForUpload] = useState<IUser | null>(null);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
+  const [uploadBaseBillingPeriod, setUploadBaseBillingPeriod] = useState("");
   const [showBillingModal, setShowBillingModal] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { visiblePeriods: uploadVisibleBillingPeriods, expandPeriods: expandUploadBillingPeriods } =
+    useExpandableBillingPeriods({
+      basePeriod: uploadBaseBillingPeriod,
+      resetKey: `${showBillingModal}-${selectedUserForUpload?._id ?? ""}`,
+      selectedPeriod: selectedBillingPeriod,
+    });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,6 +67,51 @@ export default function UsersPage() {
     fetchInvoices();
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!showBillingModal) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadDefaultBillingPeriod = async () => {
+      try {
+        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
+          fetchBillingPeriods_API().catch(() => null),
+          fetchLatestPeriod_API().catch(() => null),
+        ]);
+        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const nextPeriod =
+          sortedBillingPeriods[0] ||
+          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
+          getCurrentBillingPeriod();
+
+        if (!isActive) {
+          return;
+        }
+
+        setUploadBaseBillingPeriod(nextPeriod);
+        setSelectedBillingPeriod(nextPeriod);
+      } catch (error) {
+        console.error(error);
+
+        if (!isActive) {
+          return;
+        }
+
+        const fallbackPeriod = getCurrentBillingPeriod();
+        setUploadBaseBillingPeriod(fallbackPeriod);
+        setSelectedBillingPeriod(fallbackPeriod);
+      }
+    };
+
+    loadDefaultBillingPeriod();
+
+    return () => {
+      isActive = false;
+    };
+  }, [showBillingModal, selectedUserForUpload?._id]);
 
   const getPrimaryAreaPrefix = (user: Partial<IUser> & { areaPrefixes?: { area: string; prefix: string }[] }) => {
     const firstAreaPrefix = Array.isArray(user.areaPrefixes) ? user.areaPrefixes[0] : undefined;
@@ -626,12 +679,19 @@ export default function UsersPage() {
                     className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
                   >
                     <option value="">-- Chọn Kỳ --</option>
-                    {generateBillingPeriods().map((period) => (
+                    {uploadVisibleBillingPeriods.map((period) => (
                       <option key={period} value={period}>
                         {period}
                       </option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    onClick={expandUploadBillingPeriods}
+                    className="mt-2 px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 
@@ -672,6 +732,7 @@ export default function UsersPage() {
                     setShowBillingModal(false);
                     setSelectedBillingPeriod("");
                     setSelectedUserForUpload(null);
+                    setSelectedFile(null);
                   }}
                   className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
                 >

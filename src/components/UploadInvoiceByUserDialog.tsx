@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Button, Dialog, FormControl, InputLabel, MenuItem, Select, Typography } from "@mui/material";
-import toast from "react-hot-toast";
-import { excelUp } from "@/services/excel.api";
-import Spinner from "./SpinnerLoading";
-import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { isAxiosError } from "axios";
+import toast from "react-hot-toast";
+
+import { excelUp } from "@/services/excel.api";
+import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
+import Spinner from "./SpinnerLoading";
 
 interface Props {
   open: boolean;
@@ -16,25 +19,84 @@ interface Props {
   assignedUserName: string;
 }
 
-const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assignedUserId, assignedUserName }) => {
+const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assignedUserName }: Props) => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [baseBillingPeriod, setBaseBillingPeriod] = useState("");
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
+
+  const { visiblePeriods, expandPeriods } = useExpandableBillingPeriods({
+    basePeriod: baseBillingPeriod,
+    resetKey: open,
+    selectedPeriod: selectedBillingPeriod,
+  });
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadDefaultBillingPeriod = async () => {
+      try {
+        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
+          fetchBillingPeriods_API().catch(() => null),
+          fetchLatestPeriod_API().catch(() => null),
+        ]);
+        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const nextPeriod =
+          sortedBillingPeriods[0] ||
+          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
+          getCurrentBillingPeriod();
+
+        if (!isActive) {
+          return;
+        }
+
+        setBaseBillingPeriod(nextPeriod);
+        setSelectedBillingPeriod(nextPeriod);
+      } catch (error) {
+        console.error(error);
+
+        if (!isActive) {
+          return;
+        }
+
+        const fallbackPeriod = getCurrentBillingPeriod();
+        setBaseBillingPeriod(fallbackPeriod);
+        setSelectedBillingPeriod(fallbackPeriod);
+      }
+    };
+
+    loadDefaultBillingPeriod();
+
+    return () => {
+      isActive = false;
+    };
+  }, [open]);
+
+  const handleDialogClose = () => {
+    setUploadFile(null);
+    setSelectedBillingPeriod("");
+    onClose();
+  };
 
   const handleUpload = async () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.error("Không thể xác nhận tài khoản. Vui lòng đăng nhập lại");
+      toast.error("Không thể xác nhận tài khoản. Vui lòng đăng nhập lại.");
       return;
     }
 
     if (!uploadFile) {
-      toast.error("Vui lòng chọn file cần upload!");
+      toast.error("Vui lòng chọn file cần upload.");
       return;
     }
+
     if (!selectedBillingPeriod) {
-      toast.error("Vui lòng chọn kỳ hóa đơn!");
+      toast.error("Vui lòng chọn kỳ hóa đơn.");
       return;
     }
 
@@ -45,27 +107,27 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assign
 
     setLoading(true);
     try {
-      const res = await excelUp(formData, token);
+      const response = await excelUp(formData, token);
 
-      if (res?.status === 200) {
-        toast.success("Upload file thành công!");
+      if (response?.status === 200) {
+        toast.success("Upload file thành công.");
         onSuccess?.();
-        onClose();
+        handleDialogClose();
       } else {
-        toast.error("Upload thất bại!");
+        toast.error("Upload thất bại.");
       }
-    } catch (err) {
-      console.error(err);
-      // Hiển thị lỗi chi tiết từ backend cho người dùng
-      if (isAxiosError(err)) {
-        const errorMessage = err.response?.data?.message;
+    } catch (error) {
+      console.error(error);
+
+      if (isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message;
         if (errorMessage) {
           toast.error(`Lỗi: ${errorMessage}`);
         } else {
-          toast.error("Có lỗi xảy ra khi upload! Vui lòng thử lại.");
+          toast.error("Có lỗi xảy ra khi upload. Vui lòng thử lại.");
         }
       } else {
-        toast.error("Có lỗi xảy ra khi upload! Vui lòng thử lại.");
+        toast.error("Có lỗi xảy ra khi upload. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -73,43 +135,48 @@ const UploadInvoiceDialog: React.FC<Props> = ({ open, onClose, onSuccess, assign
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <Box sx={{ p: 3, minWidth: 300 }}>
+    <Dialog open={open} onClose={handleDialogClose}>
+      <Box sx={{ p: 3, minWidth: 320 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Upload Excel
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
-          Nguoi phu trach: <b>{assignedUserName}</b>
+          Người phụ trách: <b>{assignedUserName}</b>
         </Typography>
 
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="billing-period-label">Chon Ky</InputLabel>
-          <Select
-            labelId="billing-period-label"
-            value={selectedBillingPeriod}
-            label="Chon Ky"
-            onChange={(e) => setSelectedBillingPeriod(e.target.value)}
-          >
-            <MenuItem value="">-- Chon Ky --</MenuItem>
-            {generateBillingPeriods().map((period) => (
-              <MenuItem key={period} value={period}>
-                {period}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "stretch", mb: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel id="billing-period-label">Chọn kỳ</InputLabel>
+            <Select
+              labelId="billing-period-label"
+              value={selectedBillingPeriod}
+              label="Chọn kỳ"
+              onChange={(event) => setSelectedBillingPeriod(event.target.value)}
+            >
+              {visiblePeriods.map((period) => (
+                <MenuItem key={period} value={period}>
+                  {period}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button variant="outlined" onClick={expandPeriods} sx={{ minWidth: 44, px: 0 }}>
+            +
+          </Button>
+        </Box>
 
         <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
-          Chon file Excel
-          <input type="file" accept=".xls,.xlsx" hidden onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)} />
+          Chọn file Excel
+          <input type="file" accept=".xls,.xlsx" hidden onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} />
         </Button>
 
         {uploadFile && <Typography sx={{ mb: 2 }}>{uploadFile.name}</Typography>}
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-          <Button onClick={onClose} disabled={loading}>
-            Huy
+          <Button onClick={handleDialogClose} disabled={loading}>
+            Hủy
           </Button>
           <Button
             variant="contained"
