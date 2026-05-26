@@ -2,31 +2,32 @@
 
 import { memo, useCallback, useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
   Typography,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import { createInvoice_API, fetchLatestPeriod_API } from "@/services/invoice.api";
-import toast from "react-hot-toast";
-import { generateBillingPeriods } from "@/constants/invoice.constants";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { isAxiosError } from "axios";
+import toast from "react-hot-toast";
+
+import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { createInvoice_API, fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 
 const MAX_INVOICES = 10;
 
-// Định nghĩa kiểu dữ liệu cho từng dòng hóa đơn
 interface InvoiceItem {
   id: string;
   invoiceNumber: string;
@@ -37,6 +38,29 @@ interface InvoiceItem {
   recordBookCode: string;
   totalAmount: string;
 }
+
+const createId = () => Math.random().toString(36).slice(2, 11);
+
+const createEmptyInvoice = (): InvoiceItem => ({
+  id: createId(),
+  invoiceNumber: "",
+  customerName: "",
+  customerAddress: "",
+  currentAmount: "",
+  previousAmount: "0",
+  totalAmount: "",
+  recordBookCode: "",
+});
+
+const EXCEL_COLUMN_MAPPING: (keyof InvoiceItem)[] = [
+  "invoiceNumber",
+  "currentAmount",
+  "previousAmount",
+  "totalAmount",
+  "customerName",
+  "customerAddress",
+  "recordBookCode",
+];
 
 const InvoiceRow = memo(
   ({
@@ -66,7 +90,7 @@ const InvoiceRow = memo(
           sx={{ width: 150 }}
           label="Mã KH"
           value={inv.invoiceNumber}
-          onChange={(e) => onItemChange(inv.id, "invoiceNumber", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "invoiceNumber", event.target.value)}
         />
         <TextField
           size="small"
@@ -74,7 +98,7 @@ const InvoiceRow = memo(
           sx={{ width: 120 }}
           label="Kỳ này"
           value={inv.currentAmount}
-          onChange={(e) => onItemChange(inv.id, "currentAmount", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "currentAmount", event.target.value)}
         />
         <TextField
           size="small"
@@ -82,7 +106,7 @@ const InvoiceRow = memo(
           sx={{ width: 120 }}
           label="Kỳ trước"
           value={inv.previousAmount}
-          onChange={(e) => onItemChange(inv.id, "previousAmount", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "previousAmount", event.target.value)}
         />
         <TextField
           size="small"
@@ -90,28 +114,28 @@ const InvoiceRow = memo(
           sx={{ width: 120 }}
           label="Tổng tiền"
           value={inv.totalAmount}
-          onChange={(e) => onItemChange(inv.id, "totalAmount", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "totalAmount", event.target.value)}
         />
         <TextField
           size="small"
           sx={{ width: 200 }}
           label="Tên khách"
           value={inv.customerName}
-          onChange={(e) => onItemChange(inv.id, "customerName", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "customerName", event.target.value)}
         />
         <TextField
           size="small"
           sx={{ width: 250 }}
           label="Địa chỉ"
           value={inv.customerAddress}
-          onChange={(e) => onItemChange(inv.id, "customerAddress", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "customerAddress", event.target.value)}
         />
         <TextField
           size="small"
           sx={{ width: 130 }}
           label="Trạm"
           value={inv.recordBookCode}
-          onChange={(e) => onItemChange(inv.id, "recordBookCode", e.target.value)}
+          onChange={(event) => onItemChange(inv.id, "recordBookCode", event.target.value)}
         />
         <IconButton color="error" onClick={() => onRemove(inv.id)} size="small">
           <DeleteIcon fontSize="small" />
@@ -137,89 +161,103 @@ export default function AddInvoiceDialog({
   currentUser?: IUser | null;
 }) {
   const [loading, setLoading] = useState(false);
+  const [baseBillingPeriod, setBaseBillingPeriod] = useState("");
 
-  // Check if current user is admin
   const isAdmin = currentUser?.role === "admin";
 
   const [commonInfo, setCommonInfo] = useState({
     billing_period: "",
-    assignedTo: isAdmin ? "" : (currentUser?._id || ""),
+    assignedTo: isAdmin ? "" : currentUser?._id || "",
   });
 
-  const generateId = () => Math.random().toString(36).substr(2, 9);
+  const [invoices, setInvoices] = useState<InvoiceItem[]>([createEmptyInvoice()]);
 
-  const [invoices, setInvoices] = useState<InvoiceItem[]>([
-    {
-      id: "",
-      invoiceNumber: "",
-      customerName: "",
-      customerAddress: "",
-      currentAmount: "",
-      previousAmount: "0",
-      totalAmount: "",
-      recordBookCode: "",
-    },
-  ]);
-
-  const EXCEL_COLUMN_MAPPING: (keyof InvoiceItem)[] = [
-    "invoiceNumber",
-    "currentAmount",
-    "previousAmount",
-    "totalAmount",
-    "customerName",
-    "customerAddress",
-    "recordBookCode",
-  ];
+  const { visiblePeriods, expandPeriods } = useExpandableBillingPeriods({
+    basePeriod: baseBillingPeriod,
+    resetKey: open,
+    selectedPeriod: commonInfo.billing_period,
+  });
 
   useEffect(() => {
-    const fetchLatest = async () => {
+    if (!open) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadDefaultBillingPeriod = async () => {
       try {
-        const res = await fetchLatestPeriod_API();
-        if (res.billing_period) setCommonInfo((prev) => ({ ...prev, billing_period: res.billing_period }));
+        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
+          fetchBillingPeriods_API().catch(() => null),
+          fetchLatestPeriod_API().catch(() => null),
+        ]);
+        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const nextPeriod =
+          sortedBillingPeriods[0] ||
+          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
+          getCurrentBillingPeriod();
+
+        if (!isActive) {
+          return;
+        }
+
+        setBaseBillingPeriod(nextPeriod);
+        setCommonInfo({
+          billing_period: nextPeriod,
+          assignedTo: isAdmin ? "" : currentUser?._id || "",
+        });
       } catch (error) {
         console.error(error);
+
+        if (!isActive) {
+          return;
+        }
+
+        const fallbackPeriod = getCurrentBillingPeriod();
+        setBaseBillingPeriod(fallbackPeriod);
+        setCommonInfo({
+          billing_period: fallbackPeriod,
+          assignedTo: isAdmin ? "" : currentUser?._id || "",
+        });
       }
     };
-    if (open) fetchLatest();
-  }, [open]);
 
-  const handleCommonChange = (field: string, value: string) => {
+    loadDefaultBillingPeriod();
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentUser?._id, isAdmin, open]);
+
+  const handleCommonChange = (field: "billing_period" | "assignedTo", value: string) => {
     setCommonInfo((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleItemChange = useCallback((id: string, field: keyof InvoiceItem, value: string) => {
-    setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, [field]: value } : inv)));
+    setInvoices((prev) => prev.map((invoice) => (invoice.id === id ? { ...invoice, [field]: value } : invoice)));
   }, []);
 
   const addNewRow = () => {
     if (invoices.length >= MAX_INVOICES) {
-      toast.error(`Chỉ được phép nhập tối đa ${MAX_INVOICES} hóa đơn!`);
+      toast.error(`Chỉ được phép nhập tối đa ${MAX_INVOICES} hóa đơn.`);
       return;
     }
-    setInvoices((prev) => [
-      ...prev,
-      {
-        id: generateId(),
-        invoiceNumber: "",
-        customerName: "",
-        customerAddress: "",
-        currentAmount: "",
-        previousAmount: "0",
-        totalAmount: "",
-        recordBookCode: "",
-      },
-    ]);
+
+    setInvoices((prev) => [...prev, createEmptyInvoice()]);
   };
 
   const removeRow = useCallback((id: string) => {
-    setInvoices((prev) => (prev.length > 1 ? prev.filter((inv) => inv.id !== id) : prev));
+    setInvoices((prev) => (prev.length > 1 ? prev.filter((invoice) => invoice.id !== id) : prev));
   }, []);
 
-  const handleSmartPaste = (e: React.ClipboardEvent) => {
-    const clipboardData = e.clipboardData.getData("text");
-    if (!clipboardData.includes("\t")) return;
+  const handleSmartPaste = (event: React.ClipboardEvent) => {
+    const clipboardData = event.clipboardData.getData("text");
+    if (!clipboardData.includes("\t")) {
+      return;
+    }
 
-    e.preventDefault();
+    event.preventDefault();
+
     const lines = clipboardData
       .split(/\r\n|\n|\r/)
       .filter((line) => line.trim() !== "")
@@ -228,99 +266,90 @@ export default function AddInvoiceDialog({
     const newRows: InvoiceItem[] = lines.map((line) => {
       const columns = line
         .split("\t")
-        .map((col) => col.trim())
-        .filter((col) => col !== "");
-      const rowData: InvoiceItem = {
-        id: generateId(),
-        invoiceNumber: "",
-        customerName: "",
-        customerAddress: "",
-        currentAmount: "",
-        previousAmount: "0",
-        totalAmount: "",
-        recordBookCode: "",
-      };
+        .map((column) => column.trim())
+        .filter((column) => column !== "");
 
-      EXCEL_COLUMN_MAPPING.forEach((field, idx) => {
-        if (columns[idx]) rowData[field] = columns[idx];
+      const rowData = createEmptyInvoice();
+
+      EXCEL_COLUMN_MAPPING.forEach((field, index) => {
+        if (columns[index]) {
+          rowData[field] = columns[index];
+        }
       });
+
       return rowData;
     });
 
     setInvoices(newRows);
-    toast.success(`Đã nhập ${newRows.length} dòng!`);
+    toast.success(`Đã nhập ${newRows.length} dòng.`);
+  };
+
+  const resetDialog = () => {
+    setInvoices([createEmptyInvoice()]);
   };
 
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!commonInfo.billing_period) return toast.error("Vui lòng chọn Kỳ hóa đơn!");
-    
-    // Validate each invoice has required fields
+    if (!commonInfo.billing_period) {
+      toast.error("Vui lòng chọn kỳ hóa đơn.");
+      return;
+    }
+
     for (const invoice of invoices) {
-      if (!invoice.invoiceNumber?.trim()) {
-        return toast.error("Vui lòng nhập Mã khách hàng!");
+      if (!invoice.invoiceNumber.trim()) {
+        toast.error("Vui lòng nhập Mã KH.");
+        return;
       }
-      if (!invoice.customerName?.trim()) {
-        return toast.error("Vui lòng nhập Tên khách hàng!");
+      if (!invoice.customerName.trim()) {
+        toast.error("Vui lòng nhập tên khách hàng.");
+        return;
       }
-      if (!invoice.currentAmount || invoice.currentAmount === "") {
-        return toast.error("Vui lòng nhập Số tiền kỳ này!");
+      if (!invoice.currentAmount) {
+        toast.error("Vui lòng nhập số tiền kỳ này.");
+        return;
       }
     }
 
     try {
       setLoading(true);
+
       const finalData = invoices.map((invoice) => {
-        // Calculate totalAmount if not provided
         const currentAmount = invoice.currentAmount || "0";
         const previousAmount = invoice.previousAmount || "0";
-        const totalAmount = invoice.totalAmount || 
-          (Number(currentAmount) + Number(previousAmount)).toString();
-        
-        const payload = {
-          invoiceNumber: invoice.invoiceNumber?.trim() || "",
-          customerName: invoice.customerName?.trim() || "",
-          customerAddress: invoice.customerAddress?.trim() || "",
+        const totalAmount = invoice.totalAmount || (Number(currentAmount) + Number(previousAmount)).toString();
+
+        return {
+          invoiceNumber: invoice.invoiceNumber.trim(),
+          customerName: invoice.customerName.trim(),
+          customerAddress: invoice.customerAddress.trim(),
           billing_period: commonInfo.billing_period,
-          currentAmount: currentAmount,
-          previousAmount: previousAmount,
-          totalAmount: totalAmount,
-          recordBookCode: invoice.recordBookCode?.trim() || "",
+          currentAmount,
+          previousAmount,
+          totalAmount,
+          recordBookCode: invoice.recordBookCode.trim(),
           assignedTo: commonInfo.assignedTo || "",
         };
-        return payload;
       });
-      
-      for (const data of finalData) {
-        await createInvoice_API(data);
+
+      for (const invoiceData of finalData) {
+        await createInvoice_API(invoiceData);
       }
-      toast.success("Thành công!");
+
+      toast.success("Thêm hóa đơn thành công.");
+      resetDialog();
       onSuccess();
       onClose();
-      setInvoices([
-        {
-          id: generateId(),
-          invoiceNumber: "",
-          customerName: "",
-          customerAddress: "",
-          currentAmount: "",
-          previousAmount: "0",
-          totalAmount: "",
-          recordBookCode: "",
-        },
-      ]);
     } catch (error) {
       console.error(error);
-      // Hiển thị lỗi chi tiết từ backend cho người dùng
+
       if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.message;
         if (errorMessage) {
           toast.error(`Lỗi: ${errorMessage}`);
         } else {
-          toast.error("Đã xảy ra lỗi khi thêm hóa đơn. Vui lòng thử lại!");
+          toast.error("Đã xảy ra lỗi khi thêm hóa đơn. Vui lòng thử lại.");
         }
       } else {
-        toast.error("Đã xảy ra lỗi khi thêm hóa đơn. Vui lòng thử lại!");
+        toast.error("Đã xảy ra lỗi khi thêm hóa đơn. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -334,38 +363,45 @@ export default function AddInvoiceDialog({
         sx={{ borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
         <Typography variant="h6" fontWeight="bold">
-          Thêm 1-10 hoá đơn
+          Thêm 1-10 hóa đơn
         </Typography>
 
         <Box sx={{ display: "flex", gap: 2 }}>
-          <TextField
-            select
-            label="Kỳ TT"
-            value={commonInfo.billing_period}
-            onChange={(e) => handleCommonChange("billing_period", e.target.value)}
-            size="small"
-            sx={{ width: 150 }}
-          >
-            {generateBillingPeriods().map((p) => (
-              <MenuItem key={p} value={p}>
-                {p}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }}>
+            <FormControl size="small" sx={{ width: 150 }}>
+              <InputLabel id="add-invoice-period-label">Kỳ TT</InputLabel>
+              <Select
+                labelId="add-invoice-period-label"
+                label="Kỳ TT"
+                value={commonInfo.billing_period}
+                onChange={(event) => handleCommonChange("billing_period", event.target.value)}
+              >
+                {visiblePeriods.map((period) => (
+                  <MenuItem key={period} value={period}>
+                    {period}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Button variant="outlined" onClick={expandPeriods} sx={{ minWidth: 44, px: 0 }}>
+              +
+            </Button>
+          </Box>
 
           <FormControl size="small" sx={{ width: 200 }}>
             <InputLabel>Nhân viên phụ trách</InputLabel>
             <Select
               label="Nhân viên phụ trách"
               value={commonInfo.assignedTo}
-              onChange={(e) => handleCommonChange("assignedTo", e.target.value)}
+              onChange={(event) => handleCommonChange("assignedTo", event.target.value)}
             >
               <MenuItem value="">
                 <em>-- Trống --</em>
               </MenuItem>
-              {assignedUsers.map((u) => (
-                <MenuItem key={u._id} value={u._id}>
-                  {u.fullName}
+              {assignedUsers.map((user) => (
+                <MenuItem key={user._id} value={user._id}>
+                  {user.fullName}
                 </MenuItem>
               ))}
             </Select>
@@ -376,8 +412,14 @@ export default function AddInvoiceDialog({
       <DialogContent onPaste={handleSmartPaste}>
         <Box sx={{ mt: 2, overflowX: "auto" }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: "1300px", mt: 1 }}>
-            {invoices.map((inv, index) => (
-              <InvoiceRow key={inv.id} inv={inv} index={index} onItemChange={handleItemChange} onRemove={removeRow} />
+            {invoices.map((invoice, index) => (
+              <InvoiceRow
+                key={invoice.id}
+                inv={invoice}
+                index={index}
+                onItemChange={handleItemChange}
+                onRemove={removeRow}
+              />
             ))}
           </Box>
 
@@ -389,10 +431,10 @@ export default function AddInvoiceDialog({
 
       <DialogActions sx={{ p: 3, borderTop: "1px solid #eee" }}>
         <Typography variant="body2" sx={{ flexGrow: 1, color: "gray" }}>
-          Mẹo: Bạn có thể copy nhiều dòng từ Excel và dán vào ô Mã KH.
+          Mẹo: có thể copy nhiều dòng từ Excel rồi dán trực tiếp vào vùng nhập.
         </Typography>
         <Button onClick={onClose} disabled={loading} color="inherit">
-          Hủy bỏ
+          Hủy
         </Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
           {loading ? "Đang lưu..." : `Lưu ${invoices.length} hóa đơn`}

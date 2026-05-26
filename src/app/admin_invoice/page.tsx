@@ -339,7 +339,6 @@ export default function InvoicesPage() {
       <DeleteAllInvoicesDialog
         open={openDeleteAllModal}
         onClose={() => setOpenDeleteAllModal(false)}
-        billingPeriods={billingPeriods}
         assignedUsers={userData}
         onDeleteSuccess={reloadInvoices}
       />

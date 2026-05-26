@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -12,13 +13,18 @@ import {
 } from "@mui/material";
 import toast from "react-hot-toast";
 
-import { deleteInvoicesByBillingPeriodAndUser_API } from "@/services/invoice.api";
+import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import {
+  deleteInvoicesByBillingPeriodAndUser_API,
+  fetchBillingPeriods_API,
+  fetchLatestPeriod_API,
+} from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 
 interface DeleteAllInvoicesDialogProps {
   open: boolean;
   onClose: () => void;
-  billingPeriods: string[];
   assignedUsers: IUser[];
   onDeleteSuccess: () => void;
 }
@@ -26,12 +32,18 @@ interface DeleteAllInvoicesDialogProps {
 export default function DeleteAllInvoicesDialog({
   open,
   onClose,
-  billingPeriods,
   assignedUsers,
   onDeleteSuccess,
 }: DeleteAllInvoicesDialogProps) {
+  const [defaultBillingPeriod, setDefaultBillingPeriod] = useState("");
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("");
   const [selectedAssignedUser, setSelectedAssignedUser] = useState("all");
+
+  const { visiblePeriods, expandPeriods } = useExpandableBillingPeriods({
+    basePeriod: defaultBillingPeriod,
+    resetKey: open,
+    selectedPeriod: selectedBillingPeriod,
+  });
 
   const sortedUsers = useMemo(
     () =>
@@ -41,6 +53,51 @@ export default function DeleteAllInvoicesDialog({
     [assignedUsers]
   );
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadDefaultBillingPeriod = async () => {
+      try {
+        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
+          fetchBillingPeriods_API().catch(() => null),
+          fetchLatestPeriod_API().catch(() => null),
+        ]);
+        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const nextPeriod =
+          sortedBillingPeriods[0] ||
+          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
+          getCurrentBillingPeriod();
+
+        if (!isActive) {
+          return;
+        }
+
+        setDefaultBillingPeriod(nextPeriod);
+        setSelectedBillingPeriod(nextPeriod);
+      } catch (error) {
+        console.error(error);
+
+        if (!isActive) {
+          return;
+        }
+
+        const fallbackPeriod = getCurrentBillingPeriod();
+        setDefaultBillingPeriod(fallbackPeriod);
+        setSelectedBillingPeriod(fallbackPeriod);
+      }
+    };
+
+    loadDefaultBillingPeriod();
+
+    return () => {
+      isActive = false;
+    };
+  }, [open]);
+
   const handleClose = () => {
     onClose();
     setSelectedBillingPeriod("");
@@ -48,7 +105,9 @@ export default function DeleteAllInvoicesDialog({
   };
 
   const handleDelete = async () => {
-    if (!selectedBillingPeriod) return;
+    if (!selectedBillingPeriod) {
+      return;
+    }
 
     try {
       const response = await deleteInvoicesByBillingPeriodAndUser_API(
@@ -68,21 +127,27 @@ export default function DeleteAllInvoicesDialog({
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>Xóa hóa đơn theo kỳ / người phụ trách</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
-        <FormControl fullWidth>
-          <InputLabel id="delete-billing-period-label">Chọn kỳ hóa đơn</InputLabel>
-          <Select
-            labelId="delete-billing-period-label"
-            label="Chọn kỳ hóa đơn"
-            value={selectedBillingPeriod}
-            onChange={(event) => setSelectedBillingPeriod(event.target.value)}
-          >
-            {billingPeriods.map((period) => (
-              <MenuItem key={period} value={period}>
-                {period}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }}>
+          <FormControl fullWidth>
+            <InputLabel id="delete-billing-period-label">Chọn kỳ hóa đơn</InputLabel>
+            <Select
+              labelId="delete-billing-period-label"
+              label="Chọn kỳ hóa đơn"
+              value={selectedBillingPeriod}
+              onChange={(event) => setSelectedBillingPeriod(event.target.value)}
+            >
+              {visiblePeriods.map((period) => (
+                <MenuItem key={period} value={period}>
+                  {period}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button variant="outlined" onClick={expandPeriods} sx={{ minWidth: 44, px: 0 }}>
+            +
+          </Button>
+        </Box>
 
         <FormControl fullWidth>
           <InputLabel id="delete-assigned-user-label">Người phụ trách</InputLabel>
