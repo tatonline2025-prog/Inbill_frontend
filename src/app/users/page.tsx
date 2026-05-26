@@ -6,6 +6,13 @@ import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc 
 import { excelUp } from "@/services/excel.api";
 import { fetchBillingPeriods_API, fetchLatestPeriod_API, invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
+import {
+  compareAreaPrefixEntries,
+  ensureAreaPrefixes,
+  formatAreaPrefixLabel,
+  getAreaPrefixKey,
+  getPrimaryAreaPrefix,
+} from "@/lib/area-prefix";
 import { formatDateVN } from "@/lib/date-vn";
 import { useAreaPrefixMap } from "@/hooks/useAreaPrefixMap";
 import { IInvoiceSummaryByUser } from "@/types/invoice";
@@ -113,26 +120,10 @@ export default function UsersPage() {
     };
   }, [showBillingModal, selectedUserForUpload?._id]);
 
-  const getPrimaryAreaPrefix = (user: Partial<IUser> & { areaPrefixes?: { area: string; prefix: string }[] }) => {
-    const firstAreaPrefix = Array.isArray(user.areaPrefixes) ? user.areaPrefixes[0] : undefined;
-    return {
-      area: firstAreaPrefix?.area || "",
-      prefix: firstAreaPrefix?.prefix || "",
-    };
-  };
-
   const sortedAreaConfigs = useMemo(
-    () => [...areaConfigs].sort((a, b) => a.area.localeCompare(b.area, "vi") || a.prefix.localeCompare(b.prefix, "vi")),
+    () => [...areaConfigs].sort((a, b) => compareAreaPrefixEntries(a, b)),
     [areaConfigs]
   );
-
-  const areaNameCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    sortedAreaConfigs.forEach((config) => {
-      counts.set(config.area, (counts.get(config.area) ?? 0) + 1);
-    });
-    return counts;
-  }, [sortedAreaConfigs]);
 
   const selectedAreaConfig = useMemo(
     () => sortedAreaConfigs.find((config) => config._id === selectedAreaConfigId) ?? null,
@@ -154,20 +145,16 @@ export default function UsersPage() {
     const uniqueOptions = new Map<string, { area: string; prefix: string }>();
     mergedUsers.forEach((user) => {
       const primary = getPrimaryAreaPrefix(user);
-      if (primary.area && primary.prefix) {
-        uniqueOptions.set(`${primary.area}__${primary.prefix}`, primary);
-      }
+      uniqueOptions.set(getAreaPrefixKey(primary), primary);
     });
 
-    return Array.from(uniqueOptions.entries()).sort(([, a], [, b]) =>
-      a.area.localeCompare(b.area, "vi") || a.prefix.localeCompare(b.prefix, "vi")
-    );
+    return Array.from(uniqueOptions.entries()).sort(([, a], [, b]) => compareAreaPrefixEntries(a, b));
   }, [mergedUsers]);
 
   const filteredUsers = selectedAreaFilter
     ? mergedUsers.filter((user) => {
         const primary = getPrimaryAreaPrefix(user);
-        return `${primary.area}__${primary.prefix}` === selectedAreaFilter;
+        return getAreaPrefixKey(primary) === selectedAreaFilter;
       })
     : mergedUsers;
 
@@ -224,20 +211,19 @@ export default function UsersPage() {
     setEditingUser(user);
     const existingAreaPrefixes = (user as unknown as { areaPrefixes?: { area: string; prefix: string }[] })
       .areaPrefixes;
-    const firstAreaPrefix = Array.isArray(existingAreaPrefixes) ? existingAreaPrefixes[0] : undefined;
+    const firstAreaPrefix = ensureAreaPrefixes(existingAreaPrefixes)[0];
     const matchedAreaConfig = firstAreaPrefix
       ? sortedAreaConfigs.find((config) => config.area === firstAreaPrefix.area && config.prefix === firstAreaPrefix.prefix)
       : undefined;
     setFormData({
       fullName: user.fullName,
       email: user.email,
-      province: matchedAreaConfig?.province || user.province || "",
       username: user.username || "",
       pass: user.pass || "",
       phone: user.phone || "",
       stt: user.stt || "",
       usertype: user.usertype || "",
-      areaPrefixes: firstAreaPrefix ? [firstAreaPrefix] : [],
+      areaPrefixes: [firstAreaPrefix],
     });
     setSelectedAreaConfigId(matchedAreaConfig?._id || "");
   };
@@ -265,7 +251,6 @@ export default function UsersPage() {
     const nextConfig = sortedAreaConfigs.find((config) => config._id === configId);
     setFormData((prev) => ({
       ...prev,
-      province: nextConfig?.province || "",
       areaPrefixes: nextConfig ? [{ area: nextConfig.area, prefix: nextConfig.prefix }] : [],
     }));
   };
@@ -286,12 +271,12 @@ export default function UsersPage() {
       setFormData({
         fullName: "",
         email: "",
-        province: "",
         username: "",
         pass: "",
         phone: "",
         stt: "",
         usertype: "",
+        areaPrefixes: [],
       });
       toast.success("Cập nhật thông tin người dùng thành công");
     } catch (err) {
@@ -418,7 +403,7 @@ export default function UsersPage() {
                     <option value="">Tất cả</option>
                     {areaFilterOptions.map(([value, option]) => (
                       <option key={value} value={value}>
-                        {option.area} - {option.prefix}
+                        {formatAreaPrefixLabel(option)}
                       </option>
                     ))}
                   </select>
@@ -469,7 +454,9 @@ export default function UsersPage() {
                             <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{user.phone}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">{primaryAreaPrefix.area || "-"}</td>
-                            <td className="px-6 py-4 text-sm font-mono text-gray-700">{primaryAreaPrefix.prefix || "-"}</td>
+                            <td className="px-6 py-4 text-sm font-mono text-gray-700">
+                              {primaryAreaPrefix.prefix || "Tự do"}
+                            </td>
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {formatDateVN(user.createdAt)}
                             </td>
@@ -590,14 +577,11 @@ export default function UsersPage() {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       <option value="">-- Chọn xã/phường --</option>
-                      {sortedAreaConfigs.map((config) => {
-                        const hasDuplicateAreaName = (areaNameCounts.get(config.area) ?? 0) > 1;
-                        return (
-                          <option key={config._id} value={config._id}>
-                            {hasDuplicateAreaName ? `${config.area} (${config.prefix})` : config.area}
-                          </option>
-                        );
-                      })}
+                      {sortedAreaConfigs.map((config) => (
+                        <option key={config._id} value={config._id}>
+                          {formatAreaPrefixLabel(config)}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -607,7 +591,7 @@ export default function UsersPage() {
                       type="text"
                       readOnly
                       value={selectedAreaConfig?.prefix || ""}
-                      placeholder="Tự động theo xã/phường"
+                      placeholder="Để trống khi chọn Tự do"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700 outline-none"
                     />
                   </div>

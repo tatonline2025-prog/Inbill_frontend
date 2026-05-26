@@ -11,46 +11,31 @@ export interface InvoiceInfo {
   customerName: string;
   customerPhone?: string | null;
   customerAddress?: string | null;
-
   billing_period: string;
-
   recordBookCode: string;
-
-  // 💰 Các trường tiền tệ
-  currentAmount: string; // Tiền kỳ này
-  previousAmount: string; // Tiền kỳ trước
-  totalAmount: string; // Tổng tiền (đã có trong Excel)
-
-  // 📅 Trạng thái và ngày tháng
-  issueDate: string; // Ngày phát hành
-  collectionDate?: string | null; // Ngày thu tiền (nếu có)
-  collectionDateAdminEdited?: boolean; // true nếu admin chỉnh ngày thu thủ công
+  currentAmount: string;
+  previousAmount: string;
+  totalAmount: string;
+  issueDate: string;
+  collectionDate?: string | null;
+  collectionDateAdminEdited?: boolean;
   collectionStatus: "collected" | "not_collected";
   printStatus: "printed" | "not_printed";
-
-  province: string;
-
-  // 👥 Người liên quan
+  province?: string;
   assignedTo: {
     _id: string;
     fullName: string;
-    email: string;
+    email?: string;
   } | null;
-
   uploadedBy?: {
     _id: string;
     fullName: string;
-    email: string;
+    email?: string;
   } | null;
-
-  // 🧾 Thông tin file upload (nếu có)
   uploadFileId?: string | null;
-
   note?: string | null;
   isPaid?: boolean;
   isMissing?: boolean;
-
-  // ⏱ Timestamps
   createdAt?: string;
   updatedAt?: string;
 }

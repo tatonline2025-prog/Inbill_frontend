@@ -1,15 +1,14 @@
 "use client";
+
 import { useEffect, useState } from "react";
+
+import { compareAreaPrefixEntries } from "@/lib/area-prefix";
 import { fetchAreaConfigs, IAreaConfig } from "@/services/areaConfig.api";
 
-export type AreaPrefixMap = Record<string, { _id: string; area: string; prefix: string }[]>;
+export type AreaPrefixMap = Record<string, IAreaConfig[]>;
 
-/**
- * Hook trả về AREA_PREFIX_MAP lấy từ DB (tự cache trong session).
- * Tự động fetch khi mount, refetch khi gọi reload().
- */
 export function useAreaPrefixMap() {
-  const [map, setMap] = useState<AreaPrefixMap>({});
+  const [groupedConfigs, setGroupedConfigs] = useState<AreaPrefixMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [configs, setConfigs] = useState<IAreaConfig[]>([]);
 
@@ -17,18 +16,18 @@ export function useAreaPrefixMap() {
     try {
       setIsLoading(true);
       const data = await fetchAreaConfigs();
-      setConfigs(data);
+      const sorted = [...data].sort((left, right) => compareAreaPrefixEntries(left, right));
+      setConfigs(sorted);
 
-      // Nhóm theo province
       const grouped: AreaPrefixMap = {};
-      for (const c of data) {
-        if (!grouped[c.province]) grouped[c.province] = [];
-        grouped[c.province].push({ _id: c._id, area: c.area, prefix: c.prefix });
+      for (const config of sorted) {
+        if (!grouped[config.area]) grouped[config.area] = [];
+        grouped[config.area].push(config);
       }
-      setMap(grouped);
+      setGroupedConfigs(grouped);
     } catch {
-      // Nếu lỗi → trả về map rỗng, form vẫn hoạt động
-      setMap({});
+      setConfigs([]);
+      setGroupedConfigs({});
     } finally {
       setIsLoading(false);
     }
@@ -38,5 +37,5 @@ export function useAreaPrefixMap() {
     load();
   }, []);
 
-  return { map, configs, isLoading, reload: load };
+  return { map: groupedConfigs, groupedConfigs, configs, isLoading, reload: load };
 }

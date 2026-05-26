@@ -1,43 +1,6 @@
 import { InvoiceInfo } from "@/types/invoice";
 import { getNowVNDate } from "@/lib/date-vn";
 
-export const PROVINCES = [
-  "Đồng Tháp",
-  "Tây Ninh",
-  "Vĩnh Long",
-  "Hưng Yên",
-  "TP Hồ Chí Minh",
-  "TP Hà Nội",
-  "An Giang",
-  "Bắc Ninh",
-  "Cà Mau",
-  "Cao Bằng",
-  "Điện Biên",
-  "Đắk Lắk",
-  "Đồng Nai",
-  "Gia Lai",
-  "Hà Tĩnh",
-  "Khánh Hòa",
-  "Lai Châu",
-  "Lâm Đồng",
-  "Lạng Sơn",
-  "Lào Cai",
-  "Nghệ An",
-  "Ninh Bình",
-  "Phú Thọ",
-  "Quảng Ngãi",
-  "Quảng Ninh",
-  "Quảng Trị",
-  "Sơn La",
-  "Thái Nguyên",
-  "Thanh Hóa",
-  "TP Cần Thơ",
-  "TP Đà Nẵng",
-  "TP Hải Phòng",
-  "TP Huế",
-  "Tuyên Quang",
-];
-
 export const generateBillingPeriods = () => {
   const nowVN = getNowVNDate();
   const currentYear = nowVN.getUTCFullYear();

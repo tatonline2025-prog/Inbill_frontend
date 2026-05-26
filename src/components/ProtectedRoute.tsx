@@ -22,7 +22,7 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     if (!loading && user) {
-      const hasAccess = allowedRoles.includes(user.role) || allowedRoles.includes(user.usertype);
+      const hasAccess = allowedRoles.includes(user.role) || allowedRoles.includes(user.usertype ?? "");
       if (!hasAccess) {
         router.replace(redirectTo);
       }
@@ -33,7 +33,7 @@ export default function ProtectedRoute({
   if (loading) return fallback;
   if (!user) return fallback;
 
-  const hasAccess = allowedRoles.includes(user.role) || allowedRoles.includes(user.usertype);
+  const hasAccess = allowedRoles.includes(user.role) || allowedRoles.includes(user.usertype ?? "");
 
   if (!hasAccess) return fallback;
 

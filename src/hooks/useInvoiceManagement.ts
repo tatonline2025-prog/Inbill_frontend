@@ -16,10 +16,14 @@ import { fetchallUser } from "@/services/user.api";
 import { IUser } from "@/types/user";
 import toast from "react-hot-toast";
 
-// Import hằng số
-import { PROVINCES, generateBillingPeriods } from "@/constants/invoice.constants";
+import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 import { getApiBaseUrl } from "@/lib/api-base-url";
+import {
+  compareAreaPrefixEntries,
+  formatAreaPrefixLabel,
+  userMatchesAreaPrefixes,
+} from "@/lib/area-prefix";
 import { toDateKeyVN, toISOStringVN } from "@/lib/date-vn";
 import { useAreaPrefixMap } from "@/hooks/useAreaPrefixMap";
 
@@ -81,7 +85,6 @@ export const useInvoiceManagement = () => {
   const [filterCollection, setFilterCollection] = useState("collected_today");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("all");
-  const [selectedProvince, setSelectedProvince] = useState("all");
   const [selectedAreaPrefixes, setSelectedAreaPrefixes] = useState<string[]>([]);
   const [isPaidFilter, setIsPaidFilter] = useState(false);
 
@@ -132,34 +135,20 @@ export const useInvoiceManagement = () => {
   // --- Hằng số ---
   const defaultBillingPeriods = useMemo(() => generateBillingPeriods(), []);
   const [billingPeriods, setBillingPeriods] = useState<string[]>(defaultBillingPeriods);
-  const provinces = useMemo(() => PROVINCES, []);
   const { configs: areaConfigs } = useAreaPrefixMap();
   const areaOptions = useMemo<AreaFilterOption[]>(() => {
-    const sortedConfigs = [...areaConfigs].sort(
-      (a, b) => a.area.localeCompare(b.area, "vi") || a.prefix.localeCompare(b.prefix, "vi")
-    );
-    const areaNameCounts = new Map<string, number>();
-
-    sortedConfigs.forEach((config) => {
-      areaNameCounts.set(config.area, (areaNameCounts.get(config.area) ?? 0) + 1);
-    });
+    const sortedConfigs = [...areaConfigs]
+      .filter((config) => config.prefix)
+      .sort((a, b) => compareAreaPrefixEntries(a, b));
 
     return sortedConfigs.map((config) => ({
       value: config.prefix,
-      label: (areaNameCounts.get(config.area) ?? 0) > 1 ? `${config.area} (${config.prefix})` : `${config.area} (${config.prefix})`,
+      label: formatAreaPrefixLabel(config),
       prefix: config.prefix,
     }));
   }, [areaConfigs]);
   const filteredAssignedUsers = useMemo(() => {
-    if (selectedAreaPrefixes.length === 0) {
-      return userData;
-    }
-
-    return userData.filter(
-      (user) =>
-        Array.isArray(user.areaPrefixes) &&
-        user.areaPrefixes.some((areaPrefix) => selectedAreaPrefixes.includes(areaPrefix.prefix))
-    );
+    return userData.filter((user) => userMatchesAreaPrefixes(user, selectedAreaPrefixes));
   }, [selectedAreaPrefixes, userData]);
 
   // --- Logic Fetch Dữ liệu ---
@@ -197,10 +186,10 @@ export const useInvoiceManagement = () => {
         collectionStatusParam,
         filterAssignedUser !== "all" ? filterAssignedUser : undefined,
         selectedBillingPeriod !== "all" ? selectedBillingPeriod : undefined,
-        selectedProvince !== "all" ? selectedProvince : undefined,
+        undefined,
         searchParams.customerCode,
         searchParams.stationCode,
-        undefined, // userprovince
+        undefined,
         sortFieldToSend,
         sortDirectionToSend,
         isPaidFilter,
@@ -234,7 +223,6 @@ export const useInvoiceManagement = () => {
     filterCollection,
     filterAssignedUser,
     selectedBillingPeriod,
-    selectedProvince,
     selectedAreaPrefixes,
     isPaidFilter,
     today,
@@ -659,9 +647,6 @@ export const useInvoiceManagement = () => {
     if (selectedBillingPeriod !== "all") {
       params.append("billingPeriod", selectedBillingPeriod);
     }
-    if (selectedProvince !== "all") {
-      params.append("province", selectedProvince);
-    }
     if (selectedAreaPrefixes.length > 0) {
       params.append("areaPrefix", selectedAreaPrefixes.join(","));
     }
@@ -853,7 +838,6 @@ export const useInvoiceManagement = () => {
     filterCollection,
     filterAssignedUser,
     selectedBillingPeriod,
-    selectedProvince,
     selectedAreaPrefixes,
     searchType,
     searchValue,
@@ -879,7 +863,6 @@ export const useInvoiceManagement = () => {
 
     // Hằng số
     billingPeriods,
-    provinces,
     areaOptions,
 
     // Setters
@@ -889,7 +872,6 @@ export const useInvoiceManagement = () => {
     setSelectedBillingPeriod,
     setIsPaidFilter,
     isPaidFilter,
-    setSelectedProvince,
     setOpenAddDialog,
     setEditModalOpen,
     setOpenDeleteAllModal,

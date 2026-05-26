@@ -47,7 +47,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
   const [isPaidFilter, setIsPaidFilter] = useState(false);
-  const [selectedProvince, setSelectedProvince] = useState("all"); // --- Pagination States ---
+  // --- Pagination States ---
 
   const [currentPage, setCurrentPage] = useState(1);
   const [invoicesPerPage, setInvoicesPerPage] = useState(30);
@@ -105,10 +105,10 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         invoicesPerPage,
         filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
         filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
-        selectedProvince !== "all" ? selectedProvince : undefined,
+        undefined,
         searchParams.customerCode,
         searchParams.stationCode,
-        user?.province,
+        undefined,
         sortFieldToSend,
         sortDirectionToSend,
         isPaidFilter
@@ -131,7 +131,6 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     invoicesPerPage,
     filterPrint,
     filterCollection,
-    selectedProvince,
     debouncedSearchValue,
     searchType,
     sortField,
@@ -360,9 +359,6 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     if (filterPrint !== "all") {
       params.append("printStatus", filterPrint);
     }
-    if (selectedProvince !== "all") {
-      params.append("province", selectedProvince);
-    }
     if (searchValue) {
       if (searchType === "customerCode") {
         params.append("customerCode", searchValue);
@@ -525,7 +521,6 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     filterPrint,
     filterCollection,
     isPaidFilter,
-    selectedProvince,
     searchType,
     searchValue,
     sortField,
@@ -547,7 +542,6 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setFilterPrint,
     setFilterCollection,
     setIsPaidFilter,
-    setSelectedProvince,
     setOpenAddDialog,
     setOpenUploadDialog,
     setOpenExportCollected,

@@ -106,7 +106,6 @@ export default function AdminCustomersPage() {
       customerAddress: row.customerAddress || "",
       customerPhone: row.customerPhone || "",
       recordBookCode: row.recordBookCode || "",
-      province: row.province || "",
       note: row.note || "",
     });
   };
@@ -266,7 +265,6 @@ export default function AdminCustomersPage() {
               <TextField size="small" label="Địa chỉ" multiline minRows={2} value={editForm.customerAddress || ""} onChange={(e) => setEditForm((f) => ({ ...f, customerAddress: e.target.value }))} />
               <TextField size="small" label="Số điện thoại" value={editForm.customerPhone || ""} onChange={(e) => setEditForm((f) => ({ ...f, customerPhone: e.target.value }))} />
               <TextField size="small" label="Mã trạm" value={editForm.recordBookCode || ""} onChange={(e) => setEditForm((f) => ({ ...f, recordBookCode: e.target.value }))} />
-              <TextField size="small" label="Tỉnh" value={editForm.province || ""} onChange={(e) => setEditForm((f) => ({ ...f, province: e.target.value }))} />
               <TextField size="small" label="Ghi chú" value={editForm.note || ""} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} />
             </Stack>
           </DialogContent>

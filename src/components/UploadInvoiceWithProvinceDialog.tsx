@@ -10,6 +10,7 @@ import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods
 import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
 import { fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
+import { formatAreaPrefixLabel, getPrimaryAreaPrefix } from "@/lib/area-prefix";
 import Spinner from "./SpinnerLoading";
 
 interface Props {
@@ -94,12 +95,8 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
       return;
     }
 
-    const selectedUser = userData.find((user) => user._id === selectedUserId);
-    const province = selectedUser?.province || "";
-
     const formData = new FormData();
     formData.append("excelFile", uploadFile);
-    formData.append("province", province);
     if (selectedUserId) {
       formData.append("assignedUserId", selectedUserId);
     }
@@ -154,7 +151,7 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
             {userData.map((user) => (
               <MenuItem key={user._id} value={user._id}>
                 {user.fullName || user.email}
-                {user.province ? ` — ${user.province}` : ""}
+                {` — ${formatAreaPrefixLabel(getPrimaryAreaPrefix(user))}`}
               </MenuItem>
             ))}
           </Select>

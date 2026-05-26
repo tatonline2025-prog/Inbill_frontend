@@ -63,18 +63,18 @@ export default function AllInvoicesPage() {
       const res = await fetchallInvoice(
         pg,
         PAGE_SIZE,
-        undefined, // printStatus
+        undefined,
         appliedStatus || undefined,
         appliedUser !== "all" ? appliedUser : undefined,
-        undefined, // billingPeriod
-        undefined, // province
+        undefined,
+        undefined,
         appliedCode || undefined,
         appliedStation || undefined,
-        undefined, // userprovince
-        null, // sortField
-        undefined, // sortDirection
-        undefined, // isPaid
-        undefined, // onlyDuplicates
+        undefined,
+        null,
+        undefined,
+        undefined,
+        undefined,
         appliedName || undefined
       );
       setInvoices(res.data.data);
@@ -222,7 +222,6 @@ export default function AllInvoicesPage() {
                   <th className="px-3 py-3 text-left font-semibold whitespace-nowrap">Mã KH</th>
                   <th className="px-3 py-3 text-left font-semibold min-w-[160px]">Tên KH</th>
                   <th className="px-3 py-3 text-left font-semibold whitespace-nowrap">Trạm</th>
-                  <th className="px-3 py-3 text-left font-semibold whitespace-nowrap">Tỉnh</th>
                   <th className="px-3 py-3 text-left font-semibold whitespace-nowrap">Kỳ TT</th>
                   <th className="px-3 py-3 text-right font-semibold whitespace-nowrap">Tổng tiền</th>
                   <th className="px-3 py-3 text-left font-semibold whitespace-nowrap">Người phụ trách</th>
@@ -233,12 +232,12 @@ export default function AllInvoicesPage() {
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={10} className="py-10 text-center text-gray-400">Đang tải...</td>
+                    <td colSpan={9} className="py-10 text-center text-gray-400">Đang tải...</td>
                   </tr>
                 )}
                 {!loading && invoices.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="py-10 text-center text-gray-400">Không có dữ liệu</td>
+                    <td colSpan={9} className="py-10 text-center text-gray-400">Không có dữ liệu</td>
                   </tr>
                 )}
                 {!loading && invoices.map((inv, idx) => (
@@ -252,7 +251,6 @@ export default function AllInvoicesPage() {
                     <td className="px-3 py-2 font-mono text-xs text-gray-700 whitespace-nowrap">{inv.invoiceNumber}</td>
                     <td className="px-3 py-2 font-medium text-gray-800">{inv.customerName}</td>
                     <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{inv.recordBookCode || ""}</td>
-                    <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{inv.province || ""}</td>
                     <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{inv.billing_period || ""}</td>
                     <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">
                       {fmt(inv.totalAmount)}
