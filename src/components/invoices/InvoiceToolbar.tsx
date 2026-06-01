@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  IconButton,
   InputLabel,
   ListItemText,
   Menu,
@@ -31,6 +30,8 @@ type AreaOption = {
   label: string;
   prefix: string;
 };
+
+const AREA_LABEL_SUFFIX_PATTERN = /\s*\([^)]*\)\s*$/;
 
 interface InvoiceToolbarProps {
   invoicesCount?: number;
@@ -93,8 +94,6 @@ export default function InvoiceToolbar({
   areaOptions = [],
   selectedAreaPrefixes = [],
   onSelectedAreaPrefixesChange,
-  filterPrint,
-  onFilterPrintChange,
   filterCollection,
   onFilterCollectionChange,
   filterAssignedUser,
@@ -118,10 +117,23 @@ export default function InvoiceToolbar({
     borderRadius: 2,
     textTransform: "none",
   };
+  const grayActionButtonSx = {
+    ...commonButtonSx,
+    backgroundColor: "#6b7280",
+    color: "#fff",
+    "&:hover": { backgroundColor: "#4b5563" },
+  };
 
   const areaLabelByPrefix = useMemo(() => {
+    const areaNameCounts = areaOptions.reduce<Record<string, number>>((accumulator, option) => {
+      const baseLabel = option.label.replace(AREA_LABEL_SUFFIX_PATTERN, "").trim();
+      accumulator[baseLabel] = (accumulator[baseLabel] || 0) + 1;
+      return accumulator;
+    }, {});
+
     return areaOptions.reduce<Record<string, string>>((accumulator, option) => {
-      accumulator[option.value] = option.label;
+      const baseLabel = option.label.replace(AREA_LABEL_SUFFIX_PATTERN, "").trim();
+      accumulator[option.value] = areaNameCounts[baseLabel] > 1 ? option.label : baseLabel;
       return accumulator;
     }, {});
   }, [areaOptions]);
@@ -227,6 +239,18 @@ export default function InvoiceToolbar({
             </Button>
           )}
 
+          {onBulkSearch && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<ListIcon />}
+              onClick={() => setIsBulkDialogOpen(true)}
+              sx={{ ...commonButtonSx }}
+            >
+              TÃ¬m hÃ ng loáº¡t
+            </Button>
+          )}
+
           {onOpenUploadWithProvince && (
             <Button
               variant="contained"
@@ -240,22 +264,6 @@ export default function InvoiceToolbar({
               }}
             >
               Tải Excel + người phụ trách
-            </Button>
-          )}
-
-          {onOpenUploadPaidInvoices && (
-            <Button
-              variant="contained"
-              size="small"
-              onClick={onOpenUploadPaidInvoices}
-              sx={{
-                ...commonButtonSx,
-                backgroundColor: "#facc15",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#eab308" },
-              }}
-            >
-              Cập nhật HĐ đã đóng cước
             </Button>
           )}
 
@@ -282,12 +290,7 @@ export default function InvoiceToolbar({
                 size="small"
                 endIcon={<ArrowDropDownIcon />}
                 onClick={(event) => setDeleteMenuAnchor(event.currentTarget)}
-                sx={{
-                  ...commonButtonSx,
-                  backgroundColor: "#6b7280",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#4b5563" },
-                }}
+                sx={grayActionButtonSx}
               >
                 Xóa HĐ
               </Button>
@@ -319,6 +322,17 @@ export default function InvoiceToolbar({
                 )}
               </Menu>
             </>
+          )}
+
+          {onOpenUploadPaidInvoices && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={onOpenUploadPaidInvoices}
+              sx={grayActionButtonSx}
+            >
+              Cập nhật HĐ đã đóng cước
+            </Button>
           )}
 
           {onBulkUpdate && (
@@ -379,12 +393,12 @@ export default function InvoiceToolbar({
       <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 3 }}>
         {onSelectedAreaPrefixesChange && (
           <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 260 } }}>
-            <InputLabel id="area-prefix-label">Xã/Phường + Prefix mã KH</InputLabel>
+            <InputLabel id="area-prefix-label">Xã/Phường</InputLabel>
             <Select
               multiple
               labelId="area-prefix-label"
               value={selectedAreaPrefixes}
-              label="Xã/Phường + Prefix mã KH"
+              label="Xã/Phường"
               onChange={handleAreaChange}
               renderValue={(selected) => {
                 const values = selected as string[];
@@ -400,7 +414,7 @@ export default function InvoiceToolbar({
               {areaOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   <Checkbox checked={selectedAreaPrefixes.includes(option.value)} />
-                  <ListItemText primary={option.label} />
+                  <ListItemText primary={areaLabelByPrefix[option.value] || option.label} />
                 </MenuItem>
               ))}
             </Select>
@@ -423,6 +437,27 @@ export default function InvoiceToolbar({
                 </MenuItem>
               ))}
               <MenuItem value="no_one">Chưa phụ trách</MenuItem>
+            </Select>
+          </FormControl>
+        )}
+
+        {onFilterCollectionChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: 170, sm: 190 } }}>
+            <InputLabel id="filter-collection-label">Trạng thái hóa đơn</InputLabel>
+            <Select
+              labelId="filter-collection-label"
+              value={filterCollection ?? "collected_today"}
+              label="Trạng thái hóa đơn"
+              onChange={(event: SelectChangeEvent) => onFilterCollectionChange(event.target.value)}
+            >
+              <MenuItem value="collected_today">Đã thu hôm nay</MenuItem>
+              <MenuItem value="collected">Tất cả đã thu</MenuItem>
+              <MenuItem value="all">Danh sách đầy đủ</MenuItem>
+              <MenuItem value="not_collected">Chưa thu</MenuItem>
+              <MenuItem value="is_paid">Đã đóng cước</MenuItem>
+              <MenuItem value="duplicates" sx={{ color: "#ef4444", fontWeight: 600 }}>
+                Giống mã KH
+              </MenuItem>
             </Select>
           </FormControl>
         )}
@@ -475,55 +510,6 @@ export default function InvoiceToolbar({
               sx={{ width: { xs: "100%", sm: 220 } }}
             />
           </>
-        )}
-
-        {onBulkSearch && (
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<ListIcon />}
-            onClick={() => setIsBulkDialogOpen(true)}
-            sx={{ ...commonButtonSx, height: "40px" }}
-          >
-            Tìm hàng loạt
-          </Button>
-        )}
-
-        {onFilterPrintChange && (
-          <FormControl size="small" sx={{ minWidth: { xs: 150, sm: 170 } }}>
-            <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
-            <Select
-              labelId="filter-print-label"
-              value={filterPrint ?? "all"}
-              label="Trạng thái in bill"
-              onChange={(event: SelectChangeEvent) => onFilterPrintChange(event.target.value)}
-            >
-              <MenuItem value="all">Tất cả</MenuItem>
-              <MenuItem value="printed">Đã in</MenuItem>
-              <MenuItem value="notPrinted">Chưa in</MenuItem>
-            </Select>
-          </FormControl>
-        )}
-
-        {onFilterCollectionChange && (
-          <FormControl size="small" sx={{ minWidth: { xs: 170, sm: 190 } }}>
-            <InputLabel id="filter-collection-label">Trạng thái hóa đơn</InputLabel>
-            <Select
-              labelId="filter-collection-label"
-              value={filterCollection ?? "collected_today"}
-              label="Trạng thái hóa đơn"
-              onChange={(event: SelectChangeEvent) => onFilterCollectionChange(event.target.value)}
-            >
-              <MenuItem value="collected_today">Đã thu hôm nay</MenuItem>
-              <MenuItem value="collected">Tất cả đã thu</MenuItem>
-              <MenuItem value="all">Danh sách đầy đủ</MenuItem>
-              <MenuItem value="not_collected">Chưa thu</MenuItem>
-              <MenuItem value="is_paid">Đã đóng cước</MenuItem>
-              <MenuItem value="duplicates" sx={{ color: "#ef4444", fontWeight: 600 }}>
-                Giống mã KH
-              </MenuItem>
-            </Select>
-          </FormControl>
         )}
       </Box>
 
