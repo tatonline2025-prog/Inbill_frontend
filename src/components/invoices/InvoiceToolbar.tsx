@@ -22,6 +22,7 @@ import ListIcon from "@mui/icons-material/List";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
+import { toDateKeyVN } from "@/lib/date-vn";
 import { IUser } from "@/types/user";
 
 type SearchType = "customerCode" | "stationCode";
@@ -32,6 +33,19 @@ type AreaOption = {
 };
 
 const AREA_LABEL_SUFFIX_PATTERN = /\s*\([^)]*\)\s*$/;
+const AREA_ALL_VALUE = "__all__";
+const DEFAULT_BULK_UPDATE_FIELD = "collectionStatus";
+const DEFAULT_BULK_UPDATE_VALUE = "collected";
+const DEFAULT_BULK_COLLECTION_DATE = toDateKeyVN();
+const BULK_SEARCH_BUTTON_LABEL = "T\u00ecm h\u00e0ng lo\u1ea1t";
+const BULK_SEARCH_DIALOG_TITLE = "T\u00ecm ki\u1ebfm h\u00e0ng lo\u1ea1t";
+const BULK_SEARCH_DIALOG_CONFIRM_LABEL = "T\u00ecm ngay";
+const COLLECTION_DATE_LABEL = "Ng\u00e0y thu";
+const COLLECTION_DATE_HELPER = "B\u1ecf tr\u1ed1ng \u0111\u1ec3 xem t\u1ea5t c\u1ea3 \u0111\u00e3 thu";
+const COLLECTION_DATE_TODAY_LABEL = "H\u00f4m nay";
+const COLLECTION_DATE_CLEAR_LABEL = "B\u1ecf l\u1ecdc ng\u00e0y";
+const BULK_COLLECTION_DATE_HELPER =
+  "G\u00e1n ng\u00e0y thu h\u00e0ng lo\u1ea1t v\u00e0 t\u1ef1 chuy\u1ec3n tr\u1ea1ng th\u00e1i sang \u0110\u00e3 thu.";
 
 interface InvoiceToolbarProps {
   invoicesCount?: number;
@@ -58,6 +72,8 @@ interface InvoiceToolbarProps {
   onFilterPrintChange?: (value: string) => void;
   filterCollection?: string;
   onFilterCollectionChange?: (value: string) => void;
+  filterCollectionDate?: string;
+  onFilterCollectionDateChange?: (value: string) => void;
   filterAssignedUser?: string;
   onFilterAssignedUserChange?: (value: string) => void;
   selectedBillingPeriod?: string;
@@ -68,11 +84,10 @@ interface InvoiceToolbarProps {
     assignedTo?: string | null;
     billing_period?: string;
     collectionStatus?: "collected" | "not_collected";
+    collectionDate?: string | null;
   }) => void;
   billingPeriods?: string[];
 }
-
-const AREA_ALL_VALUE = "__all__";
 
 export default function InvoiceToolbar({
   invoicesCount = 0,
@@ -96,6 +111,8 @@ export default function InvoiceToolbar({
   onSelectedAreaPrefixesChange,
   filterCollection,
   onFilterCollectionChange,
+  filterCollectionDate = "",
+  onFilterCollectionDateChange,
   filterAssignedUser,
   onFilterAssignedUserChange,
   selectedBillingPeriod = "all",
@@ -109,9 +126,9 @@ export default function InvoiceToolbar({
   const [deleteMenuAnchor, setDeleteMenuAnchor] = useState<null | HTMLElement>(null);
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [bulkUpdateField, setBulkUpdateField] = useState<
-    "recordBookCode" | "assignedTo" | "billing_period" | "collectionStatus" | ""
-  >("");
-  const [bulkUpdateValue, setBulkUpdateValue] = useState("");
+    "recordBookCode" | "assignedTo" | "billing_period" | "collectionStatus" | "collectionDate" | ""
+  >(DEFAULT_BULK_UPDATE_FIELD);
+  const [bulkUpdateValue, setBulkUpdateValue] = useState(DEFAULT_BULK_UPDATE_VALUE);
 
   const commonButtonSx = {
     borderRadius: 2,
@@ -137,6 +154,7 @@ export default function InvoiceToolbar({
       return accumulator;
     }, {});
   }, [areaOptions]);
+
   const { visiblePeriods: visibleBillingPeriods, expandPeriods: expandBillingPeriods } = useExpandableBillingPeriods({
     fallbackPeriods: billingPeriods,
     selectedPeriod: selectedBillingPeriod !== "all" ? selectedBillingPeriod : undefined,
@@ -150,8 +168,8 @@ export default function InvoiceToolbar({
       : "Nhập đủ mã hoặc đoạn cuối mã trạm";
 
   const handleOpenBulkUpdate = () => {
-    setBulkUpdateField("");
-    setBulkUpdateValue("");
+    setBulkUpdateField(DEFAULT_BULK_UPDATE_FIELD);
+    setBulkUpdateValue(DEFAULT_BULK_UPDATE_VALUE);
     setIsBulkUpdateOpen(true);
   };
 
@@ -170,6 +188,9 @@ export default function InvoiceToolbar({
     } else if (bulkUpdateField === "collectionStatus") {
       if (bulkUpdateValue !== "collected" && bulkUpdateValue !== "not_collected") return;
       updates.collectionStatus = bulkUpdateValue;
+    } else if (bulkUpdateField === "collectionDate") {
+      if (!bulkUpdateValue) return;
+      updates.collectionDate = bulkUpdateValue;
     }
 
     onBulkUpdate(updates as Parameters<NonNullable<typeof onBulkUpdate>>[0]);
@@ -247,7 +268,7 @@ export default function InvoiceToolbar({
               onClick={() => setIsBulkDialogOpen(true)}
               sx={{ ...commonButtonSx }}
             >
-              TÃ¬m hÃ ng loáº¡t
+              {BULK_SEARCH_BUTTON_LABEL}
             </Button>
           )}
 
@@ -462,27 +483,59 @@ export default function InvoiceToolbar({
           </FormControl>
         )}
 
+        {onFilterCollectionDateChange && filterCollection === "collected" && (
+          <>
+            <TextField
+              size="small"
+              label={COLLECTION_DATE_LABEL}
+              type="date"
+              value={filterCollectionDate}
+              onChange={(event) => onFilterCollectionDateChange(event.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              helperText={COLLECTION_DATE_HELPER}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => onFilterCollectionDateChange(toDateKeyVN())}
+              sx={{ ...commonButtonSx, height: "40px" }}
+            >
+              {COLLECTION_DATE_TODAY_LABEL}
+            </Button>
+            {filterCollectionDate && (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => onFilterCollectionDateChange("")}
+                sx={{ ...commonButtonSx, height: "40px" }}
+              >
+                {COLLECTION_DATE_CLEAR_LABEL}
+              </Button>
+            )}
+          </>
+        )}
+
         {onSelectedBillingPeriodChange && (
           <>
-          <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
-            <InputLabel id="billing-period-filter-label">Kỳ thanh toán</InputLabel>
-            <Select
-              labelId="billing-period-filter-label"
-              value={selectedBillingPeriod}
-              label="Kỳ thanh toán"
-              onChange={(event: SelectChangeEvent) => onSelectedBillingPeriodChange(event.target.value)}
-            >
-              <MenuItem value="all">Tất cả kỳ</MenuItem>
-              {visibleBillingPeriods.map((period) => (
-                <MenuItem key={period} value={period}>
-                  {period}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button variant="outlined" onClick={expandBillingPeriods} sx={{ minWidth: 44, px: 0 }}>
-            +
-          </Button>
+            <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
+              <InputLabel id="billing-period-filter-label">Kỳ thanh toán</InputLabel>
+              <Select
+                labelId="billing-period-filter-label"
+                value={selectedBillingPeriod}
+                label="Kỳ thanh toán"
+                onChange={(event: SelectChangeEvent) => onSelectedBillingPeriodChange(event.target.value)}
+              >
+                <MenuItem value="all">Tất cả kỳ</MenuItem>
+                {visibleBillingPeriods.map((period) => (
+                  <MenuItem key={period} value={period}>
+                    {period}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Button variant="outlined" onClick={expandBillingPeriods} sx={{ minWidth: 44, px: 0 }}>
+              +
+            </Button>
           </>
         )}
 
@@ -515,7 +568,7 @@ export default function InvoiceToolbar({
 
       <Dialog open={isBulkDialogOpen} onClose={() => setIsBulkDialogOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 1 }}>
-          <SearchIcon color="primary" /> Tìm kiếm hàng loạt
+          <SearchIcon color="primary" /> {BULK_SEARCH_DIALOG_TITLE}
         </DialogTitle>
         <DialogContent dividers>
           <TextField
@@ -533,7 +586,7 @@ export default function InvoiceToolbar({
             Hủy bỏ
           </Button>
           <Button onClick={handleProcessBulkSearch} variant="contained" color="primary" disabled={!bulkValue.trim()}>
-            Tìm ngay
+            {BULK_SEARCH_DIALOG_CONFIRM_LABEL}
           </Button>
         </DialogActions>
       </Dialog>
@@ -550,14 +603,22 @@ export default function InvoiceToolbar({
               label="Trường cần cập nhật"
               value={bulkUpdateField}
               onChange={(event) => {
-                setBulkUpdateField(event.target.value as typeof bulkUpdateField);
-                setBulkUpdateValue("");
+                const nextField = event.target.value as typeof bulkUpdateField;
+                setBulkUpdateField(nextField);
+                setBulkUpdateValue(
+                  nextField === DEFAULT_BULK_UPDATE_FIELD
+                    ? DEFAULT_BULK_UPDATE_VALUE
+                    : nextField === "collectionDate"
+                    ? DEFAULT_BULK_COLLECTION_DATE
+                    : ""
+                );
               }}
             >
               <MenuItem value="recordBookCode">Mã trạm</MenuItem>
               <MenuItem value="assignedTo">Người phụ trách</MenuItem>
               <MenuItem value="billing_period">Kỳ thanh toán</MenuItem>
               <MenuItem value="collectionStatus">Trạng thái thu</MenuItem>
+              <MenuItem value="collectionDate">Ngày thu</MenuItem>
             </Select>
           </FormControl>
 
@@ -622,6 +683,19 @@ export default function InvoiceToolbar({
               </Select>
             </FormControl>
           )}
+
+          {bulkUpdateField === "collectionDate" && (
+            <TextField
+              fullWidth
+              size="small"
+              type="date"
+              label={COLLECTION_DATE_LABEL}
+              value={bulkUpdateValue}
+              onChange={(event) => setBulkUpdateValue(event.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              helperText={BULK_COLLECTION_DATE_HELPER}
+            />
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setIsBulkUpdateOpen(false)} color="inherit">
@@ -635,7 +709,8 @@ export default function InvoiceToolbar({
               !bulkUpdateField ||
               ((bulkUpdateField === "recordBookCode" ||
                 bulkUpdateField === "billing_period" ||
-                bulkUpdateField === "collectionStatus") &&
+                bulkUpdateField === "collectionStatus" ||
+                bulkUpdateField === "collectionDate") &&
                 !bulkUpdateValue)
             }
           >

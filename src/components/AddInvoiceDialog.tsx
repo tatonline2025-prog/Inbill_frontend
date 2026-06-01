@@ -22,7 +22,9 @@ import { isAxiosError } from "axios";
 import toast from "react-hot-toast";
 
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
+import { normalizeMoneyInputValue, resolveInvoiceAmounts } from "@/lib/money";
+import { normalizeRecordBookCode } from "@/lib/record-book-code";
 import { createInvoice_API, fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 
@@ -62,6 +64,8 @@ const EXCEL_COLUMN_MAPPING: (keyof InvoiceItem)[] = [
   "recordBookCode",
 ];
 
+const MONEY_FIELDS: ReadonlySet<keyof InvoiceItem> = new Set(["currentAmount", "previousAmount", "totalAmount"]);
+
 const InvoiceRow = memo(
   ({
     inv,
@@ -94,27 +98,27 @@ const InvoiceRow = memo(
         />
         <TextField
           size="small"
-          type="number"
           sx={{ width: 120 }}
           label="Kỳ này"
           value={inv.currentAmount}
           onChange={(event) => onItemChange(inv.id, "currentAmount", event.target.value)}
+          inputProps={{ inputMode: "numeric" }}
         />
         <TextField
           size="small"
-          type="number"
           sx={{ width: 120 }}
           label="Kỳ trước"
           value={inv.previousAmount}
           onChange={(event) => onItemChange(inv.id, "previousAmount", event.target.value)}
+          inputProps={{ inputMode: "numeric" }}
         />
         <TextField
           size="small"
-          type="number"
           sx={{ width: 120 }}
           label="Tổng tiền"
           value={inv.totalAmount}
           onChange={(event) => onItemChange(inv.id, "totalAmount", event.target.value)}
+          inputProps={{ inputMode: "numeric" }}
         />
         <TextField
           size="small"
@@ -191,7 +195,7 @@ export default function AddInvoiceDialog({
           fetchBillingPeriods_API().catch(() => null),
           fetchLatestPeriod_API().catch(() => null),
         ]);
-        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
         const nextPeriod =
           sortedBillingPeriods[0] ||
           normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
@@ -234,7 +238,8 @@ export default function AddInvoiceDialog({
   };
 
   const handleItemChange = useCallback((id: string, field: keyof InvoiceItem, value: string) => {
-    setInvoices((prev) => prev.map((invoice) => (invoice.id === id ? { ...invoice, [field]: value } : invoice)));
+    const nextValue = MONEY_FIELDS.has(field) ? normalizeMoneyInputValue(value) : value;
+    setInvoices((prev) => prev.map((invoice) => (invoice.id === id ? { ...invoice, [field]: nextValue } : invoice)));
   }, []);
 
   const addNewRow = () => {
@@ -273,7 +278,7 @@ export default function AddInvoiceDialog({
 
       EXCEL_COLUMN_MAPPING.forEach((field, index) => {
         if (columns[index]) {
-          rowData[field] = columns[index];
+          rowData[field] = MONEY_FIELDS.has(field) ? normalizeMoneyInputValue(columns[index]) : columns[index];
         }
       });
 
@@ -303,8 +308,8 @@ export default function AddInvoiceDialog({
         toast.error("Vui lòng nhập tên khách hàng.");
         return;
       }
-      if (!invoice.currentAmount) {
-        toast.error("Vui lòng nhập số tiền kỳ này.");
+      if (!invoice.currentAmount && !invoice.previousAmount && !invoice.totalAmount) {
+        toast.error("Vui lòng nhập ít nhất một trong 3 ô Kỳ này, Kỳ trước hoặc Tổng tiền.");
         return;
       }
     }
@@ -313,19 +318,21 @@ export default function AddInvoiceDialog({
       setLoading(true);
 
       const finalData = invoices.map((invoice) => {
-        const currentAmount = invoice.currentAmount || "0";
-        const previousAmount = invoice.previousAmount || "0";
-        const totalAmount = invoice.totalAmount || (Number(currentAmount) + Number(previousAmount)).toString();
+        const resolvedAmounts = resolveInvoiceAmounts({
+          currentAmount: invoice.currentAmount,
+          previousAmount: invoice.previousAmount,
+          totalAmount: invoice.totalAmount,
+        });
 
         return {
           invoiceNumber: invoice.invoiceNumber.trim(),
           customerName: invoice.customerName.trim(),
           customerAddress: invoice.customerAddress.trim(),
           billing_period: commonInfo.billing_period,
-          currentAmount,
-          previousAmount,
-          totalAmount,
-          recordBookCode: invoice.recordBookCode.trim(),
+          currentAmount: resolvedAmounts.currentAmount,
+          previousAmount: resolvedAmounts.previousAmount,
+          totalAmount: resolvedAmounts.totalAmount,
+          recordBookCode: normalizeRecordBookCode(invoice.recordBookCode),
           assignedTo: commonInfo.assignedTo || "",
         };
       });

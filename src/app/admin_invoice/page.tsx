@@ -50,6 +50,7 @@ export default function InvoicesPage() {
     totalAmountInfo,
     filterPrint,
     filterCollection,
+    filterCollectionDate,
     filterAssignedUser,
     isPaidFilter,
     selectedBillingPeriod,
@@ -99,6 +100,7 @@ export default function InvoicesPage() {
     createFilterChangeHandler,
     handleAreaFilterChange,
     handleCollectionFilterChange,
+    handleCollectionDateFilterChange,
     handleSearchTypeChange,
     handleSearchChange,
     handleBulkSearch,
@@ -142,7 +144,11 @@ export default function InvoicesPage() {
       selectedBillingPeriod !== "all" ? selectedBillingPeriod : undefined,
       searchType,
       searchValue.trim(),
-      filterCollection === "collected_today" ? toDateKeyVN() : undefined
+      filterCollection === "collected_today"
+        ? toDateKeyVN()
+        : filterCollection === "collected" && filterCollectionDate
+        ? filterCollectionDate
+        : undefined
     );
   };
 
@@ -173,6 +179,8 @@ export default function InvoicesPage() {
           onFilterPrintChange={createFilterChangeHandler(setFilterPrint)}
           filterCollection={isPaidFilter ? "is_paid" : filterCollection}
           onFilterCollectionChange={handleCollectionFilterChange}
+          filterCollectionDate={filterCollectionDate}
+          onFilterCollectionDateChange={handleCollectionDateFilterChange}
           filterAssignedUser={filterAssignedUser}
           onFilterAssignedUserChange={createFilterChangeHandler(setFilterAssignedUser)}
           selectedBillingPeriod={selectedBillingPeriod}

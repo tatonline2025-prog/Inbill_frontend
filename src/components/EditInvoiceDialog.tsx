@@ -18,7 +18,9 @@ import { isAxiosError } from "axios";
 import toast from "react-hot-toast";
 
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
+import { normalizeMoneyInputValue, resolveInvoiceAmounts } from "@/lib/money";
+import { normalizeRecordBookCode } from "@/lib/record-book-code";
 import { fetchBillingPeriods_API, fetchLatestPeriod_API, updateInvoice } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
@@ -30,6 +32,8 @@ interface EditInvoiceDialogProps {
   onSuccess: (updatedInvoice?: InvoiceInfo) => void;
   assignedUsers: IUser[];
 }
+
+const MONEY_FIELDS = new Set(["currentAmount", "previousAmount", "totalAmount"]);
 
 export default function EditInvoiceDialog({
   open,
@@ -89,7 +93,7 @@ export default function EditInvoiceDialog({
           fetchBillingPeriods_API().catch(() => null),
           fetchLatestPeriod_API().catch(() => null),
         ]);
-        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
         const nextPeriod =
           sortedBillingPeriods[0] ||
           normalizeBillingPeriod(invoice?.billing_period) ||
@@ -122,7 +126,8 @@ export default function EditInvoiceDialog({
   }, [invoice?.billing_period, open]);
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    const nextValue = MONEY_FIELDS.has(field) ? normalizeMoneyInputValue(value) : value;
+    setFormData((prev) => ({ ...prev, [field]: nextValue }));
   };
 
   const handleSave = async () => {
@@ -131,14 +136,25 @@ export default function EditInvoiceDialog({
     }
 
     try {
+      const resolvedAmounts = resolveInvoiceAmounts({
+        currentAmount: formData.currentAmount,
+        previousAmount: formData.previousAmount,
+        totalAmount: formData.totalAmount,
+      });
+      if (!resolvedAmounts.hasAnyAmount) {
+        toast.error("Vui lòng nhập ít nhất một trong 3 ô Kỳ này, Kỳ trước hoặc Tổng tiền.");
+        return;
+      }
+
       const normalizedForm = {
         ...formData,
         _id: invoice._id,
         customerName: formData.customerName.trim() || "",
         billing_period: formData.billing_period.trim() || "",
-        currentAmount: formData.currentAmount?.toString().trim() || "0",
-        previousAmount: formData.previousAmount?.toString().trim() || "0",
-        totalAmount: formData.totalAmount?.toString().trim() || "0",
+        currentAmount: resolvedAmounts.currentAmount,
+        previousAmount: resolvedAmounts.previousAmount,
+        totalAmount: resolvedAmounts.totalAmount,
+        recordBookCode: normalizeRecordBookCode(formData.recordBookCode),
       };
 
       const response = await updateInvoice(normalizedForm, invoice._id);
@@ -156,6 +172,9 @@ export default function EditInvoiceDialog({
       const localUpdatedInvoice: InvoiceInfo = {
         ...invoice,
         ...normalizedForm,
+        currentAmount: response.invoice?.currentAmount ?? normalizedForm.currentAmount,
+        previousAmount: response.invoice?.previousAmount ?? normalizedForm.previousAmount,
+        totalAmount: response.invoice?.totalAmount ?? normalizedForm.totalAmount,
         assignedTo: nextAssignedTo,
       };
 
@@ -186,23 +205,23 @@ export default function EditInvoiceDialog({
         <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Kỳ này"
-            type="number"
             value={formData.currentAmount}
             onChange={(event) => handleChange("currentAmount", event.target.value)}
+            inputProps={{ inputMode: "numeric" }}
             fullWidth
           />
           <TextField
             label="Kỳ trước"
-            type="number"
             value={formData.previousAmount}
             onChange={(event) => handleChange("previousAmount", event.target.value)}
+            inputProps={{ inputMode: "numeric" }}
             fullWidth
           />
           <TextField
             label="Tổng tiền"
-            type="number"
             value={formData.totalAmount}
             onChange={(event) => handleChange("totalAmount", event.target.value)}
+            inputProps={{ inputMode: "numeric" }}
             fullWidth
           />
 

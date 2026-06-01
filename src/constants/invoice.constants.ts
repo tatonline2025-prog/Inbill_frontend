@@ -31,7 +31,7 @@ export const TABLE_HEADERS: {
   { key: "customerAddress", label: "Địa chỉ", sortable: true },
   { key: "recordBookCode", label: "Trạm", sortable: false },
   { key: "assignedTo", label: "Người phụ trách", sortable: false },
-  { key: "billing_period", label: "Kỳ thanh toán", sortable: true },
+  { key: "billing_period", label: "Kỳ TT", sortable: true },
   { key: "print", label: "Đã in hóa đơn", sortable: false },
   { key: "collect", label: "Đã thu", sortable: false },
   { key: "isPaid", label: "Đã đóng cước", sortable: false },

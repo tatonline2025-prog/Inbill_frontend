@@ -83,6 +83,7 @@ export const useInvoiceManagement = () => {
   // --- State Bộ lọc ---
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("collected_today");
+  const [filterCollectionDate, setFilterCollectionDate] = useState("");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("all");
   const [selectedAreaPrefixes, setSelectedAreaPrefixes] = useState<string[]>([]);
@@ -169,7 +170,12 @@ export const useInvoiceManagement = () => {
           : filterCollection === "collected" || filterCollection === "collected_today"
           ? "collected"
           : undefined;
-      const collectionDateParam = filterCollection === "collected_today" ? today : undefined;
+      const collectionDateParam =
+        filterCollection === "collected_today"
+          ? today
+          : filterCollection === "collected" && filterCollectionDate
+          ? filterCollectionDate
+          : undefined;
 
       if (normalizedSearchValue) {
         if (searchType === "customerCode") {
@@ -225,6 +231,7 @@ export const useInvoiceManagement = () => {
     selectedBillingPeriod,
     selectedAreaPrefixes,
     isPaidFilter,
+    filterCollectionDate,
     today,
   ]);
 
@@ -372,6 +379,13 @@ export const useInvoiceManagement = () => {
     setBulkSearchCodes([]);
   };
 
+  const handleCollectionDateFilterChange = (value: string) => {
+    setFilterCollectionDate(value);
+    setCurrentPage(1);
+    setIsBulkSearchActive(false);
+    setBulkSearchCodes([]);
+  };
+
   const handleBulkSearch = async (codes: string[]) => {
     // console.log("Danh sách mã cần tìm:", codes);
     const normalizedCodes = codes.map((code) => code.trim().toUpperCase());
@@ -486,6 +500,7 @@ export const useInvoiceManagement = () => {
     assignedTo?: string | null;
     billing_period?: string;
     collectionStatus?: "collected" | "not_collected";
+    collectionDate?: string | null;
   }) => {
     if (selectedInvoices.length === 0) {
       toast.error("Vui lòng chọn ít nhất một hoá đơn!");
@@ -659,6 +674,8 @@ export const useInvoiceManagement = () => {
     }
     if (filterCollection === "collected_today") {
       params.append("collectionDate", today);
+    } else if (filterCollection === "collected" && filterCollectionDate) {
+      params.append("collectionDate", filterCollectionDate);
     }
     if (isPaidFilter) {
       params.append("isPaid", "true");
@@ -836,6 +853,7 @@ export const useInvoiceManagement = () => {
     totalAmountInfo,
     filterPrint,
     filterCollection,
+    filterCollectionDate,
     filterAssignedUser,
     selectedBillingPeriod,
     selectedAreaPrefixes,
@@ -868,6 +886,7 @@ export const useInvoiceManagement = () => {
     // Setters
     setFilterPrint,
     setFilterCollection,
+    setFilterCollectionDate,
     setFilterAssignedUser,
     setSelectedBillingPeriod,
     setIsPaidFilter,
@@ -893,6 +912,7 @@ export const useInvoiceManagement = () => {
     createFilterChangeHandler,
     handleAreaFilterChange,
     handleCollectionFilterChange,
+    handleCollectionDateFilterChange,
     handleSearchTypeChange,
     handleSearchChange,
     handleBulkSearch,

@@ -152,7 +152,8 @@ export const fetchuserinvoices = async (
   userprovince?: string,
   sortField?: string | null,
   sortDirection?: "asc" | "desc",
-  isPaid?: boolean
+  isPaid?: boolean,
+  collectionDate?: string
 ) => {
   const token = localStorage.getItem("token");
 
@@ -171,6 +172,7 @@ export const fetchuserinvoices = async (
         sortField,
         sortDirection,
         isPaid,
+        collectionDate,
       },
       headers: {
         Authorization: `Bearer ${token}`,
@@ -336,6 +338,7 @@ export const bulkUpdateInvoices_API = async (
     assignedTo?: string | null;
     billing_period?: string;
     collectionStatus?: "collected" | "not_collected";
+    collectionDate?: string | null;
   }
 ) => {
   const token = localStorage.getItem("token");

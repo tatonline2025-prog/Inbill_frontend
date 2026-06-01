@@ -68,6 +68,10 @@ export const sortBillingPeriodsAsc = (values: string[]) => {
   });
 };
 
+export const sortBillingPeriodsDesc = (values: string[]) => {
+  return [...sortBillingPeriodsAsc(values)].reverse();
+};
+
 export const resolveBillingPeriodBase = ({
   preferredPeriod,
   fallbackPeriods = [],
@@ -80,9 +84,9 @@ export const resolveBillingPeriodBase = ({
     return normalizedPreferred;
   }
 
-  const firstFallback = sortBillingPeriodsAsc(fallbackPeriods)[0];
-  if (firstFallback) {
-    return firstFallback;
+  const latestFallback = sortBillingPeriodsDesc(fallbackPeriods)[0];
+  if (latestFallback) {
+    return latestFallback;
   }
 
   return getCurrentBillingPeriod();
@@ -99,9 +103,9 @@ export const getBillingPeriodOffset = (basePeriod?: string | null, targetPeriod?
   return (target.year - base.year) * 12 + (target.month - base.month);
 };
 
-export const createSequentialBillingPeriods = (basePeriod: string, count: number) => {
+export const createSequentialBillingPeriods = (basePeriod: string, count: number, offsetStep = -1) => {
   const safeBasePeriod = resolveBillingPeriodBase({ preferredPeriod: basePeriod });
   const safeCount = Math.max(count, 1);
 
-  return Array.from({ length: safeCount }, (_, index) => shiftBillingPeriod(safeBasePeriod, index));
+  return Array.from({ length: safeCount }, (_, index) => shiftBillingPeriod(safeBasePeriod, index * offsetStep));
 };
