@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 import { excelUp } from "@/services/excel.api";
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
 import { fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 import Spinner from "./SpinnerLoading";
 
@@ -44,7 +44,7 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
           fetchBillingPeriods_API().catch(() => null),
           fetchLatestPeriod_API().catch(() => null),
         ]);
-        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
         const nextPeriod =
           sortedBillingPeriods[0] ||
           normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
@@ -110,7 +110,7 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
       const response = await excelUp(formData, token);
 
       if (response?.status === 200) {
-        toast.success("Upload file thành công.");
+        toast.success(response.data?.message || "Upload file thành công.");
         onSuccess?.();
         handleDialogClose();
       } else {
@@ -142,7 +142,12 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
-          Người phụ trách: <b>{assignedUserName}</b>
+          Người phụ trách mặc định: <b>{assignedUserName}</b>
+        </Typography>
+
+        <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+          Nếu file có cột <b>NPT/CTV</b>, <b>NPT</b> hoặc <b>CTV</b> thì hệ thống sẽ ưu tiên người phụ trách theo từng dòng.
+          Giá trị mặc định ở trên chỉ dùng khi dòng đó để trống.
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1, alignItems: "stretch", mb: 2 }}>

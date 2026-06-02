@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 import { excelUpProvince } from "@/services/excel.api";
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
 import { fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 import { formatAreaPrefixLabel, getPrimaryAreaPrefix } from "@/lib/area-prefix";
@@ -46,7 +46,7 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
           fetchBillingPeriods_API().catch(() => null),
           fetchLatestPeriod_API().catch(() => null),
         ]);
-        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
+        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
         const nextPeriod =
           sortedBillingPeriods[0] ||
           normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
@@ -106,7 +106,7 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
     try {
       const response = await excelUpProvince(formData);
       if (response?.status === 200) {
-        toast.success("Tải file tổng lên thành công.");
+        toast.success(response.data?.message || "Tải file tổng lên thành công.");
         onSuccess();
         handleDialogClose();
       } else {
@@ -137,6 +137,11 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
           Tải Excel + người phụ trách
         </Typography>
 
+        <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+          Nếu file có cột <b>NPT/CTV</b>, <b>NPT</b> hoặc <b>CTV</b> thì hệ thống sẽ gán người phụ trách theo từng dòng.
+          Mục chọn bên dưới chỉ dùng làm mặc định cho dòng trống.
+        </Typography>
+
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel id="user-label">Người phụ trách (không bắt buộc)</InputLabel>
           <Select
@@ -151,7 +156,7 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
             {userData.map((user) => (
               <MenuItem key={user._id} value={user._id}>
                 {user.fullName || user.email}
-                {` — ${formatAreaPrefixLabel(getPrimaryAreaPrefix(user))}`}
+                {` - ${formatAreaPrefixLabel(getPrimaryAreaPrefix(user))}`}
               </MenuItem>
             ))}
           </Select>
