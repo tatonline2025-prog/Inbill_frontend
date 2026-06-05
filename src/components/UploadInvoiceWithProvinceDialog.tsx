@@ -7,8 +7,7 @@ import toast from "react-hot-toast";
 
 import { excelUpProvince } from "@/services/excel.api";
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
-import { fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
+import { getDefaultBillingPeriod } from "@/lib/billing-period";
 import { IUser } from "@/types/user";
 import { formatAreaPrefixLabel, getPrimaryAreaPrefix } from "@/lib/area-prefix";
 import Spinner from "./SpinnerLoading";
@@ -38,44 +37,9 @@ const UploadInvoiceWithProvinceDialog = ({ open, onClose, onSuccess, userData }:
       return;
     }
 
-    let isActive = true;
-
-    const loadDefaultBillingPeriod = async () => {
-      try {
-        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
-          fetchBillingPeriods_API().catch(() => null),
-          fetchLatestPeriod_API().catch(() => null),
-        ]);
-        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
-        const nextPeriod =
-          sortedBillingPeriods[0] ||
-          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
-          getCurrentBillingPeriod();
-
-        if (!isActive) {
-          return;
-        }
-
-        setBaseBillingPeriod(nextPeriod);
-        setBillingPeriod(nextPeriod);
-      } catch (error) {
-        console.error(error);
-
-        if (!isActive) {
-          return;
-        }
-
-        const fallbackPeriod = getCurrentBillingPeriod();
-        setBaseBillingPeriod(fallbackPeriod);
-        setBillingPeriod(fallbackPeriod);
-      }
-    };
-
-    loadDefaultBillingPeriod();
-
-    return () => {
-      isActive = false;
-    };
+    const defaultPeriod = getDefaultBillingPeriod();
+    setBaseBillingPeriod(defaultPeriod);
+    setBillingPeriod(defaultPeriod);
   }, [open]);
 
   const handleDialogClose = () => {

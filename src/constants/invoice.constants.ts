@@ -1,20 +1,7 @@
 import { InvoiceInfo } from "@/types/invoice";
-import { getNowVNDate } from "@/lib/date-vn";
+import { createBillingPeriodWindow, getDefaultBillingPeriod } from "@/lib/billing-period";
 
-export const generateBillingPeriods = () => {
-  const nowVN = getNowVNDate();
-  const currentYear = nowVN.getUTCFullYear();
-  const currentMonth = nowVN.getUTCMonth();
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const offset = index - 3;
-    const date = new Date(Date.UTC(currentYear, currentMonth + offset, 1));
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-    const year = date.getUTCFullYear();
-
-    return `${month}/${year}`;
-  });
-};
+export const generateBillingPeriods = () => createBillingPeriodWindow(getDefaultBillingPeriod(), 1, 1);
 
 export const TABLE_HEADERS: {
   key: keyof InvoiceInfo | "checkbox" | "stt" | "actions" | "totalAmount" | "print" | "collect";

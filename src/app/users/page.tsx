@@ -2,9 +2,9 @@
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
+import { getDefaultBillingPeriod } from "@/lib/billing-period";
 import { excelUp } from "@/services/excel.api";
-import { fetchBillingPeriods_API, fetchLatestPeriod_API, invoiceSummary } from "@/services/invoice.api";
+import { invoiceSummary } from "@/services/invoice.api";
 import { deleteUserByAdmin, fetchallUser, updateUserByAdmin } from "@/services/user.api";
 import {
   compareAreaPrefixEntries,
@@ -80,44 +80,9 @@ export default function UsersPage() {
       return;
     }
 
-    let isActive = true;
-
-    const loadDefaultBillingPeriod = async () => {
-      try {
-        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
-          fetchBillingPeriods_API().catch(() => null),
-          fetchLatestPeriod_API().catch(() => null),
-        ]);
-        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
-        const nextPeriod =
-          sortedBillingPeriods[0] ||
-          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
-          getCurrentBillingPeriod();
-
-        if (!isActive) {
-          return;
-        }
-
-        setUploadBaseBillingPeriod(nextPeriod);
-        setSelectedBillingPeriod(nextPeriod);
-      } catch (error) {
-        console.error(error);
-
-        if (!isActive) {
-          return;
-        }
-
-        const fallbackPeriod = getCurrentBillingPeriod();
-        setUploadBaseBillingPeriod(fallbackPeriod);
-        setSelectedBillingPeriod(fallbackPeriod);
-      }
-    };
-
-    loadDefaultBillingPeriod();
-
-    return () => {
-      isActive = false;
-    };
+    const defaultPeriod = getDefaultBillingPeriod();
+    setUploadBaseBillingPeriod(defaultPeriod);
+    setSelectedBillingPeriod(defaultPeriod);
   }, [showBillingModal, selectedUserForUpload?._id]);
 
   const sortedAreaConfigs = useMemo(

@@ -641,7 +641,7 @@ export default function InvoiceToolbar({
                 value={bulkUpdateValue}
                 onChange={(event) => setBulkUpdateValue(String(event.target.value))}
               >
-                {billingPeriods.map((period) => (
+                {visibleBillingPeriods.map((period) => (
                   <MenuItem key={period} value={period}>
                     {period}
                   </MenuItem>

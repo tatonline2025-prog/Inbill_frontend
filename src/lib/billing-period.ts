@@ -34,11 +34,17 @@ export const getCurrentBillingPeriod = (date: Date = new Date()) => {
   return formatBillingPeriod(nowVN.getUTCMonth() + 1, nowVN.getUTCFullYear());
 };
 
+export const getDefaultBillingPeriod = (date: Date = new Date()) => {
+  const nowVN = getNowVNDate(date);
+  const previousMonth = new Date(Date.UTC(nowVN.getUTCFullYear(), nowVN.getUTCMonth() - 1, 1));
+  return formatBillingPeriod(previousMonth.getUTCMonth() + 1, previousMonth.getUTCFullYear());
+};
+
 export const shiftBillingPeriod = (period: string, offset = 0) => {
   const parsed = parseBillingPeriod(period);
 
   if (!parsed) {
-    return getCurrentBillingPeriod();
+    return getDefaultBillingPeriod();
   }
 
   const shifted = new Date(Date.UTC(parsed.year, parsed.month - 1 + offset, 1));
@@ -84,12 +90,17 @@ export const resolveBillingPeriodBase = ({
     return normalizedPreferred;
   }
 
+  const defaultPeriod = getDefaultBillingPeriod();
+  if (defaultPeriod) {
+    return defaultPeriod;
+  }
+
   const latestFallback = sortBillingPeriodsDesc(fallbackPeriods)[0];
   if (latestFallback) {
     return latestFallback;
   }
 
-  return getCurrentBillingPeriod();
+  return getDefaultBillingPeriod();
 };
 
 export const getBillingPeriodOffset = (basePeriod?: string | null, targetPeriod?: string | null) => {
@@ -108,4 +119,21 @@ export const createSequentialBillingPeriods = (basePeriod: string, count: number
   const safeCount = Math.max(count, 1);
 
   return Array.from({ length: safeCount }, (_, index) => shiftBillingPeriod(safeBasePeriod, index * offsetStep));
+};
+
+export const createBillingPeriodWindow = (basePeriod: string, pastCount = 1, futureCount = 1) => {
+  const safeBasePeriod = resolveBillingPeriodBase({ preferredPeriod: basePeriod });
+  const safePastCount = Math.max(0, pastCount);
+  const safeFutureCount = Math.max(0, futureCount);
+  const periods = new Set<string>([safeBasePeriod]);
+
+  for (let offset = 1; offset <= safePastCount; offset += 1) {
+    periods.add(shiftBillingPeriod(safeBasePeriod, -offset));
+  }
+
+  for (let offset = 1; offset <= safeFutureCount; offset += 1) {
+    periods.add(shiftBillingPeriod(safeBasePeriod, offset));
+  }
+
+  return sortBillingPeriodsDesc(Array.from(periods));
 };

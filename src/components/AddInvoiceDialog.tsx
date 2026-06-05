@@ -22,10 +22,10 @@ import { isAxiosError } from "axios";
 import toast from "react-hot-toast";
 
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
+import { getDefaultBillingPeriod } from "@/lib/billing-period";
 import { normalizeMoneyInputValue, resolveInvoiceAmounts } from "@/lib/money";
 import { normalizeRecordBookCode } from "@/lib/record-book-code";
-import { createInvoice_API, fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
+import { createInvoice_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 
 const MAX_INVOICES = 10;
@@ -187,50 +187,12 @@ export default function AddInvoiceDialog({
       return;
     }
 
-    let isActive = true;
-
-    const loadDefaultBillingPeriod = async () => {
-      try {
-        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
-          fetchBillingPeriods_API().catch(() => null),
-          fetchLatestPeriod_API().catch(() => null),
-        ]);
-        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
-        const nextPeriod =
-          sortedBillingPeriods[0] ||
-          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
-          getCurrentBillingPeriod();
-
-        if (!isActive) {
-          return;
-        }
-
-        setBaseBillingPeriod(nextPeriod);
-        setCommonInfo({
-          billing_period: nextPeriod,
-          assignedTo: isAdmin ? "" : currentUser?._id || "",
-        });
-      } catch (error) {
-        console.error(error);
-
-        if (!isActive) {
-          return;
-        }
-
-        const fallbackPeriod = getCurrentBillingPeriod();
-        setBaseBillingPeriod(fallbackPeriod);
-        setCommonInfo({
-          billing_period: fallbackPeriod,
-          assignedTo: isAdmin ? "" : currentUser?._id || "",
-        });
-      }
-    };
-
-    loadDefaultBillingPeriod();
-
-    return () => {
-      isActive = false;
-    };
+    const defaultPeriod = getDefaultBillingPeriod();
+    setBaseBillingPeriod(defaultPeriod);
+    setCommonInfo({
+      billing_period: defaultPeriod,
+      assignedTo: isAdmin ? "" : currentUser?._id || "",
+    });
   }, [currentUser?._id, isAdmin, open]);
 
   const handleCommonChange = (field: "billing_period" | "assignedTo", value: string) => {

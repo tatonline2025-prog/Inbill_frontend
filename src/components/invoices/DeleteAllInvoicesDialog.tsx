@@ -14,12 +14,8 @@ import {
 import toast from "react-hot-toast";
 
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsAsc } from "@/lib/billing-period";
-import {
-  deleteInvoicesByBillingPeriodAndUser_API,
-  fetchBillingPeriods_API,
-  fetchLatestPeriod_API,
-} from "@/services/invoice.api";
+import { getDefaultBillingPeriod } from "@/lib/billing-period";
+import { deleteInvoicesByBillingPeriodAndUser_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 
 interface DeleteAllInvoicesDialogProps {
@@ -58,44 +54,9 @@ export default function DeleteAllInvoicesDialog({
       return;
     }
 
-    let isActive = true;
-
-    const loadDefaultBillingPeriod = async () => {
-      try {
-        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
-          fetchBillingPeriods_API().catch(() => null),
-          fetchLatestPeriod_API().catch(() => null),
-        ]);
-        const sortedBillingPeriods = sortBillingPeriodsAsc(billingPeriodsResponse?.periods || []);
-        const nextPeriod =
-          sortedBillingPeriods[0] ||
-          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
-          getCurrentBillingPeriod();
-
-        if (!isActive) {
-          return;
-        }
-
-        setDefaultBillingPeriod(nextPeriod);
-        setSelectedBillingPeriod(nextPeriod);
-      } catch (error) {
-        console.error(error);
-
-        if (!isActive) {
-          return;
-        }
-
-        const fallbackPeriod = getCurrentBillingPeriod();
-        setDefaultBillingPeriod(fallbackPeriod);
-        setSelectedBillingPeriod(fallbackPeriod);
-      }
-    };
-
-    loadDefaultBillingPeriod();
-
-    return () => {
-      isActive = false;
-    };
+    const defaultPeriod = getDefaultBillingPeriod();
+    setDefaultBillingPeriod(defaultPeriod);
+    setSelectedBillingPeriod(defaultPeriod);
   }, [open]);
 
   const handleClose = () => {

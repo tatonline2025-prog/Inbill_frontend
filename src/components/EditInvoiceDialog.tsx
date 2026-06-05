@@ -18,10 +18,10 @@ import { isAxiosError } from "axios";
 import toast from "react-hot-toast";
 
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
+import { getDefaultBillingPeriod, normalizeBillingPeriod } from "@/lib/billing-period";
 import { normalizeMoneyInputValue, resolveInvoiceAmounts } from "@/lib/money";
 import { normalizeRecordBookCode } from "@/lib/record-book-code";
-import { fetchBillingPeriods_API, fetchLatestPeriod_API, updateInvoice } from "@/services/invoice.api";
+import { updateInvoice } from "@/services/invoice.api";
 import { InvoiceInfo } from "@/types/invoice";
 import { IUser } from "@/types/user";
 
@@ -85,44 +85,7 @@ export default function EditInvoiceDialog({
       return;
     }
 
-    let isActive = true;
-
-    const loadDefaultBillingPeriod = async () => {
-      try {
-        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
-          fetchBillingPeriods_API().catch(() => null),
-          fetchLatestPeriod_API().catch(() => null),
-        ]);
-        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
-        const nextPeriod =
-          sortedBillingPeriods[0] ||
-          normalizeBillingPeriod(invoice?.billing_period) ||
-          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
-          getCurrentBillingPeriod();
-
-        if (!isActive) {
-          return;
-        }
-
-        setBaseBillingPeriod(nextPeriod);
-      } catch (error) {
-        console.error(error);
-
-        if (!isActive) {
-          return;
-        }
-
-        setBaseBillingPeriod(
-          normalizeBillingPeriod(invoice?.billing_period) || getCurrentBillingPeriod()
-        );
-      }
-    };
-
-    loadDefaultBillingPeriod();
-
-    return () => {
-      isActive = false;
-    };
+    setBaseBillingPeriod(normalizeBillingPeriod(invoice?.billing_period) || getDefaultBillingPeriod());
   }, [invoice?.billing_period, open]);
 
   const handleChange = (field: string, value: string) => {

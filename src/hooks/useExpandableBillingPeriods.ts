@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  createSequentialBillingPeriods,
+  createBillingPeriodWindow,
   getBillingPeriodOffset,
   resolveBillingPeriodBase,
 } from "@/lib/billing-period";
@@ -9,7 +9,8 @@ import {
 interface UseExpandableBillingPeriodsOptions {
   basePeriod?: string | null;
   fallbackPeriods?: string[];
-  initialVisibleCount?: number;
+  initialPastCount?: number;
+  initialFutureCount?: number;
   resetKey?: string | number | boolean;
   selectedPeriod?: string | null;
 }
@@ -17,7 +18,8 @@ interface UseExpandableBillingPeriodsOptions {
 export const useExpandableBillingPeriods = ({
   basePeriod,
   fallbackPeriods = [],
-  initialVisibleCount = 2,
+  initialPastCount = 1,
+  initialFutureCount = 1,
   resetKey,
   selectedPeriod,
 }: UseExpandableBillingPeriodsOptions) => {
@@ -30,31 +32,50 @@ export const useExpandableBillingPeriods = ({
     [basePeriod, fallbackPeriods]
   );
 
-  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+  const [pastCount, setPastCount] = useState(initialPastCount);
+  const [futureCount, setFutureCount] = useState(initialFutureCount);
 
   useEffect(() => {
-    setVisibleCount(initialVisibleCount);
-  }, [initialVisibleCount, resetKey, resolvedBasePeriod]);
+    setPastCount(initialPastCount);
+    setFutureCount(initialFutureCount);
+  }, [initialFutureCount, initialPastCount, resetKey, resolvedBasePeriod]);
 
-  const requiredCount = useMemo(() => {
+  const requiredCounts = useMemo(() => {
     const offset = getBillingPeriodOffset(resolvedBasePeriod, selectedPeriod);
-    if (offset === null || offset < 0) {
-      return 0;
+    if (offset === null) {
+      return {
+        past: 0,
+        future: 0,
+      };
     }
 
-    return offset + 1;
+    if (offset > 0) {
+      return {
+        past: 0,
+        future: offset,
+      };
+    }
+
+    return {
+      past: Math.abs(offset),
+      future: 0,
+    };
   }, [resolvedBasePeriod, selectedPeriod]);
 
-  const effectiveCount = Math.max(initialVisibleCount, visibleCount, requiredCount);
+  const effectivePastCount = Math.max(initialPastCount, pastCount, requiredCounts.past);
+  const effectiveFutureCount = Math.max(initialFutureCount, futureCount, requiredCounts.future);
 
   const visiblePeriods = useMemo(
-    () => createSequentialBillingPeriods(resolvedBasePeriod, effectiveCount),
-    [effectiveCount, resolvedBasePeriod]
+    () => createBillingPeriodWindow(resolvedBasePeriod, effectivePastCount, effectiveFutureCount),
+    [effectiveFutureCount, effectivePastCount, resolvedBasePeriod]
   );
 
   return {
     basePeriod: resolvedBasePeriod,
     visiblePeriods,
-    expandPeriods: () => setVisibleCount((currentCount) => currentCount + 1),
+    expandPeriods: () => {
+      setPastCount((currentCount) => currentCount + 1);
+      setFutureCount((currentCount) => currentCount + 1);
+    },
   };
 };

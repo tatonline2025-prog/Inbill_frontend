@@ -7,8 +7,7 @@ import toast from "react-hot-toast";
 
 import { excelUp } from "@/services/excel.api";
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
-import { getCurrentBillingPeriod, normalizeBillingPeriod, sortBillingPeriodsDesc } from "@/lib/billing-period";
-import { fetchBillingPeriods_API, fetchLatestPeriod_API } from "@/services/invoice.api";
+import { getDefaultBillingPeriod } from "@/lib/billing-period";
 import Spinner from "./SpinnerLoading";
 
 interface Props {
@@ -36,44 +35,9 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
       return;
     }
 
-    let isActive = true;
-
-    const loadDefaultBillingPeriod = async () => {
-      try {
-        const [billingPeriodsResponse, latestPeriodResponse] = await Promise.all([
-          fetchBillingPeriods_API().catch(() => null),
-          fetchLatestPeriod_API().catch(() => null),
-        ]);
-        const sortedBillingPeriods = sortBillingPeriodsDesc(billingPeriodsResponse?.periods || []);
-        const nextPeriod =
-          sortedBillingPeriods[0] ||
-          normalizeBillingPeriod(latestPeriodResponse?.billing_period) ||
-          getCurrentBillingPeriod();
-
-        if (!isActive) {
-          return;
-        }
-
-        setBaseBillingPeriod(nextPeriod);
-        setSelectedBillingPeriod(nextPeriod);
-      } catch (error) {
-        console.error(error);
-
-        if (!isActive) {
-          return;
-        }
-
-        const fallbackPeriod = getCurrentBillingPeriod();
-        setBaseBillingPeriod(fallbackPeriod);
-        setSelectedBillingPeriod(fallbackPeriod);
-      }
-    };
-
-    loadDefaultBillingPeriod();
-
-    return () => {
-      isActive = false;
-    };
+    const defaultPeriod = getDefaultBillingPeriod();
+    setBaseBillingPeriod(defaultPeriod);
+    setSelectedBillingPeriod(defaultPeriod);
   }, [open]);
 
   const handleDialogClose = () => {
