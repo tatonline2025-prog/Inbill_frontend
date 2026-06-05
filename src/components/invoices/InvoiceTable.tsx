@@ -388,6 +388,7 @@ export default function InvoiceTable({
             <Switch
               checked={invoice.isPaid ?? false}
               onChange={() => onToggleIsPaid?.(invoice._id)}
+              disabled={!onToggleIsPaid}
               color="success"
               size="small"
               sx={{ transform: "scale(0.8)" }}

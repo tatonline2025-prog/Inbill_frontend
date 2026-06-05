@@ -28,7 +28,7 @@ import { normalizeRecordBookCode } from "@/lib/record-book-code";
 import { createInvoice_API } from "@/services/invoice.api";
 import { IUser } from "@/types/user";
 
-const MAX_INVOICES = 10;
+const MAX_INVOICES = 100;
 
 interface InvoiceItem {
   id: string;
@@ -166,12 +166,13 @@ export default function AddInvoiceDialog({
 }) {
   const [loading, setLoading] = useState(false);
   const [baseBillingPeriod, setBaseBillingPeriod] = useState("");
-
-  const isAdmin = currentUser?.role === "admin";
+  const isFixedAssignedUser = !!currentUser && currentUser.role !== "admin";
+  const singleAssignedUserLabel =
+    (isFixedAssignedUser ? currentUser?.fullName : assignedUsers[0]?.fullName) || currentUser?.fullName || "";
 
   const [commonInfo, setCommonInfo] = useState({
     billing_period: "",
-    assignedTo: isAdmin ? "" : currentUser?._id || "",
+    assignedTo: isFixedAssignedUser ? currentUser?._id || "" : "",
   });
 
   const [invoices, setInvoices] = useState<InvoiceItem[]>([createEmptyInvoice()]);
@@ -183,19 +184,20 @@ export default function AddInvoiceDialog({
   });
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!open) return;
 
     const defaultPeriod = getDefaultBillingPeriod();
     setBaseBillingPeriod(defaultPeriod);
     setCommonInfo({
       billing_period: defaultPeriod,
-      assignedTo: isAdmin ? "" : currentUser?._id || "",
+      assignedTo: isFixedAssignedUser ? currentUser?._id || "" : "",
     });
-  }, [currentUser?._id, isAdmin, open]);
+  }, [currentUser?._id, isFixedAssignedUser, open]);
 
   const handleCommonChange = (field: "billing_period" | "assignedTo", value: string) => {
+    if (field === "assignedTo" && isFixedAssignedUser) {
+      return;
+    }
     setCommonInfo((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -332,7 +334,7 @@ export default function AddInvoiceDialog({
         sx={{ borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
         <Typography variant="h6" fontWeight="bold">
-          Thêm 1-10 hóa đơn
+          Thêm 1-100 hóa đơn
         </Typography>
 
         <Box sx={{ display: "flex", gap: 2 }}>
@@ -358,23 +360,33 @@ export default function AddInvoiceDialog({
             </Button>
           </Box>
 
-          <FormControl size="small" sx={{ width: 200 }}>
-            <InputLabel>Nhân viên phụ trách</InputLabel>
-            <Select
-              label="Nhân viên phụ trách"
-              value={commonInfo.assignedTo}
-              onChange={(event) => handleCommonChange("assignedTo", event.target.value)}
-            >
-              <MenuItem value="">
-                <em>-- Chưa chọn --</em>
-              </MenuItem>
-              {assignedUsers.map((user) => (
-                <MenuItem key={user._id} value={user._id}>
-                  {user.fullName}
+          {!isFixedAssignedUser && assignedUsers.length > 1 ? (
+            <FormControl size="small" sx={{ width: 200 }}>
+              <InputLabel>Nhân viên phụ trách</InputLabel>
+              <Select
+                label="Nhân viên phụ trách"
+                value={commonInfo.assignedTo}
+                onChange={(event) => handleCommonChange("assignedTo", event.target.value)}
+              >
+                <MenuItem value="">
+                  <em>-- Chưa chọn --</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {assignedUsers.map((user) => (
+                  <MenuItem key={user._id} value={user._id}>
+                    {user.fullName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ) : singleAssignedUserLabel ? (
+            <TextField
+              size="small"
+              sx={{ width: 200 }}
+              label="Nhân viên phụ trách"
+              value={singleAssignedUserLabel}
+              InputProps={{ readOnly: true }}
+            />
+          ) : null}
         </Box>
       </DialogTitle>
 

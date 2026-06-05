@@ -89,7 +89,7 @@ export default function Header() {
         Trang chủ
       </Link>
       <UserDropdown />
-      <Link href="/user_invoice" className="nav-item" onClick={closeMenus}>
+      <Link href="/user_invoice_v2" className="nav-item" onClick={closeMenus}>
         QL Hóa Đơn
       </Link>
     </>

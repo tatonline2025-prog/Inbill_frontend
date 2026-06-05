@@ -15,7 +15,7 @@ export default function ProtectedRoute({
   children,
   allowedRoles = ["admin"], // mặc định chỉ admin
   fallback = null,
-  redirectTo = "/user_invoice",
+  redirectTo = "/user_invoice_v2",
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();

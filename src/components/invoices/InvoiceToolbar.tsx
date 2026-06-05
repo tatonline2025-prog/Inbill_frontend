@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -32,32 +32,29 @@ type AreaOption = {
   prefix: string;
 };
 
+type CollectionFilterOption = {
+  value: string;
+  label: string;
+  danger?: boolean;
+};
+
 const AREA_LABEL_SUFFIX_PATTERN = /\s*\([^)]*\)\s*$/;
-const AREA_ALL_VALUE = "__all__";
-const DEFAULT_BULK_UPDATE_FIELD = "collectionStatus";
-const DEFAULT_BULK_UPDATE_VALUE = "collected";
-const DEFAULT_BULK_COLLECTION_DATE = toDateKeyVN();
-const BULK_SEARCH_BUTTON_LABEL = "T\u00ecm h\u00e0ng lo\u1ea1t";
-const BULK_SEARCH_DIALOG_TITLE = "T\u00ecm ki\u1ebfm h\u00e0ng lo\u1ea1t";
-const BULK_SEARCH_DIALOG_CONFIRM_LABEL = "T\u00ecm ngay";
-const COLLECTION_DATE_LABEL = "Ng\u00e0y thu";
-const COLLECTION_DATE_HELPER = "B\u1ecf tr\u1ed1ng \u0111\u1ec3 xem t\u1ea5t c\u1ea3 \u0111\u00e3 thu";
-const COLLECTION_DATE_TODAY_LABEL = "H\u00f4m nay";
-const COLLECTION_DATE_CLEAR_LABEL = "B\u1ecf l\u1ecdc ng\u00e0y";
-const BULK_COLLECTION_DATE_HELPER =
-  "G\u00e1n ng\u00e0y thu h\u00e0ng lo\u1ea1t v\u00e0 t\u1ef1 chuy\u1ec3n tr\u1ea1ng th\u00e1i sang \u0110\u00e3 thu.";
 
 interface InvoiceToolbarProps {
   invoicesCount?: number;
   onExport?: () => void;
   onExportPrinted?: () => void;
+  exportButtonLabel?: string;
   invoicesPerPage?: number;
   onInvoicesPerPageChange?: (value: number) => void;
   onOpenAddDialog?: () => void;
+  addButtonLabel?: string;
   selectedInvoicesCount?: number;
   onDeleteSelected?: () => void;
+  deleteButtonLabel?: string;
   onOpenDeleteAllModal?: () => void;
   onOpenUploadWithProvince?: () => void;
+  uploadButtonLabel?: string;
   onOpenUploadPaidInvoices?: () => void;
   searchValue?: string;
   onSearchChange?: (search: string) => void;
@@ -72,6 +69,8 @@ interface InvoiceToolbarProps {
   onFilterPrintChange?: (value: string) => void;
   filterCollection?: string;
   onFilterCollectionChange?: (value: string) => void;
+  collectionFilterLabel?: string;
+  collectionFilterOptions?: CollectionFilterOption[];
   filterCollectionDate?: string;
   onFilterCollectionDateChange?: (value: string) => void;
   filterAssignedUser?: string;
@@ -87,19 +86,37 @@ interface InvoiceToolbarProps {
     collectionDate?: string | null;
   }) => void;
   billingPeriods?: string[];
+  extraActions?: ReactNode;
 }
+
+const AREA_ALL_VALUE = "__all__";
+const DEFAULT_BULK_UPDATE_FIELD = "collectionStatus";
+const DEFAULT_BULK_UPDATE_VALUE = "collected";
+const DEFAULT_BULK_COLLECTION_DATE = toDateKeyVN();
+const DEFAULT_COLLECTION_FILTER_OPTIONS: CollectionFilterOption[] = [
+  { value: "collected_today", label: "Đã thu hôm nay" },
+  { value: "collected", label: "Tất cả đã thu" },
+  { value: "all", label: "Danh sách đầy đủ" },
+  { value: "not_collected", label: "Chưa thu" },
+  { value: "is_paid", label: "Đã đóng cước" },
+  { value: "duplicates", label: "Giống mã KH", danger: true },
+];
 
 export default function InvoiceToolbar({
   invoicesCount = 0,
   onExport,
   onExportPrinted,
+  exportButtonLabel = "Xuất Excel chọn lọc",
   invoicesPerPage = 30,
   onInvoicesPerPageChange,
   onOpenAddDialog,
+  addButtonLabel = "Thêm HĐ mới",
   selectedInvoicesCount = 0,
   onDeleteSelected,
+  deleteButtonLabel = "Xóa HĐ",
   onOpenDeleteAllModal,
   onOpenUploadWithProvince,
+  uploadButtonLabel = "Tải Excel + người phụ trách",
   onOpenUploadPaidInvoices,
   searchValue = "",
   onSearchChange,
@@ -109,8 +126,12 @@ export default function InvoiceToolbar({
   areaOptions = [],
   selectedAreaPrefixes = [],
   onSelectedAreaPrefixesChange,
+  filterPrint,
+  onFilterPrintChange,
   filterCollection,
   onFilterCollectionChange,
+  collectionFilterLabel = "Trạng thái hóa đơn",
+  collectionFilterOptions = DEFAULT_COLLECTION_FILTER_OPTIONS,
   filterCollectionDate = "",
   onFilterCollectionDateChange,
   filterAssignedUser,
@@ -120,6 +141,7 @@ export default function InvoiceToolbar({
   userData = [],
   onBulkUpdate,
   billingPeriods = [],
+  extraActions,
 }: InvoiceToolbarProps) {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkValue, setBulkValue] = useState("");
@@ -134,6 +156,7 @@ export default function InvoiceToolbar({
     borderRadius: 2,
     textTransform: "none",
   };
+
   const grayActionButtonSx = {
     ...commonButtonSx,
     backgroundColor: "#6b7280",
@@ -256,7 +279,7 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#15803d" },
               }}
             >
-              Xuất Excel chọn lọc
+              {exportButtonLabel}
             </Button>
           )}
 
@@ -266,9 +289,9 @@ export default function InvoiceToolbar({
               color="primary"
               startIcon={<ListIcon />}
               onClick={() => setIsBulkDialogOpen(true)}
-              sx={{ ...commonButtonSx }}
+              sx={commonButtonSx}
             >
-              {BULK_SEARCH_BUTTON_LABEL}
+              Tìm hàng loạt
             </Button>
           )}
 
@@ -284,7 +307,7 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#eab308" },
               }}
             >
-              Tải Excel + người phụ trách
+              {uploadButtonLabel}
             </Button>
           )}
 
@@ -300,7 +323,7 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#eab308" },
               }}
             >
-              Thêm HĐ mới
+              {addButtonLabel}
             </Button>
           )}
 
@@ -313,7 +336,7 @@ export default function InvoiceToolbar({
                 onClick={(event) => setDeleteMenuAnchor(event.currentTarget)}
                 sx={grayActionButtonSx}
               >
-                Xóa HĐ
+                {deleteButtonLabel}
               </Button>
               <Menu
                 anchorEl={deleteMenuAnchor}
@@ -346,15 +369,12 @@ export default function InvoiceToolbar({
           )}
 
           {onOpenUploadPaidInvoices && (
-            <Button
-              variant="contained"
-              size="small"
-              onClick={onOpenUploadPaidInvoices}
-              sx={grayActionButtonSx}
-            >
+            <Button variant="contained" size="small" onClick={onOpenUploadPaidInvoices} sx={grayActionButtonSx}>
               Cập nhật HĐ đã đóng cước
             </Button>
           )}
+
+          {extraActions}
 
           {onBulkUpdate && (
             <Button
@@ -388,7 +408,7 @@ export default function InvoiceToolbar({
                 "&:hover": { backgroundColor: "#15803d" },
               }}
             >
-              Xuất Excel chọn lọc
+              {exportButtonLabel}
             </Button>
           )}
         </Box>
@@ -462,57 +482,42 @@ export default function InvoiceToolbar({
           </FormControl>
         )}
 
-        {onFilterCollectionChange && (
+        {onFilterPrintChange && (
           <FormControl size="small" sx={{ minWidth: { xs: 170, sm: 190 } }}>
-            <InputLabel id="filter-collection-label">Trạng thái hóa đơn</InputLabel>
+            <InputLabel id="filter-print-label">Trạng thái in bill</InputLabel>
             <Select
-              labelId="filter-collection-label"
-              value={filterCollection ?? "collected_today"}
-              label="Trạng thái hóa đơn"
-              onChange={(event: SelectChangeEvent) => onFilterCollectionChange(event.target.value)}
+              labelId="filter-print-label"
+              value={filterPrint ?? "all"}
+              label="Trạng thái in bill"
+              onChange={(event: SelectChangeEvent) => onFilterPrintChange(event.target.value)}
             >
-              <MenuItem value="collected_today">Đã thu hôm nay</MenuItem>
-              <MenuItem value="collected">Tất cả đã thu</MenuItem>
-              <MenuItem value="all">Danh sách đầy đủ</MenuItem>
-              <MenuItem value="not_collected">Chưa thu</MenuItem>
-              <MenuItem value="is_paid">Đã đóng cước</MenuItem>
-              <MenuItem value="duplicates" sx={{ color: "#ef4444", fontWeight: 600 }}>
-                Giống mã KH
-              </MenuItem>
+              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="printed">Đã in</MenuItem>
+              <MenuItem value="notPrinted">Chưa in</MenuItem>
             </Select>
           </FormControl>
         )}
 
-        {onFilterCollectionDateChange && filterCollection === "collected" && (
-          <>
-            <TextField
-              size="small"
-              label={COLLECTION_DATE_LABEL}
-              type="date"
-              value={filterCollectionDate}
-              onChange={(event) => onFilterCollectionDateChange(event.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-              helperText={COLLECTION_DATE_HELPER}
-            />
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => onFilterCollectionDateChange(toDateKeyVN())}
-              sx={{ ...commonButtonSx, height: "40px" }}
+        {onFilterCollectionChange && (
+          <FormControl size="small" sx={{ minWidth: { xs: 170, sm: 190 } }}>
+            <InputLabel id="filter-collection-label">{collectionFilterLabel}</InputLabel>
+            <Select
+              labelId="filter-collection-label"
+              value={filterCollection ?? "collected_today"}
+              label={collectionFilterLabel}
+              onChange={(event: SelectChangeEvent) => onFilterCollectionChange(event.target.value)}
             >
-              {COLLECTION_DATE_TODAY_LABEL}
-            </Button>
-            {filterCollectionDate && (
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => onFilterCollectionDateChange("")}
-                sx={{ ...commonButtonSx, height: "40px" }}
-              >
-                {COLLECTION_DATE_CLEAR_LABEL}
-              </Button>
-            )}
-          </>
+              {collectionFilterOptions.map((option) => (
+                <MenuItem
+                  key={option.value}
+                  value={option.value}
+                  sx={option.danger ? { color: "#ef4444", fontWeight: 600 } : undefined}
+                >
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         )}
 
         {onSelectedBillingPeriodChange && (
@@ -543,12 +548,7 @@ export default function InvoiceToolbar({
           <>
             <FormControl size="small" sx={{ minWidth: { xs: 110, sm: 130 } }}>
               <InputLabel id="search-type-label">Tìm theo</InputLabel>
-              <Select
-                labelId="search-type-label"
-                value={searchType}
-                label="Tìm theo"
-                onChange={handleSearchTypeSelect}
-              >
+              <Select labelId="search-type-label" value={searchType} label="Tìm theo" onChange={handleSearchTypeSelect}>
                 <MenuItem value="customerCode">Mã KH</MenuItem>
                 <MenuItem value="stationCode">Mã trạm</MenuItem>
               </Select>
@@ -564,11 +564,43 @@ export default function InvoiceToolbar({
             />
           </>
         )}
+
+        {onFilterCollectionDateChange && filterCollection === "collected" && (
+          <>
+            <TextField
+              size="small"
+              label="Ngày thu"
+              type="date"
+              value={filterCollectionDate}
+              onChange={(event) => onFilterCollectionDateChange(event.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              helperText="Bỏ trống để xem tất cả đã thu"
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => onFilterCollectionDateChange(toDateKeyVN())}
+              sx={{ ...commonButtonSx, height: "40px" }}
+            >
+              Hôm nay
+            </Button>
+            {filterCollectionDate && (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => onFilterCollectionDateChange("")}
+                sx={{ ...commonButtonSx, height: "40px" }}
+              >
+                Bỏ lọc ngày
+              </Button>
+            )}
+          </>
+        )}
       </Box>
 
       <Dialog open={isBulkDialogOpen} onClose={() => setIsBulkDialogOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 1 }}>
-          <SearchIcon color="primary" /> {BULK_SEARCH_DIALOG_TITLE}
+          <SearchIcon color="primary" /> Tìm kiếm hàng loạt
         </DialogTitle>
         <DialogContent dividers>
           <TextField
@@ -586,15 +618,13 @@ export default function InvoiceToolbar({
             Hủy bỏ
           </Button>
           <Button onClick={handleProcessBulkSearch} variant="contained" color="primary" disabled={!bulkValue.trim()}>
-            {BULK_SEARCH_DIALOG_CONFIRM_LABEL}
+            Tìm ngay
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={isBulkUpdateOpen} onClose={() => setIsBulkUpdateOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontWeight: "bold" }}>
-          Cập nhật hàng loạt ({selectedInvoicesCount} hóa đơn)
-        </DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Cập nhật hàng loạt ({selectedInvoicesCount} hóa đơn)</DialogTitle>
         <DialogContent dividers>
           <FormControl fullWidth size="small" sx={{ mt: 1, mb: 2 }}>
             <InputLabel id="bulk-update-field-label">Trường cần cập nhật</InputLabel>
@@ -689,11 +719,11 @@ export default function InvoiceToolbar({
               fullWidth
               size="small"
               type="date"
-              label={COLLECTION_DATE_LABEL}
+              label="Ngày thu"
               value={bulkUpdateValue}
               onChange={(event) => setBulkUpdateValue(event.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
-              helperText={BULK_COLLECTION_DATE_HELPER}
+              helperText="Gán ngày thu hàng loạt và tự chuyển trạng thái sang Đã thu."
             />
           )}
         </DialogContent>

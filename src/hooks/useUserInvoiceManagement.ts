@@ -46,6 +46,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
   const [filterPrint, setFilterPrint] = useState("all");
   const [filterCollection, setFilterCollection] = useState("all");
+  const [filterCollectionDate, setFilterCollectionDate] = useState("");
   const [isPaidFilter, setIsPaidFilter] = useState(false);
   // --- Pagination States ---
 
@@ -77,41 +78,71 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const [collectedFromDate, setCollectedFromDate] = useState(today); // Từ ngày
   const [collectedToDate, setCollectedToDate] = useState(today); // Đến ngày
 
-  const [collectedStatus, setCollectedStatus] = useState("paid");
-  const [closingStatus, setClosingStatus] = useState("false");
+  const [collectedStatus, setCollectedStatus] = useState("all");
+  const [closingStatus, setClosingStatus] = useState("all");
 
-  const [allCollectionStatus, setAllCollectionStatus] = useState("paid");
-  const [allPaymentStatus, setAllPaymentStatus] = useState("false");
+  const [allCollectionStatus, setAllCollectionStatus] = useState("all");
+  const [allPaymentStatus, setAllPaymentStatus] = useState("all");
+
+  const resolveInvoiceQueryParams = useCallback(() => {
+    const sortFieldToSend = sortDirection !== "none" ? sortField : undefined;
+    const sortDirectionToSend = sortDirection !== "none" ? sortDirection : undefined;
+    const printStatusToSend = filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined;
+    const collectionStatusToSend =
+      !isPaidFilter && filterCollection !== "all"
+        ? filterCollection === "not_collected"
+          ? "not_collected"
+          : "collected"
+        : undefined;
+    const collectionDateToSend =
+      collectionStatusToSend === "collected" && filterCollectionDate ? filterCollectionDate : undefined;
+
+    const searchParams: { customerCode?: string; stationCode?: string } = {};
+    if (debouncedSearchValue) {
+      if (searchType === "customerCode") {
+        searchParams.customerCode = debouncedSearchValue;
+      } else {
+        searchParams.stationCode = debouncedSearchValue;
+      }
+    }
+
+    return {
+      printStatusToSend,
+      collectionStatusToSend,
+      collectionDateToSend,
+      searchParams,
+      sortFieldToSend,
+      sortDirectionToSend,
+    };
+  }, [debouncedSearchValue, filterCollection, filterCollectionDate, filterPrint, isPaidFilter, searchType, sortField, sortDirection]);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    const sortFieldToSend = sortDirection !== "none" ? sortField : undefined;
-    const sortDirectionToSend = sortDirection !== "none" ? sortDirection : undefined;
+    const {
+      printStatusToSend,
+      collectionStatusToSend,
+      collectionDateToSend,
+      searchParams,
+      sortFieldToSend,
+      sortDirectionToSend,
+    } = resolveInvoiceQueryParams();
 
-    const searchParams: { customerCode?: string; stationCode?: string } = {}; // DĂ¹ng debouncedSearchValue
-
-    if (debouncedSearchValue) {
-      if (searchType === "customerCode") {
-        searchParams.customerCode = debouncedSearchValue;
-      } else if (searchType === "stationCode") {
-        searchParams.stationCode = debouncedSearchValue;
-      }
-    }
     try {
       const res = await fetchuserinvoices(
         currentPage,
         invoicesPerPage,
-        filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined,
-        filterCollection !== "all" ? (filterCollection === "not_collected" ? "not_collected" : "collected") : undefined,
+        printStatusToSend,
+        collectionStatusToSend,
         undefined,
         searchParams.customerCode,
         searchParams.stationCode,
         undefined,
         sortFieldToSend,
         sortDirectionToSend,
-        isPaidFilter
+        isPaidFilter,
+        collectionDateToSend
       );
 
       setTotalPages(res.data.pagination.totalPages);
@@ -125,18 +156,35 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     } finally {
       setLoading(false);
     }
-  }, [
-    user,
-    currentPage,
-    invoicesPerPage,
-    filterPrint,
-    filterCollection,
-    debouncedSearchValue,
-    searchType,
-    sortField,
-    sortDirection,
-    isPaidFilter,
-  ]);
+  }, [currentPage, invoicesPerPage, isPaidFilter, resolveInvoiceQueryParams]);
+
+  const fetchAllInvoicesForCopy = useCallback(async () => {
+    const {
+      printStatusToSend,
+      collectionStatusToSend,
+      collectionDateToSend,
+      searchParams,
+      sortFieldToSend,
+      sortDirectionToSend,
+    } = resolveInvoiceQueryParams();
+
+    const res = await fetchuserinvoices(
+      1,
+      5000,
+      printStatusToSend,
+      collectionStatusToSend,
+      undefined,
+      searchParams.customerCode,
+      searchParams.stationCode,
+      undefined,
+      sortFieldToSend,
+      sortDirectionToSend,
+      isPaidFilter,
+      collectionDateToSend
+    );
+
+    return res.data.data;
+  }, [isPaidFilter, resolveInvoiceQueryParams]);
 
   const fetchCollectSummary = useCallback(async () => {
     setLoading(true);
@@ -178,13 +226,45 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setCurrentPage(1);
   };
 
+  const handleInvoicesPerPageValueChange = (value: number) => {
+    setInvoicesPerPage(value);
+    setCurrentPage(1);
+  };
+
   const handleFilterChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: SelectChangeEvent) => {
     setter(e.target.value);
     setCurrentPage(1);
   };
 
+  const handlePrintFilterValueChange = (value: string) => {
+    setFilterPrint(value);
+    setCurrentPage(1);
+  };
+
   const handleIsPaidFilterChange = (checked: boolean) => {
     setIsPaidFilter(checked);
+    setCurrentPage(1);
+  };
+
+  const handleCollectionFilterValueChange = (value: string) => {
+    if (value === "is_paid") {
+      setIsPaidFilter(true);
+      setFilterCollection("all");
+      setFilterCollectionDate("");
+      setCurrentPage(1);
+      return;
+    }
+
+    setIsPaidFilter(false);
+    setFilterCollection(value);
+    if (value !== "collected") {
+      setFilterCollectionDate("");
+    }
+    setCurrentPage(1);
+  };
+
+  const handleCollectionDateFilterChange = (value: string) => {
+    setFilterCollectionDate(value);
     setCurrentPage(1);
   };
 
@@ -196,6 +276,12 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setSearchType(e.target.value as SearchType);
     setSearchValue(""); // Reset giá trị tìm kiếm khi đổi loại
     setCurrentPage(1); // Reset page khi đổi loại
+  };
+
+  const handleSearchTypeValueChange = (value: SearchType) => {
+    setSearchType(value);
+    setSearchValue("");
+    setCurrentPage(1);
   };
 
   const handleSort = (field: string) => {
@@ -308,11 +394,15 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     setSelectedInvoice(null);
   };
 
-  const handleOpenEdit = () => {
-    if (!selectedInvoice) return;
-    setEditingInvoice(selectedInvoice);
+  const handleEditInvoice = (invoice: InvoiceInfo) => {
+    setEditingInvoice(invoice);
     setEditModalOpen(true);
     handleMenuClose();
+  };
+
+  const handleOpenEdit = () => {
+    if (!selectedInvoice) return;
+    handleEditInvoice(selectedInvoice);
   };
 
   const handleDeleteInvoice = async () => {
@@ -359,12 +449,15 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     if (filterPrint !== "all") {
       params.append("printStatus", filterPrint);
     }
-    if (searchValue) {
+    if (searchValue.trim()) {
       if (searchType === "customerCode") {
-        params.append("customerCode", searchValue);
+        params.append("customerCode", searchValue.trim());
       } else if (searchType === "stationCode") {
-        params.append("stationCode", searchValue);
+        params.append("stationCode", searchValue.trim());
       }
+    }
+    if (filterCollection === "collected" && filterCollectionDate) {
+      params.append("collectionDate", filterCollectionDate);
     }
     if (sortField && sortDirection !== "none") {
       params.append("sortField", sortField);
@@ -396,6 +489,62 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     } catch (error) {
       console.error("Loi khi xuat file:", error);
       toast.error("Khong the ket noi toi may chu de xuat file.");
+    }
+  };
+
+  const handleExportCollectedOnly = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui long dang nhap lai");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.append("collectionStatus", "paid");
+
+    if (filterCollectionDate) {
+      params.append("collectionDate", filterCollectionDate);
+    }
+    if (filterPrint !== "all") {
+      params.append("printStatus", filterPrint);
+    }
+    if (searchValue.trim()) {
+      if (searchType === "customerCode") {
+        params.append("customerCode", searchValue.trim());
+      } else if (searchType === "stationCode") {
+        params.append("stationCode", searchValue.trim());
+      }
+    }
+    if (sortField && sortDirection !== "none") {
+      params.append("sortField", sortField);
+      params.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
+    }
+
+    const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
+    try {
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Co loi xay ra khi xuat file da thu.");
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const contentDisposition = response.headers.get("content-disposition");
+      const fileNameMatch = contentDisposition?.match(/filename=\"(.+)\"/);
+      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-da-thu.xlsx";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Loi khi xuat file da thu:", error);
+      toast.error("Khong the ket noi toi may chu de xuat file da thu.");
     }
   };
 
@@ -520,6 +669,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     totalAmountInfo,
     filterPrint,
     filterCollection,
+    filterCollectionDate,
     isPaidFilter,
     searchType,
     searchValue,
@@ -541,6 +691,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     // Setters
     setFilterPrint,
     setFilterCollection,
+    setFilterCollectionDate,
     setIsPaidFilter,
     setOpenAddDialog,
     setOpenUploadDialog,
@@ -550,12 +701,18 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
     // Handlers
     reloadInvoices,
+    fetchAllInvoicesForCopy,
     handlePageChange,
     handleRowsPerPageChange,
+    handleInvoicesPerPageValueChange,
     handleFilterChange,
+    handlePrintFilterValueChange,
+    handleCollectionFilterValueChange,
+    handleCollectionDateFilterChange,
     handleIsPaidFilterChange,
     onSearchChange,
     handleSearchTypeChange,
+    handleSearchTypeValueChange,
     handleSort,
     handleSelectAll,
     handleSelectOne,
@@ -563,9 +720,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     handleToggle,
     handleMenuOpen,
     handleMenuClose,
+    handleEditInvoice,
     handleOpenEdit,
     handleDeleteInvoice,
     handleExport,
+    handleExportCollectedOnly,
     handleOpenExportCollected,
     handleExportCollectedConfirm,
     handleAddSuccess,
