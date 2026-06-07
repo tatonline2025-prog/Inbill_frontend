@@ -94,9 +94,9 @@ const DEFAULT_BULK_UPDATE_FIELD = "collectionStatus";
 const DEFAULT_BULK_UPDATE_VALUE = "collected";
 const DEFAULT_BULK_COLLECTION_DATE = toDateKeyVN();
 const DEFAULT_COLLECTION_FILTER_OPTIONS: CollectionFilterOption[] = [
+  { value: "all", label: "Danh sách tổng" },
   { value: "collected_today", label: "Đã thu hôm nay" },
   { value: "collected", label: "Tất cả đã thu" },
-  { value: "all", label: "Danh sách đầy đủ" },
   { value: "not_collected", label: "Chưa thu" },
   { value: "is_paid", label: "Đã đóng cước" },
   { value: "duplicates", label: "Giống mã KH", danger: true },
@@ -503,7 +503,7 @@ export default function InvoiceToolbar({
             <InputLabel id="filter-collection-label">{collectionFilterLabel}</InputLabel>
             <Select
               labelId="filter-collection-label"
-              value={filterCollection ?? "collected_today"}
+              value={filterCollection ?? "all"}
               label={collectionFilterLabel}
               onChange={(event: SelectChangeEvent) => onFilterCollectionChange(event.target.value)}
             >

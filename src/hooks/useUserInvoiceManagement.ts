@@ -238,6 +238,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
   const handlePrintFilterValueChange = (value: string) => {
     setFilterPrint(value);
+    setSearchValue("");
     setCurrentPage(1);
   };
 
@@ -251,6 +252,7 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       setIsPaidFilter(true);
       setFilterCollection("all");
       setFilterCollectionDate("");
+      setSearchValue("");
       setCurrentPage(1);
       return;
     }
@@ -260,11 +262,13 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     if (value !== "collected") {
       setFilterCollectionDate("");
     }
+    setSearchValue("");
     setCurrentPage(1);
   };
 
   const handleCollectionDateFilterChange = (value: string) => {
     setFilterCollectionDate(value);
+    setSearchValue("");
     setCurrentPage(1);
   };
 

@@ -82,7 +82,7 @@ export const useInvoiceManagement = () => {
 
   // --- State Bộ lọc ---
   const [filterPrint, setFilterPrint] = useState("all");
-  const [filterCollection, setFilterCollection] = useState("collected_today");
+  const [filterCollection, setFilterCollection] = useState("all");
   const [filterCollectionDate, setFilterCollectionDate] = useState("");
   const [filterAssignedUser, setFilterAssignedUser] = useState("all");
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState("all");
@@ -322,6 +322,7 @@ export const useInvoiceManagement = () => {
   const createFilterChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
     return (value: string) => {
       setter(value);
+      setSearchValue("");
       setCurrentPage(1);
       // Reset bulk search when filters change
       setIsBulkSearchActive(false);
@@ -361,6 +362,7 @@ export const useInvoiceManagement = () => {
 
   const handleAreaFilterChange = (values: string[]) => {
     setSelectedAreaPrefixes(values);
+    setSearchValue("");
     setCurrentPage(1);
     setIsBulkSearchActive(false);
     setBulkSearchCodes([]);
@@ -370,10 +372,15 @@ export const useInvoiceManagement = () => {
     if (value === "is_paid") {
       setIsPaidFilter(true);
       setFilterCollection("all");
+      setFilterCollectionDate("");
     } else {
       setIsPaidFilter(false);
       setFilterCollection(value);
+      if (value !== "collected") {
+        setFilterCollectionDate("");
+      }
     }
+    setSearchValue("");
     setCurrentPage(1);
     setIsBulkSearchActive(false);
     setBulkSearchCodes([]);
@@ -381,6 +388,7 @@ export const useInvoiceManagement = () => {
 
   const handleCollectionDateFilterChange = (value: string) => {
     setFilterCollectionDate(value);
+    setSearchValue("");
     setCurrentPage(1);
     setIsBulkSearchActive(false);
     setBulkSearchCodes([]);
@@ -422,6 +430,7 @@ export const useInvoiceManagement = () => {
 
     setIsBulkSearchActive(true);
     setBulkSearchCodes(normalizedCodes);
+    setSearchValue("");
     setTotalPages(1);
     setInvoices(mergedInvoices);
     setInvoiceNumberStatuses({});
