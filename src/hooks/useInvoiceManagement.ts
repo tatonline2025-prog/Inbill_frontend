@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 import { getApiBaseUrl } from "@/lib/api-base-url";
+import { prepareExcelSaveTarget, resolveContentDispositionFileName } from "@/lib/file-download";
 import {
   compareAreaPrefixEntries,
   formatAreaPrefixLabel,
@@ -696,6 +697,11 @@ export const useInvoiceManagement = () => {
 
     const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
     try {
+      const saveTarget = await prepareExcelSaveTarget("danh-sach-hoa-don.xlsx");
+      if (!saveTarget) {
+        return;
+      }
+
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -705,17 +711,9 @@ export const useInvoiceManagement = () => {
         return;
       }
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
-      const fileNameMatch = contentDisposition?.match(/filename=\"(.+)\"/);
-      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-hoa-don.xlsx";
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-hoa-don.xlsx");
+      await saveTarget.save(blob, fileName);
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
       toast.error("Không thể kết nối tới máy chủ để xuất file.");
@@ -742,13 +740,19 @@ export const useInvoiceManagement = () => {
       return;
     }
     try {
-          const exportByUserParams = new URLSearchParams({ assignedUserId: selectedExportUser });
-    if (sortField && sortDirection !== "none") {
-      exportByUserParams.append("sortField", sortField);
-      exportByUserParams.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
-    }
-    const response = await fetch(
-      `${getApiBaseUrl()}/api/invoices/exportExcelByUser?${exportByUserParams.toString()}`,
+      const saveTarget = await prepareExcelSaveTarget("danh-sach-hoa-don.xlsx");
+      if (!saveTarget) {
+        return;
+      }
+
+      const exportByUserParams = new URLSearchParams({ assignedUserId: selectedExportUser });
+      if (sortField && sortDirection !== "none") {
+        exportByUserParams.append("sortField", sortField);
+        exportByUserParams.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
+      }
+
+      const response = await fetch(
+        `${getApiBaseUrl()}/api/invoices/exportExcelByUser?${exportByUserParams.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok || response.headers.get("content-type")?.includes("application/json")) {
@@ -758,17 +762,9 @@ export const useInvoiceManagement = () => {
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
-      const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-hoa-don.xlsx";
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-hoa-don.xlsx");
+      await saveTarget.save(blob, fileName);
       setOpenExportByUser(false);
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
@@ -810,6 +806,11 @@ export const useInvoiceManagement = () => {
 
     // 3. Gọi API
     try {
+      const saveTarget = await prepareExcelSaveTarget("danh-sach-da-thu.xlsx");
+      if (!saveTarget) {
+        return;
+      }
+
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -820,18 +821,9 @@ export const useInvoiceManagement = () => {
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
-      const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-da-thu.xlsx";
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-da-thu.xlsx");
+      await saveTarget.save(blob, fileName);
 
       // Reset và đóng modal
       setOpenExportCollected(false);

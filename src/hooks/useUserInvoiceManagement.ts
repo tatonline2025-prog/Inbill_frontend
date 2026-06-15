@@ -15,6 +15,7 @@ import { SelectChangeEvent } from "@mui/material";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 import { getApiBaseUrl } from "@/lib/api-base-url";
 import { toDateKeyVN, toISOStringVN } from "@/lib/date-vn";
+import { prepareExcelSaveTarget, resolveContentDispositionFileName } from "@/lib/file-download";
 
 type SearchType = "customerCode" | "stationCode";
 type SortDirection = "asc" | "desc" | "none";
@@ -470,6 +471,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
     const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
     try {
+      const saveTarget = await prepareExcelSaveTarget("danh-sach-hoa-don.xlsx");
+      if (!saveTarget) {
+        return;
+      }
+
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -479,17 +485,9 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         return;
       }
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
-      const fileNameMatch = contentDisposition?.match(/filename=\"(.+)\"/);
-      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-hoa-don.xlsx";
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-hoa-don.xlsx");
+      await saveTarget.save(blob, fileName);
     } catch (error) {
       console.error("Loi khi xuat file:", error);
       toast.error("Khong the ket noi toi may chu de xuat file.");
@@ -526,6 +524,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
 
     const apiUrl = `${getApiBaseUrl()}/api/invoices/exportExcel?${params.toString()}`;
     try {
+      const saveTarget = await prepareExcelSaveTarget("danh-sach-da-thu.xlsx");
+      if (!saveTarget) {
+        return;
+      }
+
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -535,17 +538,9 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
         return;
       }
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
-      const fileNameMatch = contentDisposition?.match(/filename=\"(.+)\"/);
-      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-da-thu.xlsx";
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-da-thu.xlsx");
+      await saveTarget.save(blob, fileName);
     } catch (error) {
       console.error("Loi khi xuat file da thu:", error);
       toast.error("Khong the ket noi toi may chu de xuat file da thu.");
@@ -593,6 +588,11 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
     }
 
     try {
+      const saveTarget = await prepareExcelSaveTarget("danh-sach-da-thu.xlsx");
+      if (!saveTarget) {
+        return;
+      }
+
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -603,19 +603,9 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("content-disposition");
-      const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const fileName = fileNameMatch ? fileNameMatch[1] : "danh-sach-da-thu.xlsx";
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
+      const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-da-thu.xlsx");
+      await saveTarget.save(blob, fileName);
       setOpenExportCollected(false);
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
