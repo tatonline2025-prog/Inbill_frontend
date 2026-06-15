@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import TelegramIcon from "@mui/icons-material/Telegram";
@@ -58,6 +58,7 @@ export default function CollectionDeliveryPanel({ users }: CollectionDeliveryPan
   const [summary, setSummary] = useState<ICollectionDeliverySummary | null>(null);
   const [items, setItems] = useState<ICollectionDeliveryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [runningAction, setRunningAction] = useState<string | null>(null);
 
   const load = async () => {
@@ -66,6 +67,7 @@ export default function CollectionDeliveryPanel({ users }: CollectionDeliveryPan
       const response = await fetchCollectionDeliverySummaryAPI(date, assignedUserId);
       setSummary(response.data.summary);
       setItems(response.data.items);
+      setHasLoaded(true);
     } catch (error) {
       console.error(error);
       toast.error("Khong tai duoc doi soat da thu.");
@@ -73,11 +75,6 @@ export default function CollectionDeliveryPanel({ users }: CollectionDeliveryPan
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const runReplay = async (
     actionKey: string,
@@ -194,6 +191,10 @@ export default function CollectionDeliveryPanel({ users }: CollectionDeliveryPan
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
           <CircularProgress size={28} />
         </Box>
+      ) : !hasLoaded ? (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          Chon ngay va bam Tai lai de xem tong so da thu, so da gui Telegram va so da ghi vao Filter.
+        </Alert>
       ) : (
         <>
           <Box
