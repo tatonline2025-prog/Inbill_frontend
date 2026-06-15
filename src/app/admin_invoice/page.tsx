@@ -10,6 +10,7 @@ import EditInvoiceDialog from "@/components/EditInvoiceDialog";
 import UploadInvoiceWithProvinceDialog from "@/components/UploadInvoiceWithProvinceDialog";
 import UploadPaidInvoicesDialog from "@/components/UploadPaidInvoicesDialog";
 import DeleteAllInvoicesDialog from "@/components/invoices/DeleteAllInvoicesDialog";
+import CollectionDeliveryPanel from "@/components/invoices/CollectionDeliveryPanel";
 import InvoiceToolbar from "@/components/invoices/InvoiceToolbar";
 import InvoiceSummary from "@/components/invoices/InvoiceSummary";
 import InvoiceTable from "@/components/invoices/InvoiceTable";
@@ -260,6 +261,8 @@ export default function InvoicesPage() {
           notCollected={collectSummary?.notCollected}
           isPaid={collectSummary?.isPaid}
         />
+
+        <CollectionDeliveryPanel users={filteredAssignedUsers} />
 
         <Box sx={{ overflowX: "auto" }}>
           <InvoiceTable

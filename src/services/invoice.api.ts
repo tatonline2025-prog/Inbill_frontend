@@ -259,6 +259,81 @@ export const dailyCollectionSummaryAPI = async (params: IDailyCollectionParams =
   return res;
 };
 
+export interface ICollectionDeliverySummary {
+  date: string;
+  totalCollectedCount: number;
+  telegramDeliveredCount: number;
+  webhookDeliveredCount: number;
+  missingTelegramCount: number;
+  missingWebhookCount: number;
+}
+
+export interface ICollectionDeliveryItem {
+  eventKey: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  billingPeriod: string;
+  assignedToName: string;
+  customerName: string;
+  recordBookCode: string;
+  totalAmount: number;
+  collectionDateDisplay: string;
+  telegramStatus: "pending" | "sending" | "sent" | "failed" | string;
+  telegramSentAt: string | null;
+  telegramError: string;
+  webhookStatus: "pending" | "sending" | "sent" | "failed" | string;
+  webhookSentAt: string | null;
+  webhookError: string;
+}
+
+export interface ICollectionDeliverySummaryResponse {
+  success: boolean;
+  summary: ICollectionDeliverySummary;
+  items: ICollectionDeliveryItem[];
+}
+
+export const fetchCollectionDeliverySummaryAPI = async (
+  date: string,
+  assignedUserId: string = "all"
+) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
+  const res = await axios.get<ICollectionDeliverySummaryResponse>(
+    `${getApiBaseUrl()}/api/invoices/collection-delivery-summary`,
+    {
+      params: {
+        date,
+        assignedUserId,
+      },
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  return res;
+};
+
+export const replayCollectionDeliveryAPI = async (payload: {
+  date: string;
+  assignedUserId?: string;
+  channel: "telegram" | "webhook" | "both";
+  mode: "missing" | "force";
+  invoiceIds?: string[];
+}) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Chua dang nhap");
+
+  const res = await axios.post(
+    `${getApiBaseUrl()}/api/invoices/collection-delivery-replay`,
+    payload,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  return res;
+};
+
 export const collectSummaryAPI = async (assignedUserId?: string) => {
   const token = localStorage.getItem("token");
 
