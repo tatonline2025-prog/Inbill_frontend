@@ -1,6 +1,6 @@
 ﻿// hooks/useUserInvoiceManagement.ts
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   collectSummaryAPI,
   deleteInvoice_API,
@@ -35,6 +35,7 @@ interface UseUserInvoiceManagementProps {
 }
 
 export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps) => {
+  const pendingInvoiceActionIdsRef = useRef<Set<string>>(new Set());
   // --- Data & Loading States ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [collectSummary, setCollectSummary] = useState<CollectionSummaryProps>();
@@ -338,9 +339,14 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   };
 
   const handleToggle = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
+    if (pendingInvoiceActionIdsRef.current.has(invoiceId)) {
+      return;
+    }
+
     const targetInvoice = invoices.find((inv) => inv._id === invoiceId);
     if (!targetInvoice) return;
 
+    pendingInvoiceActionIdsRef.current.add(invoiceId);
     try {
       if (field === "printStatus") {
         await handleToggle_API(invoiceId, field);
@@ -386,6 +392,8 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
       reloadInvoices();
+    } finally {
+      pendingInvoiceActionIdsRef.current.delete(invoiceId);
     }
   };
 

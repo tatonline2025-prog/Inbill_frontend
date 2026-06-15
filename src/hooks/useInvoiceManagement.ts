@@ -1,6 +1,6 @@
 ﻿// hooks/useInvoiceManagement.ts
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   collectSummaryAPI,
   deleteInvoice_API,
@@ -64,6 +64,7 @@ const sortBillingPeriodsDesc = (values: string[]) => {
 };
 
 export const useInvoiceManagement = () => {
+  const pendingInvoiceActionIdsRef = useRef<Set<string>>(new Set());
   // --- State Dữ liệu chính ---
   const [invoices, setInvoices] = useState<InvoiceInfo[]>([]);
   const [duplicateInvoiceNumbers, setDuplicateInvoiceNumbers] = useState<string[]>([]);
@@ -549,9 +550,14 @@ export const useInvoiceManagement = () => {
 
   // Tác vụ Toggle
   const handleToggle = async (invoiceId: string, field: "printStatus" | "collectionStatus") => {
+    if (pendingInvoiceActionIdsRef.current.has(invoiceId)) {
+      return;
+    }
+
     const targetInvoice = invoices.find((inv) => inv._id === invoiceId);
     if (!targetInvoice) return;
 
+    pendingInvoiceActionIdsRef.current.add(invoiceId);
     try {
       if (field === "printStatus") {
         await handleToggle_API(invoiceId, field);
@@ -597,13 +603,20 @@ export const useInvoiceManagement = () => {
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
       reloadInvoices();
+    } finally {
+      pendingInvoiceActionIdsRef.current.delete(invoiceId);
     }
   };
 
   const handleToggleIsPaid = async (invoiceId: string) => {
+    if (pendingInvoiceActionIdsRef.current.has(invoiceId)) {
+      return;
+    }
+
     const targetInvoice = invoices.find((inv) => inv._id === invoiceId);
     if (!targetInvoice) return;
 
+    pendingInvoiceActionIdsRef.current.add(invoiceId);
     try {
       // Bật "Đã đóng cước" => tự tắt "Đã thu".
       // Tắt "Đã đóng cước" => về "Chưa thu".
@@ -633,6 +646,8 @@ export const useInvoiceManagement = () => {
       console.error(err);
       toast.error("Lỗi khi cập nhật trạng thái!");
       reloadInvoices();
+    } finally {
+      pendingInvoiceActionIdsRef.current.delete(invoiceId);
     }
   };
 
