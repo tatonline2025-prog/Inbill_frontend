@@ -28,6 +28,12 @@ export type PreparedFileSaveTarget = {
 };
 
 const EXCEL_SAVE_PICKER_ID = "inbill-excel-export";
+const EXCEL_SAVE_MODE_PROMPT = [
+  "Chon cach xuat Excel:",
+  "",
+  "OK = Luu truc tiep vao thu muc ban chon (co nho vi tri cu).",
+  "Cancel = Tai qua trinh duyet de thay file vua tai nhu truoc.",
+].join("\n");
 
 const EXCEL_SAVE_PICKER_TYPES: SavePickerAcceptType[] = [
   {
@@ -55,6 +61,18 @@ const isAbortLikeError = (error: unknown) => {
   return !!error && typeof error === "object" && "name" in error && error.name === "AbortError";
 };
 
+const createBrowserDownloadTarget = (suggestedFileName: string): PreparedFileSaveTarget => ({
+  mode: "download",
+  save: async (blob, actualFileName) => {
+    triggerBrowserDownload(blob, actualFileName || suggestedFileName);
+  },
+});
+
+const chooseExcelSaveMode = (): PreparedFileSaveTarget["mode"] => {
+  const useDirectSave = window.confirm(EXCEL_SAVE_MODE_PROMPT);
+  return useDirectSave ? "picker" : "download";
+};
+
 export const resolveContentDispositionFileName = (contentDisposition: string | null, fallbackFileName: string) => {
   if (!contentDisposition) return fallbackFileName;
 
@@ -77,12 +95,12 @@ export const prepareExcelSaveTarget = async (
   const browserWindow = window as WindowWithSaveFilePicker;
 
   if (typeof browserWindow.showSaveFilePicker !== "function" || !window.isSecureContext) {
-    return {
-      mode: "download",
-      save: async (blob, actualFileName) => {
-        triggerBrowserDownload(blob, actualFileName || suggestedFileName);
-      },
-    };
+    return createBrowserDownloadTarget(suggestedFileName);
+  }
+
+  const saveMode = chooseExcelSaveMode();
+  if (saveMode === "download") {
+    return createBrowserDownloadTarget(suggestedFileName);
   }
 
   try {
@@ -107,11 +125,6 @@ export const prepareExcelSaveTarget = async (
 
     console.warn("showSaveFilePicker failed, fallback to browser download.", error);
 
-    return {
-      mode: "download",
-      save: async (blob, actualFileName) => {
-        triggerBrowserDownload(blob, actualFileName || suggestedFileName);
-      },
-    };
+    return createBrowserDownloadTarget(suggestedFileName);
   }
 };
