@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -54,6 +54,10 @@ const createEmptyInvoice = (): InvoiceItem => ({
   recordBookCode: "",
 });
 
+const cloneInvoice = (invoice: InvoiceItem): InvoiceItem => ({ ...invoice });
+
+const createInvoiceLookup = (items: InvoiceItem[]) => new Map(items.map((item) => [item.id, cloneInvoice(item)]));
+
 const EXCEL_COLUMN_MAPPING: (keyof InvoiceItem)[] = [
   "invoiceNumber",
   "currentAmount",
@@ -78,6 +82,22 @@ const InvoiceRow = memo(
     onItemChange: (id: string, field: keyof InvoiceItem, value: string) => void;
     onRemove: (id: string) => void;
   }) => {
+    const [rowState, setRowState] = useState(inv);
+
+    useEffect(() => {
+      setRowState(inv);
+    }, [inv]);
+
+    const handleFieldChange = useCallback(
+      (field: keyof InvoiceItem, value: string) => {
+        const nextValue = MONEY_FIELDS.has(field) ? normalizeMoneyInputValue(value) : value;
+
+        setRowState((prev) => ({ ...prev, [field]: nextValue }));
+        onItemChange(inv.id, field, nextValue);
+      },
+      [inv.id, onItemChange]
+    );
+
     return (
       <Box
         sx={{
@@ -93,53 +113,53 @@ const InvoiceRow = memo(
           size="small"
           sx={{ width: 150 }}
           label="Mã KH"
-          value={inv.invoiceNumber}
-          onChange={(event) => onItemChange(inv.id, "invoiceNumber", event.target.value)}
+          value={rowState.invoiceNumber}
+          onChange={(event) => handleFieldChange("invoiceNumber", event.target.value)}
         />
         <TextField
           size="small"
           sx={{ width: 120 }}
           label="Kỳ này"
-          value={inv.currentAmount}
-          onChange={(event) => onItemChange(inv.id, "currentAmount", event.target.value)}
+          value={rowState.currentAmount}
+          onChange={(event) => handleFieldChange("currentAmount", event.target.value)}
           inputProps={{ inputMode: "numeric" }}
         />
         <TextField
           size="small"
           sx={{ width: 120 }}
           label="Kỳ trước"
-          value={inv.previousAmount}
-          onChange={(event) => onItemChange(inv.id, "previousAmount", event.target.value)}
+          value={rowState.previousAmount}
+          onChange={(event) => handleFieldChange("previousAmount", event.target.value)}
           inputProps={{ inputMode: "numeric" }}
         />
         <TextField
           size="small"
           sx={{ width: 120 }}
           label="Tổng tiền"
-          value={inv.totalAmount}
-          onChange={(event) => onItemChange(inv.id, "totalAmount", event.target.value)}
+          value={rowState.totalAmount}
+          onChange={(event) => handleFieldChange("totalAmount", event.target.value)}
           inputProps={{ inputMode: "numeric" }}
         />
         <TextField
           size="small"
           sx={{ width: 200 }}
           label="Tên khách"
-          value={inv.customerName}
-          onChange={(event) => onItemChange(inv.id, "customerName", event.target.value)}
+          value={rowState.customerName}
+          onChange={(event) => handleFieldChange("customerName", event.target.value)}
         />
         <TextField
           size="small"
           sx={{ width: 250 }}
           label="Địa chỉ"
-          value={inv.customerAddress}
-          onChange={(event) => onItemChange(inv.id, "customerAddress", event.target.value)}
+          value={rowState.customerAddress}
+          onChange={(event) => handleFieldChange("customerAddress", event.target.value)}
         />
         <TextField
           size="small"
           sx={{ width: 130 }}
           label="Trạm"
-          value={inv.recordBookCode}
-          onChange={(event) => onItemChange(inv.id, "recordBookCode", event.target.value)}
+          value={rowState.recordBookCode}
+          onChange={(event) => handleFieldChange("recordBookCode", event.target.value)}
         />
         <IconButton color="error" onClick={() => onRemove(inv.id)} size="small">
           <DeleteIcon fontSize="small" />
@@ -175,7 +195,13 @@ export default function AddInvoiceDialog({
     assignedTo: isFixedAssignedUser ? currentUser?._id || "" : "",
   });
 
-  const [invoices, setInvoices] = useState<InvoiceItem[]>([createEmptyInvoice()]);
+  const initialInvoicesRef = useRef<InvoiceItem[] | null>(null);
+  if (initialInvoicesRef.current === null) {
+    initialInvoicesRef.current = [createEmptyInvoice()];
+  }
+
+  const [invoices, setInvoices] = useState<InvoiceItem[]>(() => initialInvoicesRef.current!.map(cloneInvoice));
+  const invoiceLookupRef = useRef<Map<string, InvoiceItem>>(createInvoiceLookup(initialInvoicesRef.current!));
 
   const { visiblePeriods, expandPeriods } = useExpandableBillingPeriods({
     basePeriod: baseBillingPeriod,
@@ -198,12 +224,17 @@ export default function AddInvoiceDialog({
     if (field === "assignedTo" && isFixedAssignedUser) {
       return;
     }
+
     setCommonInfo((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleItemChange = useCallback((id: string, field: keyof InvoiceItem, value: string) => {
-    const nextValue = MONEY_FIELDS.has(field) ? normalizeMoneyInputValue(value) : value;
-    setInvoices((prev) => prev.map((invoice) => (invoice.id === id ? { ...invoice, [field]: nextValue } : invoice)));
+    const currentInvoice = invoiceLookupRef.current.get(id);
+    if (!currentInvoice) {
+      return;
+    }
+
+    invoiceLookupRef.current.set(id, { ...currentInvoice, [field]: value });
   }, []);
 
   const addNewRow = () => {
@@ -212,11 +243,20 @@ export default function AddInvoiceDialog({
       return;
     }
 
-    setInvoices((prev) => [...prev, createEmptyInvoice()]);
+    const nextInvoice = createEmptyInvoice();
+    invoiceLookupRef.current.set(nextInvoice.id, cloneInvoice(nextInvoice));
+    setInvoices((prev) => [...prev, nextInvoice]);
   };
 
   const removeRow = useCallback((id: string) => {
-    setInvoices((prev) => (prev.length > 1 ? prev.filter((invoice) => invoice.id !== id) : prev));
+    setInvoices((prev) => {
+      if (prev.length <= 1) {
+        return prev;
+      }
+
+      invoiceLookupRef.current.delete(id);
+      return prev.filter((invoice) => invoice.id !== id);
+    });
   }, []);
 
   const handleSmartPaste = (event: React.ClipboardEvent) => {
@@ -249,21 +289,26 @@ export default function AddInvoiceDialog({
       return rowData;
     });
 
+    invoiceLookupRef.current = createInvoiceLookup(newRows);
     setInvoices(newRows);
     toast.success(`Đã nhập ${newRows.length} dòng.`);
   };
 
   const resetDialog = () => {
-    setInvoices([createEmptyInvoice()]);
+    const nextInvoices = [createEmptyInvoice()];
+    invoiceLookupRef.current = createInvoiceLookup(nextInvoices);
+    setInvoices(nextInvoices);
   };
 
   const handleSubmit = async () => {
+    const latestInvoices = invoices.map((invoice) => invoiceLookupRef.current.get(invoice.id) ?? invoice);
+
     if (!commonInfo.billing_period) {
       toast.error("Vui lòng chọn kỳ hóa đơn.");
       return;
     }
 
-    for (const invoice of invoices) {
+    for (const invoice of latestInvoices) {
       if (!invoice.invoiceNumber.trim()) {
         toast.error("Vui lòng nhập Mã KH.");
         return;
@@ -281,7 +326,7 @@ export default function AddInvoiceDialog({
     try {
       setLoading(true);
 
-      const finalData = invoices.map((invoice) => {
+      const finalData = latestInvoices.map((invoice) => {
         const resolvedAmounts = resolveInvoiceAmounts({
           currentAmount: invoice.currentAmount,
           previousAmount: invoice.previousAmount,
@@ -384,7 +429,7 @@ export default function AddInvoiceDialog({
               sx={{ width: 200 }}
               label="Nhân viên phụ trách"
               value={singleAssignedUserLabel}
-              InputProps={{ readOnly: true }}
+              slotProps={{ input: { readOnly: true } }}
             />
           ) : null}
         </Box>
