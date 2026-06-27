@@ -376,62 +376,80 @@ export default function AddInvoiceDialog({
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
       <DialogTitle
         component="div"
-        sx={{ borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+        sx={{
+          borderBottom: "1px solid #eee",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", lg: "flex-start" },
+          gap: 2,
+          flexWrap: "wrap",
+        }}
       >
         <Typography variant="h6" fontWeight="bold">
           Thêm 1-100 hóa đơn
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }}>
-            <FormControl size="small" sx={{ width: 170 }}>
-              <InputLabel id="add-invoice-period-label">Kỳ thanh toán</InputLabel>
-              <Select
-                labelId="add-invoice-period-label"
-                label="Kỳ thanh toán"
-                value={commonInfo.billing_period}
-                onChange={(event) => handleCommonChange("billing_period", event.target.value)}
-              >
-                {visiblePeriods.map((period) => (
-                  <MenuItem key={period} value={period}>
-                    {period}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, ml: "auto", maxWidth: "100%" }}>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }}>
+              <FormControl size="small" sx={{ width: 170 }}>
+                <InputLabel id="add-invoice-period-label">Kỳ thanh toán</InputLabel>
+                <Select
+                  labelId="add-invoice-period-label"
+                  label="Kỳ thanh toán"
+                  value={commonInfo.billing_period}
+                  onChange={(event) => handleCommonChange("billing_period", event.target.value)}
+                >
+                  {visiblePeriods.map((period) => (
+                    <MenuItem key={period} value={period}>
+                      {period}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-            <Button variant="outlined" onClick={expandPeriods} sx={{ minWidth: 44, px: 0 }}>
-              +
-            </Button>
+              <Button variant="outlined" onClick={expandPeriods} sx={{ minWidth: 44, px: 0 }}>
+                +
+              </Button>
+            </Box>
+
+            {!isFixedAssignedUser && assignedUsers.length > 1 ? (
+              <FormControl size="small" sx={{ width: 200 }}>
+                <InputLabel>Nhân viên phụ trách</InputLabel>
+                <Select
+                  label="Nhân viên phụ trách"
+                  value={commonInfo.assignedTo}
+                  onChange={(event) => handleCommonChange("assignedTo", event.target.value)}
+                >
+                  <MenuItem value="">
+                    <em>-- Chưa chọn --</em>
+                  </MenuItem>
+                  {assignedUsers.map((user) => (
+                    <MenuItem key={user._id} value={user._id}>
+                      {user.fullName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : singleAssignedUserLabel ? (
+              <TextField
+                size="small"
+                sx={{ width: 200 }}
+                label="Nhân viên phụ trách"
+                value={singleAssignedUserLabel}
+                slotProps={{ input: { readOnly: true } }}
+              />
+            ) : null}
           </Box>
 
-          {!isFixedAssignedUser && assignedUsers.length > 1 ? (
-            <FormControl size="small" sx={{ width: 200 }}>
-              <InputLabel>Nhân viên phụ trách</InputLabel>
-              <Select
-                label="Nhân viên phụ trách"
-                value={commonInfo.assignedTo}
-                onChange={(event) => handleCommonChange("assignedTo", event.target.value)}
-              >
-                <MenuItem value="">
-                  <em>-- Chưa chọn --</em>
-                </MenuItem>
-                {assignedUsers.map((user) => (
-                  <MenuItem key={user._id} value={user._id}>
-                    {user.fullName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ) : singleAssignedUserLabel ? (
-            <TextField
-              size="small"
-              sx={{ width: 200 }}
-              label="Nhân viên phụ trách"
-              value={singleAssignedUserLabel}
-              slotProps={{ input: { readOnly: true } }}
-            />
-          ) : null}
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <Button onClick={onClose} disabled={loading} color="inherit">
+              Hủy
+            </Button>
+            <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+              {loading ? "Đang lưu..." : `Lưu ${invoices.length} hóa đơn`}
+            </Button>
+          </Box>
         </Box>
       </DialogTitle>
 
@@ -455,16 +473,10 @@ export default function AddInvoiceDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, borderTop: "1px solid #eee" }}>
-        <Typography variant="body2" sx={{ flexGrow: 1, color: "gray" }}>
+      <DialogActions sx={{ p: 3, borderTop: "1px solid #eee", justifyContent: "flex-start" }}>
+        <Typography variant="body2" sx={{ color: "gray" }}>
           Mẹo: có thể copy nhiều dòng từ Excel rồi dán trực tiếp vào vùng nhập.
         </Typography>
-        <Button onClick={onClose} disabled={loading} color="inherit">
-          Hủy
-        </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Đang lưu..." : `Lưu ${invoices.length} hóa đơn`}
-        </Button>
       </DialogActions>
     </Dialog>
   );
