@@ -800,12 +800,9 @@ export const useInvoiceManagement = () => {
       toDate: collectedToDate,
       status: collectedStatus, // 'collected' | 'not_collected' | 'all'
       isClosed: closingStatus, // 'true' | 'false' | 'all'
+      sortField: collectedStatus === "paid" || collectedStatus === "all" ? "collectionDate" : "updatedAt",
+      sortDirection: "1",
     });
-
-    if (sortField && sortDirection !== "none") {
-      params.append("sortField", sortField);
-      params.append("sortDirection", sortDirection === "asc" ? "1" : "-1");
-    }
 
     // Xử lý mảng userIds (nối chuỗi bằng dấu phẩy)
     if (selectedCollectedUsers.length > 0) {
