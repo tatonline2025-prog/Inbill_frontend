@@ -96,7 +96,7 @@ export default function ExportModals({
   paymentStatus,
   setPaymentStatus,
 }: ExportModalsProps) {
-  const [filterAreaKey, setFilterAreaKey] = useState<string>("ALL");
+  const [selectedAreaKey, setSelectedAreaKey] = useState<string | null>(null);
 
   const areaOptions = useMemo(() => {
     const uniqueOptions = new Map<string, ReturnType<typeof getPrimaryAreaPrefix>>();
@@ -107,6 +107,15 @@ export default function ExportModals({
 
     return Array.from(uniqueOptions.entries()).sort(([, left], [, right]) => compareAreaPrefixEntries(left, right));
   }, [userData]);
+
+  const defaultAreaKey = areaOptions.find(([, entry]) => entry.area === "Lấp Vò")?.[0] ?? "ALL";
+  const filterAreaKey = selectedAreaKey ?? defaultAreaKey;
+
+  useEffect(() => {
+    if (!openExportCollected) {
+      setSelectedAreaKey(null);
+    }
+  }, [openExportCollected]);
 
   const filteredUsers = useMemo(() => {
     if (filterAreaKey === "ALL") return userData;
@@ -129,12 +138,14 @@ export default function ExportModals({
   };
 
   useEffect(() => {
+    if (!openExportCollected) return;
+
     if (filteredUsers.length > 0) {
       setSelectedCollectedUsers(filteredUsers.map((user) => user._id));
     } else {
       setSelectedCollectedUsers([]);
     }
-  }, [filteredUsers, setSelectedCollectedUsers]);
+  }, [filteredUsers, openExportCollected, setSelectedCollectedUsers]);
 
   return (
     <>
@@ -215,7 +226,7 @@ export default function ExportModals({
                 value={filterAreaKey}
                 label="Lọc theo Xã/Phường"
                 onChange={(event) => {
-                  setFilterAreaKey(event.target.value);
+                  setSelectedAreaKey(event.target.value);
                   setSelectedCollectedUsers([]);
                 }}
               >
