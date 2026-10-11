@@ -837,10 +837,8 @@ export const useInvoiceManagement = () => {
       const fileName = resolveContentDispositionFileName(contentDisposition, "danh-sach-da-thu.xlsx");
       await saveTarget.save(blob, fileName);
 
-      // Reset và đóng modal
+      // Đóng modal, giữ danh sách người phụ trách cho lần xuất tiếp theo.
       setOpenExportCollected(false);
-      // Có thể reset form
-      setSelectedCollectedUsers([]);
       setCollectedStatus("paid");
     } catch (error) {
       console.error("Lỗi khi xuất file:", error);
