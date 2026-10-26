@@ -540,15 +540,20 @@ interface LatestPeriodResponse {
 }
 export const deleteInvoicesByBillingPeriodAndUser_API = async (
   billing_period: string,
-  assignedUserId?: string
+  assignedUserId?: string | string[]
 ) => {
+  if (Array.isArray(assignedUserId) && assignedUserId.length === 0) {
+    throw new Error("Vui lòng chọn ít nhất một người phụ trách.");
+  }
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Chưa đăng nhập");
 
   const res = await axios.delete(`${getApiBaseUrl()}/api/invoices/deleteByBillingPeriod`, {
     params: {
       billing_period,
-      assignedUserId,
+      ...(Array.isArray(assignedUserId)
+        ? { assignedUserIds: assignedUserId.join(",") }
+        : { assignedUserId }),
     },
     headers: { Authorization: `Bearer ${token}` },
   });
