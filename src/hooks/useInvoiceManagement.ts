@@ -20,6 +20,7 @@ import { generateBillingPeriods } from "@/constants/invoice.constants";
 import { CollectionSummaryProps } from "@/components/invoices/CollectionSummary";
 import { getApiBaseUrl } from "@/lib/api-base-url";
 import { prepareExcelSaveTarget, resolveContentDispositionFileName } from "@/lib/file-download";
+import type { CollectedExportAreaScope } from "@/lib/collected-export-areas";
 import {
   compareAreaPrefixEntries,
   formatAreaPrefixLabel,
@@ -787,10 +788,14 @@ export const useInvoiceManagement = () => {
     }
   };
 
-  const handleExportCollectedConfirm = async () => {
+  const handleExportCollectedConfirm = async (areaScope?: CollectedExportAreaScope) => {
     // 1. Validate
     if (!collectedFromDate || !collectedToDate) {
       toast.error("Vui lòng chọn khoảng thời gian (Từ ngày - Đến ngày)!");
+      return;
+    }
+    if (selectedCollectedUsers.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một người phụ trách để xuất file.");
       return;
     }
 
@@ -803,6 +808,10 @@ export const useInvoiceManagement = () => {
       sortField: collectedStatus === "paid" || collectedStatus === "all" ? "collectionDate" : "updatedAt",
       sortDirection: "1",
     });
+    if (areaScope) {
+      params.set("areaPrefixes", areaScope.prefixes.join(","));
+      params.set("unrestrictedUserIds", areaScope.unrestrictedUserIds.join(","));
+    }
 
     // Xử lý mảng userIds (nối chuỗi bằng dấu phẩy)
     if (selectedCollectedUsers.length > 0) {

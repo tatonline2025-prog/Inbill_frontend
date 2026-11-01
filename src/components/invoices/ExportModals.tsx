@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   InputLabel,
   ListItemText,
   MenuItem,
@@ -16,12 +17,19 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  compareAreaPrefixEntries,
+  ensureAreaPrefixes,
   formatAreaPrefixLabel,
   getAreaPrefixKey,
   getPrimaryAreaPrefix,
 } from "@/lib/area-prefix";
 import { IUser } from "@/types/user";
+import {
+  CollectedExportAreaScope,
+  filterCollectedExportUsers,
+  getCollectedExportAreaOptions,
+  getCollectedExportAreaScope,
+  getDefaultCollectedExportAreaKeys,
+} from "@/lib/collected-export-areas";
 
 export const FILTER_STATUS = {
   ALL: "all",
@@ -44,7 +52,7 @@ interface ExportModalsProps {
   handleExportByUserConfirm: () => Promise<void>;
   openExportCollected: boolean;
   setOpenExportCollected: (open: boolean) => void;
-  handleExportCollectedConfirm: () => Promise<void>;
+  handleExportCollectedConfirm: (scope?: CollectedExportAreaScope) => Promise<void>;
   openExportModal: boolean;
   setOpenExportModal: (open: boolean) => void;
   handleExportConfirm: () => Promise<void>;
@@ -96,36 +104,19 @@ export default function ExportModals({
   paymentStatus,
   setPaymentStatus,
 }: ExportModalsProps) {
-  const [selectedAreaKey, setSelectedAreaKey] = useState<string | null>(null);
-
-  const areaOptions = useMemo(() => {
-    const uniqueOptions = new Map<string, ReturnType<typeof getPrimaryAreaPrefix>>();
-    userData.forEach((user) => {
-      const primary = getPrimaryAreaPrefix(user);
-      uniqueOptions.set(getAreaPrefixKey(primary), primary);
-    });
-
-    return Array.from(uniqueOptions.entries()).sort(([, left], [, right]) => compareAreaPrefixEntries(left, right));
-  }, [userData]);
-
-  const defaultAreaKey = areaOptions.find(([, entry]) => entry.area === "Lấp Vò")?.[0] ?? "ALL";
-  const filterAreaKey = selectedAreaKey ?? defaultAreaKey;
+  const [selectedAreaKeys, setSelectedAreaKeys] = useState<string[] | null>(null);
+  const areaOptions = useMemo(() => getCollectedExportAreaOptions(userData), [userData]);
+  const defaultAreaKeys = useMemo(() => getDefaultCollectedExportAreaKeys(areaOptions), [areaOptions]);
+  const filterAreaKeys = selectedAreaKeys ?? defaultAreaKeys;
+  const allAreasSelected = areaOptions.length > 0 && areaOptions.every(([key]) => filterAreaKeys.includes(key));
 
   useEffect(() => {
     if (!openExportCollected) {
-      setSelectedAreaKey(null);
+      setSelectedAreaKeys(null);
     }
   }, [openExportCollected]);
 
-  const filteredUsers = useMemo(() => {
-    if (filterAreaKey === "ALL") return userData;
-    return userData.filter((user) => getAreaPrefixKey(getPrimaryAreaPrefix(user)) === filterAreaKey);
-  }, [filterAreaKey, userData]);
-
-  const areaLabel =
-    filterAreaKey === "ALL"
-      ? "Tất cả khu vực"
-      : formatAreaPrefixLabel(areaOptions.find(([value]) => value === filterAreaKey)?.[1]);
+  const filteredUsers = useMemo(() => filterCollectedExportUsers(userData, filterAreaKeys), [filterAreaKeys, userData]);
 
   const isAllSelected = filteredUsers.length > 0 && selectedCollectedUsers.length === filteredUsers.length;
 
@@ -221,28 +212,47 @@ export default function ExportModals({
 
           <div style={{ marginTop: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
             <FormControl fullWidth margin="dense" size="small" sx={{ marginBottom: "12px" }}>
-              <InputLabel>Lọc theo Xã/Phường</InputLabel>
+              <InputLabel shrink>Lọc theo Xã/Phường</InputLabel>
               <Select
-                value={filterAreaKey}
+                multiple
+                displayEmpty
+                value={filterAreaKeys}
                 label="Lọc theo Xã/Phường"
                 onChange={(event) => {
-                  setSelectedAreaKey(event.target.value);
+                  const value = event.target.value;
+                  const keys = typeof value === "string" ? value.split(",") : value;
+                  if (keys.includes("SELECT_ALL_AREAS")) return;
+                  setSelectedAreaKeys(keys);
                   setSelectedCollectedUsers([]);
                 }}
+                renderValue={(selected) => {
+                  if (selected.length === 0) return "Chọn khu vực";
+                  if (allAreasSelected) return "Tất cả khu vực";
+                  return areaOptions.filter(([key]) => selected.includes(key)).map(([, entry]) => formatAreaPrefixLabel(entry)).join(", ");
+                }}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 240 } }, MenuListProps: { dense: true } }}
               >
-                <MenuItem value="ALL">-- Tất cả khu vực --</MenuItem>
+                <MenuItem value="SELECT_ALL_AREAS" onClick={() => {
+                  setSelectedAreaKeys(allAreasSelected ? [] : areaOptions.map(([key]) => key));
+                  setSelectedCollectedUsers([]);
+                }}>
+                  <Checkbox checked={allAreasSelected} indeterminate={!allAreasSelected && filterAreaKeys.length > 0} size="small" />
+                  <ListItemText primary={allAreasSelected ? "Bỏ chọn tất cả khu vực" : "Chọn tất cả khu vực"} />
+                </MenuItem>
                 {areaOptions.map(([value, entry]) => (
                   <MenuItem key={value} value={value}>
-                    {formatAreaPrefixLabel(entry)}
+                    <Checkbox checked={filterAreaKeys.includes(value)} size="small" />
+                    <ListItemText primary={formatAreaPrefixLabel(entry)} />
                   </MenuItem>
                 ))}
               </Select>
+              <FormHelperText>Có thể chọn nhiều khu vực, kể cả cùng tên nhưng khác tiền tố.</FormHelperText>
             </FormControl>
 
             <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
               <FormControl fullWidth margin="dense" sx={{ flex: 1 }}>
                 <InputLabel shrink={openExportCollected || selectedCollectedUsers.length > 0}>
-                  Người phụ trách ({areaLabel})
+                  Người phụ trách
                 </InputLabel>
                 <Select
                   multiple
@@ -293,7 +303,7 @@ export default function ExportModals({
                         <Checkbox checked={selectedCollectedUsers.indexOf(user._id) > -1} />
                         <ListItemText
                           primary={user.fullName}
-                          secondary={formatAreaPrefixLabel(getPrimaryAreaPrefix(user))}
+                          secondary={ensureAreaPrefixes(user.areaPrefixes).filter((entry) => filterAreaKeys.includes(getAreaPrefixKey(entry))).map(formatAreaPrefixLabel).join(", ")}
                         />
                       </MenuItem>
                     ))
@@ -319,7 +329,12 @@ export default function ExportModals({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenExportCollected(false)}>Huỷ</Button>
-          <Button variant="contained" color="success" onClick={handleExportCollectedConfirm}>
+          <Button
+            variant="contained"
+            color="success"
+            disabled={filterAreaKeys.length === 0 || selectedCollectedUsers.length === 0}
+            onClick={() => handleExportCollectedConfirm(getCollectedExportAreaScope(userData, areaOptions, filterAreaKeys))}
+          >
             Xuất Excel
           </Button>
         </DialogActions>
