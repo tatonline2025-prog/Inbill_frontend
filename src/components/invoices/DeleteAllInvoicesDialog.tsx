@@ -8,9 +8,11 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
+  FormGroup,
   FormHelperText,
+  FormLabel,
   InputLabel,
-  ListItemText,
   MenuItem,
   Select,
 } from "@mui/material";
@@ -119,38 +121,42 @@ export default function DeleteAllInvoicesDialog({
         </Box>
 
         <FormControl fullWidth disabled={isDeleting}>
-          <InputLabel id="delete-assigned-user-label" shrink>Người phụ trách</InputLabel>
-          <Select
-            multiple
-            displayEmpty
-            labelId="delete-assigned-user-label"
-            label="Người phụ trách"
-            value={selectedAssignedUsers}
-            onChange={(event) => {
-              const value = event.target.value;
-              setSelectedAssignedUsers(typeof value === "string" ? value.split(",") : value);
-            }}
-            renderValue={(selected) => {
-              if (selected.length === 0) return "Chọn người phụ trách";
-              if (selected.length > 2) return `Đã chọn ${selected.length} người phụ trách`;
-              return selected.map((id) => {
-                if (id === "no_one") return "Chưa phụ trách";
-                const user = sortedUsers.find((entry) => entry._id === id);
-                return user?.fullName || user?.username || id;
-              }).join(", ");
+          <FormLabel id="delete-assigned-user-label">
+            Người phụ trách (đã chọn {selectedAssignedUsers.length})
+          </FormLabel>
+          <FormGroup
+            aria-labelledby="delete-assigned-user-label"
+            sx={{
+              mt: 1,
+              p: 0.5,
+              maxHeight: { xs: 180, sm: 240 },
+              overflowY: "auto",
+              flexWrap: "nowrap",
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1,
             }}
           >
-            {sortedUsers.map((user) => (
-              <MenuItem key={user._id} value={user._id}>
-                <Checkbox checked={selectedAssignedUsers.includes(user._id)} />
-                <ListItemText primary={user.fullName || user.username} />
-              </MenuItem>
+            {[...sortedUsers.map((user) => ({ id: user._id, label: user.fullName || user.username })),
+              { id: "no_one", label: "Chưa phụ trách" }].map(({ id, label }) => (
+              <FormControlLabel
+                key={id}
+                label={label}
+                disabled={isDeleting}
+                sx={{ m: 0, minHeight: 36, flexShrink: 0 }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={selectedAssignedUsers.includes(id)}
+                    onChange={(_, checked) => setSelectedAssignedUsers((selected) =>
+                      checked ? [...selected, id] : selected.filter((value) => value !== id)
+                    )}
+                    sx={{ p: 0.75 }}
+                  />
+                }
+              />
             ))}
-            <MenuItem value="no_one">
-              <Checkbox checked={selectedAssignedUsers.includes("no_one")} />
-              <ListItemText primary="Chưa phụ trách" />
-            </MenuItem>
-          </Select>
+          </FormGroup>
           <FormHelperText>Chọn một hoặc nhiều người phụ trách để xóa hóa đơn trong kỳ đã chọn.</FormHelperText>
         </FormControl>
       </DialogContent>
