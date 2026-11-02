@@ -9,6 +9,7 @@ import { excelUp } from "@/services/excel.api";
 import { useExpandableBillingPeriods } from "@/hooks/useExpandableBillingPeriods";
 import { getDefaultBillingPeriod } from "@/lib/billing-period";
 import Spinner from "./SpinnerLoading";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,7 @@ interface Props {
 }
 
 const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assignedUserName }: Props) => {
+  const { user } = useAuth();
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [baseBillingPeriod, setBaseBillingPeriod] = useState("");
@@ -110,8 +112,8 @@ const UploadInvoiceDialog = ({ open, onClose, onSuccess, assignedUserId, assigne
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-          Nếu file có cột <b>NPT/CTV</b>, <b>NPT</b> hoặc <b>CTV</b> thì hệ thống sẽ ưu tiên người phụ trách theo từng dòng.
-          Giá trị mặc định ở trên chỉ dùng khi dòng đó để trống.
+          {user?.role === "admin" ? "Người phụ trách trong từng dòng của file được ưu tiên; dòng trống dùng người phụ trách mặc định."
+            : "Tất cả hóa đơn trong file được gán cho tài khoản của bạn. Cột người phụ trách trong file không thay đổi tài khoản nhận."}
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1, alignItems: "stretch", mb: 2 }}>

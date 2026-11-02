@@ -89,8 +89,8 @@ export const useUserInvoiceManagement = ({ user }: UseUserInvoiceManagementProps
   const resolveInvoiceQueryParams = useCallback(() => {
     const sortFieldToSend = sortDirection !== "none" ? sortField : undefined;
     const sortDirectionToSend = sortDirection !== "none" ? sortDirection : undefined;
-    const printStatusToSend = filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined;
-    const collectionStatusToSend =
+    const printStatusToSend: "printed" | "not_printed" | undefined = filterPrint !== "all" ? (filterPrint === "notPrinted" ? "not_printed" : "printed") : undefined;
+    const collectionStatusToSend: "collected" | "not_collected" | undefined =
       !isPaidFilter && filterCollection !== "all"
         ? filterCollection === "not_collected"
           ? "not_collected"

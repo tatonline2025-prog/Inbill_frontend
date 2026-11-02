@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { useAuth } from "@/hooks/useAuth";
+import AdminNotifications from "@/components/AdminNotifications";
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -92,6 +93,9 @@ export default function Header() {
       <Link href="/user_invoice_v2" className="nav-item" onClick={closeMenus}>
         QL Hóa Đơn
       </Link>
+      <Link href="/my-customers" className="nav-item" onClick={closeMenus}>
+        Khách hàng của tôi
+      </Link>
     </>
   );
 
@@ -160,6 +164,7 @@ export default function Header() {
         <nav className="hidden min-w-0 md:ml-auto md:flex md:flex-wrap md:items-center md:justify-start md:gap-2 lg:gap-3">
           <NavLinks />
         </nav>
+        {user?.role === "admin" && <AdminNotifications />}
       </div>
 
       <div

@@ -11,6 +11,8 @@ interface InvoiceActionMenuProps {
   onClose: () => void;
   onEdit: (invoice: InvoiceInfo) => void;
   onDeleteSuccess: () => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 export default function InvoiceActionMenu({
@@ -19,15 +21,17 @@ export default function InvoiceActionMenu({
   onClose,
   onEdit,
   onDeleteSuccess,
+  canEdit = true,
+  canDelete = true,
 }: InvoiceActionMenuProps) {
   const handleEdit = () => {
-    if (!selectedInvoice) return;
+    if (!selectedInvoice || !canEdit) return;
     onEdit(selectedInvoice);
     onClose();
   };
 
   const handleDelete = async () => {
-    if (!selectedInvoice) return;
+    if (!selectedInvoice || !canDelete) return;
 
     const confirmDelete = window.confirm(`Bạn có chắc muốn xoá hoá đơn ${selectedInvoice.invoiceNumber}?`);
     if (!confirmDelete) {
@@ -66,13 +70,13 @@ export default function InvoiceActionMenu({
         horizontal: "right",
       }}
     >
-      <MenuItem onClick={handleEdit} sx={{ color: "blue", fontSize: 13 }}>
+      <MenuItem onClick={handleEdit} disabled={!canEdit} sx={{ color: "blue", fontSize: 13 }}>
         Chỉnh sửa hoá đơn
       </MenuItem>
 
-      <MenuItem onClick={handleDelete} sx={{ color: "red", fontSize: 13 }}>
+      {canDelete && <MenuItem onClick={handleDelete} sx={{ color: "red", fontSize: 13 }}>
         Xoá hoá đơn
-      </MenuItem>
+      </MenuItem>}
     </Menu>
   );
 }

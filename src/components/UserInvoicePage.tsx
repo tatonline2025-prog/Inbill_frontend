@@ -112,7 +112,7 @@ export default function UserInvoicePage() {
   const assignedUsers = [user];
 
   return (
-    <ProtectedRoute allowedRoles={["admin", "internal"]} redirectTo="/">
+    <ProtectedRoute allowedRoles={["admin", "user"]} redirectTo="/">
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Danh Sách Hóa Đơn
@@ -127,7 +127,7 @@ export default function UserInvoicePage() {
           onOpenAddDialog={() => setOpenAddDialog(true)}
           addButtonLabel="Thêm mới hóa đơn"
           selectedInvoicesCount={selectedInvoices.length}
-          onDeleteSelected={handleDeleteSelected}
+          onDeleteSelected={user.role === "admin" || user.usertype === "internal" ? handleDeleteSelected : undefined}
           deleteButtonLabel="Xóa HĐ"
           onOpenUploadWithProvince={() => setOpenUploadDialog(true)}
           uploadButtonLabel="Upload Excel"
@@ -212,6 +212,8 @@ export default function UserInvoicePage() {
         onClose={handleMenuClose}
         onEdit={handleEditInvoice}
         onDeleteSuccess={reloadInvoices}
+        canEdit={user.role === "admin" || (typeof selectedInvoice?.assignedTo === "string" ? selectedInvoice.assignedTo : selectedInvoice?.assignedTo?._id) === user._id}
+        canDelete={user.role === "admin" || (user.usertype === "internal" && (typeof selectedInvoice?.assignedTo === "string" ? selectedInvoice.assignedTo : selectedInvoice?.assignedTo?._id) === user._id)}
       />
 
       <EditInvoiceDialog

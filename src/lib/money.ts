@@ -23,7 +23,7 @@ export const parseMoneyInputNumber = (value: unknown): number => {
 };
 
 export const sumMoneyInputValues = (...values: unknown[]): string => {
-  return String(values.reduce((sum, value) => sum + parseMoneyInputNumber(value), 0));
+  return String(values.reduce<number>((sum, value) => sum + parseMoneyInputNumber(value), 0));
 };
 
 const hasMoneyInputValue = (value: unknown): boolean => {

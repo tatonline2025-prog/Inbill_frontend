@@ -12,6 +12,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SyncIcon from "@mui/icons-material/Sync";
 import toast from "react-hot-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/hooks/useAuth";
 import {
   fetchCustomerMaster_API,
   updateCustomerMaster_API,
@@ -37,6 +38,8 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 };
 
 export default function AdminCustomersPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [items, setItems] = useState<EditableRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -50,6 +53,7 @@ export default function AdminCustomersPage() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const load = useCallback(async () => {
+    if (!user?._id) return;
     setLoading(true);
     try {
       const data = await fetchCustomerMaster_API({ page, limit, search });
@@ -60,7 +64,7 @@ export default function AdminCustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [limit, page, search]);
+  }, [limit, page, search, user?._id]);
 
   useEffect(() => {
     void load();
@@ -158,16 +162,16 @@ export default function AdminCustomersPage() {
   };
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={["admin", "user"]}>
       <Box sx={{ p: { xs: 0.5, sm: 1.5 } }}>
         <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", md: "center" }} spacing={1.5} sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Danh sách tổng (Khách hàng cố định) — {total.toLocaleString("vi-VN")}
+            {isAdmin ? "Danh sách tổng (Khách hàng cố định)" : "Khách hàng của tôi"} — {total.toLocaleString("vi-VN")}
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ width: { xs: "100%", md: "auto" } }}>
-            <Button size="small" variant="outlined" color="warning" startIcon={<SyncIcon />} onClick={handleSyncFromInvoices} fullWidth>
+            {isAdmin && <Button size="small" variant="outlined" color="warning" startIcon={<SyncIcon />} onClick={handleSyncFromInvoices} fullWidth>
               Đồng bộ từ kho hóa đơn
-            </Button>
+            </Button>}
           </Stack>
         </Stack>
 
@@ -238,9 +242,9 @@ export default function AdminCustomersPage() {
                         <Tooltip title="Sửa thông tin KH">
                           <IconButton size="small" onClick={() => openEdit(r)}><EditIcon fontSize="small" /></IconButton>
                         </Tooltip>
-                        <Tooltip title="Xóa khỏi danh sách tổng">
+                        {isAdmin && <Tooltip title="Xóa khỏi danh sách tổng">
                           <IconButton size="small" color="error" onClick={() => handleDelete(r)}><DeleteIcon fontSize="small" /></IconButton>
-                        </Tooltip>
+                        </Tooltip>}
                       </Stack>
                     </TableCell>
                   </TableRow>
