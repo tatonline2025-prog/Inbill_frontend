@@ -6,7 +6,9 @@ import { Alert, Badge, Box, Button, Collapse, Dialog, DialogActions, DialogConte
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateTimeVN } from "@/lib/date-vn";
-import { AdminActivityItem, fetchAdminActivities, markAdminActivityRead } from "@/services/adminActivity.api";
+import { AdminActivityItem, fetchAdminActivities, markAdminActivityRead, retryAdminActivityTelegram } from "@/services/adminActivity.api";
+
+const telegramLabels = { not_requested: "", awaiting_config: "Chờ cấu hình bot và nơi nhận", pending: "Đang chờ gửi", sending: "Đang gửi", sent: "Đã gửi", failed: "Gửi chưa thành công" };
 
 export default function AdminNotifications() {
   const { user } = useAuth();
@@ -72,6 +74,11 @@ export default function AdminNotifications() {
               <Collapse in={expanded === item._id}>
                 <Stack spacing={0.5} sx={{ px: 2, pb: 2 }}>
                   <Typography variant="body2">Tài khoản: {item.actorUsername || item.actorName}</Typography>
+                  {item.telegramStatus && item.telegramStatus !== "not_requested" && <Typography variant="body2">Telegram: {telegramLabels[item.telegramStatus]}</Typography>}
+                  {item.telegramStatus === "failed" && <Button size="small" sx={{ alignSelf: "flex-start" }} onClick={async () => {
+                    try { await retryAdminActivityTelegram(item._id); setRefresh((value) => value + 1); }
+                    catch { setError("Chưa gửi lại được Telegram. Vui lòng kiểm tra cấu hình bot và nơi nhận."); }
+                  }}>Gửi lại Telegram</Button>}
                   {item.customerCode && <Typography variant="body2">Mã KH: {item.customerCode}</Typography>}
                   {item.details.fileName && <Typography variant="body2">File: {item.details.fileName}</Typography>}
                   {item.details.billingPeriod && <Typography variant="body2">Kỳ: {item.details.billingPeriod}</Typography>}
