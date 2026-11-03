@@ -63,8 +63,8 @@ const EXCEL_COLUMN_MAPPING: (keyof InvoiceItem)[] = [
   "currentAmount",
   "previousAmount",
   "totalAmount",
-  "customerName",
   "customerAddress",
+  "customerName",
   "recordBookCode",
 ];
 
@@ -142,17 +142,17 @@ const InvoiceRow = memo(
         />
         <TextField
           size="small"
-          sx={{ width: 200 }}
-          label="Tên khách"
-          value={rowState.customerName}
-          onChange={(event) => handleFieldChange("customerName", event.target.value)}
-        />
-        <TextField
-          size="small"
           sx={{ width: 250 }}
           label="Địa chỉ"
           value={rowState.customerAddress}
           onChange={(event) => handleFieldChange("customerAddress", event.target.value)}
+        />
+        <TextField
+          size="small"
+          sx={{ width: 200 }}
+          label="Tên khách"
+          value={rowState.customerName}
+          onChange={(event) => handleFieldChange("customerName", event.target.value)}
         />
         <TextField
           size="small"
@@ -275,8 +275,7 @@ export default function AddInvoiceDialog({
     const newRows: InvoiceItem[] = lines.map((line) => {
       const columns = line
         .split("\t")
-        .map((column) => column.trim())
-        .filter((column) => column !== "");
+        .map((column) => column.trim());
 
       const rowData = createEmptyInvoice();
 
