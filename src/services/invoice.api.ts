@@ -230,6 +230,7 @@ export interface IDailyCollectionSummary {
 export interface IDailyCollectionParams {
   days?: number;
   assignedUserId?: string;
+  assignedUserIds?: string[];
   dateFrom?: string; // "YYYY-MM-DD"
   dateTo?: string;   // "YYYY-MM-DD"
 }
@@ -245,7 +246,10 @@ export const dailyCollectionSummaryAPI = async (params: IDailyCollectionParams =
   } else {
     query.days = params.days ?? 31;
   }
-  if (params.assignedUserId && params.assignedUserId !== "all") {
+  if (params.assignedUserIds !== undefined) {
+    if (params.assignedUserIds.length === 0) throw new Error("Chưa chọn người phụ trách");
+    query.assignedUserIds = params.assignedUserIds.join(",");
+  } else if (params.assignedUserId && params.assignedUserId !== "all") {
     query.assignedUserId = params.assignedUserId;
   }
 

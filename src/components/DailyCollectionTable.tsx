@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Checkbox, FormControl, InputLabel, ListItemText, MenuItem, Select } from "@mui/material";
+import { ensureAreaPrefixes } from "@/lib/area-prefix";
 
 import { useAuth } from "@/hooks/useAuth";
 import { dailyCollectionSummaryAPI, IDailyCollectionSummary } from "@/services/invoice.api";
@@ -20,41 +22,74 @@ export default function DailyCollectionTable() {
   const today = toVNDateStr(new Date());
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
-  const [assignedUserId, setAssignedUserId] = useState("all");
+  const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
   const [rows, setRows] = useState<IDailyCollectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<IUser[]>([]);
 
-  useEffect(() => {
-    if (!isAdmin) return;
+  const userId = user?._id;
 
-    fetchallUser()
-      .then((response) => setUsers(response.data.user.filter((item) => item.usertype === "internal")))
-      .catch(() => {});
-  }, [isAdmin]);
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    setLoading(true);
+    setInitialized(false);
+    setError(null);
+    setRows([]);
+
+    const initialize = async () => {
+      try {
+        let defaults: string[] = [];
+        if (isAdmin) {
+          const response = await fetchallUser();
+          if (cancelled) return;
+          const available = response.data.user.filter((item) => item.usertype === "internal");
+          defaults = available.filter((item) => ensureAreaPrefixes(item.areaPrefixes).some((entry) =>
+            ["Lấp Vò", "Lai Vung"].some((area) => entry.area.localeCompare(area, "vi", { sensitivity: "base" }) === 0)
+          )).map((item) => item._id);
+          setUsers(available);
+          setAssignedUserIds(defaults);
+        }
+        setInitialized(true);
+        if (isAdmin && defaults.length === 0) return;
+        const response = await dailyCollectionSummaryAPI({
+          days: 31,
+          ...(isAdmin ? { assignedUserIds: defaults } : {}),
+        });
+        if (!cancelled) setRows(response.data);
+      } catch (loadError) {
+        console.error(loadError);
+        if (!cancelled) setError("Không tải được dữ liệu thống kê hoặc danh sách người phụ trách. Vui lòng tải lại trang.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void initialize();
+    return () => { cancelled = true; };
+  }, [userId, isAdmin]);
 
   const load = async () => {
+    if (!initialized || (isAdmin && assignedUserIds.length === 0)) return;
     try {
       setLoading(true);
       setError(null);
-
-      const params = mode === "range" ? { dateFrom, dateTo, assignedUserId } : { days, assignedUserId };
+      const params = {
+        ...(mode === "range" ? { dateFrom, dateTo } : { days }),
+        ...(isAdmin ? { assignedUserIds } : {}),
+      };
       const response = await dailyCollectionSummaryAPI(params);
       setRows(response.data);
     } catch (loadError) {
       console.error(loadError);
+      setRows([]);
       setError("Không tải được dữ liệu thống kê.");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const totalCount = rows.reduce((sum, row) => sum + row.totalCount, 0);
   const totalAmount = rows.reduce((sum, row) => sum + row.totalAmount, 0);
@@ -129,32 +164,62 @@ export default function DailyCollectionTable() {
           )}
 
           {isAdmin && (
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Người phụ trách</label>
-              <select
-                className="min-w-[160px] rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={assignedUserId}
-                onChange={(event) => setAssignedUserId(event.target.value)}
+            <FormControl size="small" sx={{ minWidth: 240, width: 320, maxWidth: "100%" }}>
+              <InputLabel id="daily-assignees-label" shrink>Người phụ trách</InputLabel>
+              <Select<string[]>
+                labelId="daily-assignees-label"
+                label="Người phụ trách"
+                multiple
+                value={assignedUserIds}
+                disabled={!initialized || loading}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const selected = typeof value === "string" ? value.split(",") : value;
+                  if (selected.includes("__all")) setAssignedUserIds(users.map((item) => item._id));
+                  else if (selected.includes("__clear") || selected.length === 0) {
+                    setAssignedUserIds([]);
+                    setRows([]);
+                  } else setAssignedUserIds(selected);
+                }}
+                renderValue={(selected) => selected.length === users.length && users.length > 0
+                  ? `Tất cả (${selected.length})`
+                  : `Đã chọn ${selected.length} người`}
+                displayEmpty
+                MenuProps={{ PaperProps: { sx: { maxHeight: 280, maxWidth: "calc(100vw - 32px)" } } }}
               >
-                <option value="all">Tất cả</option>
+                <MenuItem value="__all" dense>
+                  <Checkbox size="small" checked={users.length > 0 && assignedUserIds.length === users.length}
+                    indeterminate={assignedUserIds.length > 0 && assignedUserIds.length < users.length} />
+                  <ListItemText primary="Chọn tất cả" />
+                </MenuItem>
+                <MenuItem value="__clear" dense><ListItemText primary="Bỏ chọn tất cả" sx={{ ml: 4 }} /></MenuItem>
                 {users.map((item) => (
-                  <option key={item._id} value={item._id}>
-                    {item.fullName || item.username}
-                  </option>
+                  <MenuItem key={item._id} value={item._id} dense>
+                    <Checkbox size="small" checked={assignedUserIds.includes(item._id)} />
+                    <ListItemText primary={item.fullName || item.username} />
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormControl>
           )}
 
           <button
             className="rounded-lg bg-blue-600 px-5 py-2 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
             onClick={load}
-            disabled={loading}
+            disabled={loading || !initialized || (isAdmin && assignedUserIds.length === 0)}
           >
             {loading ? "Đang tải..." : "Xem"}
           </button>
         </div>
       </div>
+
+      {isAdmin && (
+        <p className="mb-3 text-xs text-gray-500">
+          {initialized && assignedUserIds.length === 0
+            ? "Chưa chọn người phụ trách. Hãy chọn ít nhất một người để xem thống kê."
+            : "Mặc định chọn người thuộc Lấp Vò, Lai Vung. Có thể chọn nhiều người rồi bấm Xem."}
+        </p>
+      )}
 
       {error && <p className="mb-2 text-center text-red-600">{error}</p>}
 
